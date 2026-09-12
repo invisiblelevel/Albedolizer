@@ -2,7 +2,7 @@
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Version](https://img.shields.io/badge/version-1.2.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -111,6 +111,12 @@ Output: `dist/Albedolizer.exe`
 4. **▶ Run processing**
 5. Output goes to `_corrected` or `_compressed` folder next to sources
 
+### Compression
+1. **🗜 Compress** tab
+2. **📂 Open** for single file, or **📁 Select folder** for batch
+3. **🗜 Compress** or **▶ Compress folder**
+4. Output to `_compressed` folder next to sources
+
 ---
 
 ## 🛠 Tech Stack
@@ -153,7 +159,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.1.0  
+**Version:** 1.2.0  
 **Date:** 2026
 
 ---
@@ -267,6 +273,12 @@ python -m PyInstaller --onefile --windowed --name Albedolizer ^
 4. **▶ Запустить обработку**
 5. Результат в папке `_corrected` или `_compressed` рядом с исходниками
 
+### Сжатие
+1. Вкладка **🗜 Сжатие**
+2. **📂 Открыть** для одного файла или **📁 Выбрать папку** для пакета
+3. **🗜 Сжать** или **▶ Сжать папку**
+4. Результат в папке `_compressed` рядом с исходниками
+
 ---
 
 ## 🛠 Технологии
@@ -309,5 +321,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.1.0  
+**Версия:** 1.2.0  
 **Дата:** 2026
