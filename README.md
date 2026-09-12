@@ -15,8 +15,6 @@
 
 Albedolizer is a tool for 3D artists, game designers, and anyone working with PBR textures. It checks Albedo maps against standards, automatically corrects color via an AI model, and generates a full set of PBR maps.
 
-**Why not Materialize?** Materialize is slow — it takes forever to load an Albedo and even longer to save files. Albedolizer does the same job **many times faster**, plus it supports **batch processing**, which Materialize lacks.
-
 ---
 
 ## ✨ Features
@@ -172,8 +170,6 @@ MIT — free to use, including in commercial projects.
 ## 📖 Что это
 
 Albedolizer — инструмент для 3D-художников, геймдизайнеров и всех, кто работает с PBR-текстурами. Он проверяет Albedo-карты на соответствие стандартам, автоматически корректирует цвет через AI-модель и генерирует полный набор PBR-карт.
-
-**Почему не Materialize?** Materialize тормозит — долго загружает Albedo и ещё дольше сохраняет файлы. Albedolizer делает ту же работу **в разы быстрее**, плюс поддерживает **пакетную обработку**, которой у Materialize нет.
 
 ---
 
