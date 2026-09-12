@@ -133,29 +133,6 @@ def _fallback_standalone(pil, profile_key):
     arr_back = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB)
     return Image.fromarray(arr_back, mode="RGB")
 
-def _ai_correct_standalone(pil, exe_path, model_path):
-    if not (os.path.exists(exe_path) and os.path.exists(model_path)):
-        return None, False
-    try:
-        tmpdir = tempfile.mkdtemp(prefix="albedolizer_")
-        try:
-            src_path = os.path.join(tmpdir, "input.png")
-            pil.save(src_path)
-            result = subprocess.run(
-                [exe_path, "--model", model_path,
-                 "--outdir", tmpdir, src_path],
-                capture_output=True, text=True, timeout=120
-            )
-            out_path = os.path.join(tmpdir, "input_al.png")
-            if os.path.exists(out_path):
-                img = Image.open(out_path).convert("RGB")
-                img.load()
-                return img, True
-            return None, False
-        finally:
-            shutil.rmtree(tmpdir, ignore_errors=True)
-    except Exception:
-        return None, False
 
 # ═══════════════════════════════════════════════════════════
 #  ПЕРЕВОДЫ
@@ -163,7 +140,8 @@ def _ai_correct_standalone(pil, exe_path, model_path):
 T = {
     "ru": {
         "subtitle": "PBR Albedo Checker & Optimizer",
-        "tab_single": "Одиночная", "tab_batch": "Пакетная", "tab_pbr": "🎨 PBR",
+        "tab_single": "🖼 Одиночная", "tab_pbr": "🎨 PBR",
+        "tab_compress": "🗜 Сжатие", "tab_batch": "🗂 Пакетная",
         "load": "📂 Открыть", "check": "🔍 Проверить",
         "fix": "✨ Автокоррекция", "compress": "🗜 Сжать",
         "save": "💾 Сохранить", "reset": "↺ Сброс",
@@ -171,7 +149,7 @@ T = {
         "all_types": "Все типы", "log_title": "ЛОГ",
         "info_btn": "ℹ Инфо", "lang_btn": "🌐 EN",
         "preview_hint": "🖼  Загрузи Albedo-текстуру, чтобы начать",
-        "welcome_1": "👋 Добро пожаловать в Albedolizer v1.1.0",
+        "welcome_1": "👋 Добро пожаловать в Albedolizer v1.2.0",
         "welcome_2": "→ Нажми «📂 Открыть» для начала",
         "log_loaded": "📂 Загружено:", "log_type": "→ Тип:",
         "log_click_check": "→ Нажми «Проверить» для анализа",
@@ -189,22 +167,27 @@ T = {
         "batch_title": "ПАКЕТНАЯ ОБРАБОТКА",
         "batch_select_folder": "📁 Выбрать папку",
         "batch_select_files": "📄 Выбрать файлы",
-        "batch_mode": "РЕЖИМ ОБРАБОТКИ",
-        "batch_mode_fix": "Умная коррекция",
-        "batch_mode_compress": "Только сжатие",
         "batch_run": "▶ Запустить обработку",
         "batch_ready": "Готово к запуску",
         "batch_files_count": "файлов",
-        "batch_processing": "Обработка",
         "batch_done": "Готово",
         "batch_folder": "Папка:",
         "batch_found": "Найдено файлов:",
         "batch_selected": "Выбрано файлов:",
         "batch_no_files": "⚠ Файлы не выбраны",
         "batch_started": "⚡ Пакетная обработка:",
-        "batch_mode_label": "Режим:",
         "batch_out": "Результат в:",
         "batch_processed": "Обработано:",
+        # Compress tab
+        "compress_title": "СЖАТИЕ ALBEDO",
+        "compress_single": "ОДИНОЧНОЕ СЖАТИЕ",
+        "compress_batch": "ПАКЕТНОЕ СЖАТИЕ",
+        "compress_run": "🗜 Сжать",
+        "compress_batch_run": "▶ Сжать папку",
+        "compress_log_done": "🗜 Сжатие выполнено:",
+        "compress_batch_started": "⚡ Пакетное сжатие:",
+        "compress_out": "Результат в:",
+        # PBR
         "pbr_load": "📂 Загрузить Albedo", "pbr_gen": "🎨 Сгенерировать",
         "pbr_batch": "🗂 Из папки", "pbr_save": "💾 Сохранить все",
         "pbr_params": "ПАРАМЕТРЫ PBR",
@@ -243,19 +226,25 @@ T = {
                         "Albedo-карт PBR-текстур. LAB + Autolevels AI."),
         "help_text": (
             "Albedolizer — руководство\n\n"
+            "🖼 ОДИНОЧНАЯ\n"
             "1. Выбери тип текстуры\n"
-            "2. Нажми «📂 Открыть»\n"
-            "3. Нажми «🔍 Проверить»\n"
-            "4. Если FAIL — «✨ Автокоррекция»\n"
-            "5. Если PASS — «🗜 Сжать»\n"
-            "6. «💾 Сохранить»\n\n"
-            "Коррекция использует AI-модель\n"
-            "Autolevels для естественного цвета."
+            "2. «📂 Открыть» → «🔍 Проверить»\n"
+            "3. Если FAIL — «✨ Автокоррекция»\n"
+            "4. «💾 Сохранить»\n\n"
+            "🎨 PBR\n"
+            "1. «📂 Загрузить Albedo»\n"
+            "2. Выбери пресет\n"
+            "3. «🎨 Сгенерировать» → «💾 Сохранить все»\n\n"
+            "🗜 СЖАТИЕ\n"
+            "Одиночное или пакетное сжатие Albedo.\n\n"
+            "🗂 ПАКЕТНАЯ\n"
+            "AI-коррекция целой папки."
         ),
     },
     "en": {
         "subtitle": "PBR Albedo Checker & Optimizer",
-        "tab_single": "Single", "tab_batch": "Batch", "tab_pbr": "🎨 PBR",
+        "tab_single": "🖼 Single", "tab_pbr": "🎨 PBR",
+        "tab_compress": "🗜 Compress", "tab_batch": "🗂 Batch",
         "load": "📂 Open", "check": "🔍 Check",
         "fix": "✨ Auto-Correct", "compress": "🗜 Compress",
         "save": "💾 Save", "reset": "↺ Reset",
@@ -263,7 +252,7 @@ T = {
         "all_types": "All types", "log_title": "LOG",
         "info_btn": "ℹ Info", "lang_btn": "🌐 RU",
         "preview_hint": "🖼  Load an Albedo texture to start",
-        "welcome_1": "👋 Welcome to Albedolizer v1.1.0",
+        "welcome_1": "👋 Welcome to Albedolizer v1.2.0",
         "welcome_2": "→ Click «📂 Open» to start",
         "log_loaded": "📂 Loaded:", "log_type": "→ Type:",
         "log_click_check": "→ Click «Check» to analyze",
@@ -281,22 +270,27 @@ T = {
         "batch_title": "BATCH PROCESSING",
         "batch_select_folder": "📁 Select folder",
         "batch_select_files": "📄 Select files",
-        "batch_mode": "PROCESSING MODE",
-        "batch_mode_fix": "Smart correction",
-        "batch_mode_compress": "Compress only",
         "batch_run": "▶ Run processing",
         "batch_ready": "Ready to start",
         "batch_files_count": "files",
-        "batch_processing": "Processing",
         "batch_done": "Done",
         "batch_folder": "Folder:",
         "batch_found": "Files found:",
         "batch_selected": "Files selected:",
         "batch_no_files": "⚠ No files selected",
         "batch_started": "⚡ Batch processing:",
-        "batch_mode_label": "Mode:",
         "batch_out": "Output:",
         "batch_processed": "Processed:",
+        # Compress tab
+        "compress_title": "ALBEDO COMPRESSION",
+        "compress_single": "SINGLE COMPRESSION",
+        "compress_batch": "BATCH COMPRESSION",
+        "compress_run": "🗜 Compress",
+        "compress_batch_run": "▶ Compress folder",
+        "compress_log_done": "🗜 Compression done:",
+        "compress_batch_started": "⚡ Batch compression:",
+        "compress_out": "Output:",
+        # PBR
         "pbr_load": "📂 Load Albedo", "pbr_gen": "🎨 Generate",
         "pbr_batch": "🗂 From folder", "pbr_save": "💾 Save all",
         "pbr_params": "PBR PARAMETERS",
@@ -311,7 +305,7 @@ T = {
         "pbr_progress_gen": "Generating PBR maps...",
         "pbr_progress_batch": "PBR: processing folder...",
         "pbr_log_loaded": "📂 PBR: loaded",
-        "pbr_log_gen_done": "✅ PBR: generated 6 maps",
+        "pbr_log_gen_done": "✅ PBR: generated 7 maps",
         "pbr_log_saved": "💾 PBR saved to",
         "pbr_log_no_files": "⚠ PBR: no files in folder",
         "pbr_log_batch_done": "✅ PBR batch done:",
@@ -335,54 +329,27 @@ T = {
                         "Albedo maps of PBR textures. LAB + Autolevels AI."),
         "help_text": (
             "Albedolizer — user guide\n\n"
+            "🖼 SINGLE\n"
             "1. Pick texture type\n"
-            "2. Click «📂 Open»\n"
-            "3. Click «🔍 Check»\n"
-            "4. If FAIL — «✨ Auto-Correct»\n"
-            "5. If PASS — «🗜 Compress»\n"
-            "6. «💾 Save»\n\n"
-            "Correction uses Autolevels AI model\n"
-            "for natural color."
+            "2. «📂 Open» → «🔍 Check»\n"
+            "3. If FAIL — «✨ Auto-Correct»\n"
+            "4. «💾 Save»\n\n"
+            "🎨 PBR\n"
+            "1. «📂 Load Albedo»\n"
+            "2. Pick preset\n"
+            "3. «🎨 Generate» → «💾 Save all»\n\n"
+            "🗜 COMPRESS\n"
+            "Single or batch Albedo compression.\n\n"
+            "🗂 BATCH\n"
+            "AI-correction of a whole folder."
         ),
     },
 }
 
-# Многоядерность
-import concurrent.futures
-
-def _batch_worker(task):
-    import traceback
-    fp = task["fp"]
-    mode = task["mode"]
-    profile = task["profile"]
-    out_dir = task["out_dir"]
-    try:
-        if not os.path.exists(out_dir):
-            os.makedirs(out_dir, exist_ok=True)
-
-        img = Image.open(fp).convert("RGB")
-        if mode == "fix":
-            result = _fallback_standalone(img, profile)
-        else:
-            result = img.convert("LAB").convert("RGB")
-
-        base = os.path.splitext(os.path.basename(fp))[0]
-        out_path = os.path.join(out_dir, f"{base}.png")
-        result.save(str(out_path))
-        img.close()
-
-        if not os.path.exists(out_path):
-            return {"fp": fp, "ok": False,
-                    "err": "файл не создался: " + out_path}
-
-        return {"fp": fp, "ok": True, "err": None}
-    except Exception as ex:
-        return {"fp": fp, "ok": False,
-                "err": type(ex).__name__ + ": " + str(ex)}
 
 def main(page: ft.Page):
     cv2.setNumThreads(os.cpu_count() or 4)
-    page.title = "Albedolizer v1.1.0"
+    page.title = "Albedolizer v1.2.0"
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 0
     page.spacing = 0
@@ -417,13 +384,13 @@ def main(page: ft.Page):
     FG2 = "#9aa0a6"
     FG3 = "#5f6368"
     ACCENT = "#5b8dd9"
-    ACCENT_H = "#7ba3e0"
     SUCCESS = "#4caf50"
     DANGER = "#e53935"
     WARN = "#ff9800"
     FONT = "Segoe UI"
     PBR_COLOR = "#4caf50"
     BATCH_COLOR = "#ff9800"
+    COMPRESS_COLOR = "#1565c0"
 
     S = {
         "image_path": None,
@@ -444,8 +411,12 @@ def main(page: ft.Page):
         "pbr_preview_hint": None,
         "pbr_map_buttons": {},
         "batch_files": [],
-        "batch_mode": "fix",
+        "compress_files": [],
         "active_tab": "single",
+        # Compress tab states
+        "compress_original": None,
+        "compress_corrected": None,
+        "compress_path": None,
     }
 
     def t(key):
@@ -476,7 +447,6 @@ def main(page: ft.Page):
             try:
                 src_path = os.path.join(tmpdir, "input.png")
                 pil.save(src_path)
-                import subprocess
                 creation_flags = 0x08000000 if os.name == 'nt' else 0
                 result = subprocess.run(
                     [AUTOLEVELS_EXE, "--model", AUTOLEVELS_MODEL,
@@ -586,6 +556,18 @@ def main(page: ft.Page):
         expand=True,
         padding=4,
     )
+    S["log_column_pbr"] = ft.ListView(
+        spacing=3,
+        auto_scroll=True,
+        expand=True,
+        padding=4,
+    )
+    S["log_column_compress"] = ft.ListView(
+        spacing=3,
+        auto_scroll=True,
+        expand=True,
+        padding=4,
+    )
 
     S["stats_column"] = ft.Column([], spacing=4)
     S["preview_image"] = ft.Image(src="", visible=False, fit=ft.BoxFit.CONTAIN)
@@ -603,6 +585,11 @@ def main(page: ft.Page):
                                                height=4, bar_height=4)
     S["batch_progress_text"] = ft.Text("", color=FG2, size=12,
                                          font_family=FONT)
+    S["compress_progress_bar"] = ft.ProgressBar(value=0, visible=True,
+                                                  color=COMPRESS_COLOR, bgcolor=INPUT,
+                                                  height=4, bar_height=4)
+    S["compress_progress_text"] = ft.Text("", color=FG2, size=12,
+                                            font_family=FONT)
     S["buttons"] = {}
 
     def log(text, color=FG2):
@@ -612,7 +599,8 @@ def main(page: ft.Page):
         refresh_log()
 
     def refresh_log():
-        for lc in (S["log_column"], S["log_column_batch"]):
+        for lc in (S["log_column"], S["log_column_batch"],
+                   S["log_column_pbr"], S["log_column_compress"]):
             lc.controls.clear()
             for txt, col in S["log_lines"]:
                 lc.controls.append(
@@ -669,6 +657,15 @@ def main(page: ft.Page):
             S["batch_progress_text"].value = text
         else:
             S["batch_progress_text"].value = f"{done} / {total}  ({pct}%)"
+        page.update()
+
+    def update_compress_progress(done, total, text=None):
+        pct = int((done / total) * 100) if total > 0 else 0
+        S["compress_progress_bar"].value = pct / 100
+        if text is not None:
+            S["compress_progress_text"].value = text
+        else:
+            S["compress_progress_text"].value = f"{done} / {total}  ({pct}%)"
         page.update()
 
     def analyze_image(pil):
@@ -748,7 +745,6 @@ def main(page: ft.Page):
             await show_progress(t("progress_fix"))
             await asyncio.sleep(0.15)
 
-            # Шаг 1: AI-модель
             import time as _time
             _t0 = _time.time()
             ai_result, ai_ok = await asyncio.to_thread(
@@ -780,7 +776,6 @@ def main(page: ft.Page):
                 if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = False
                 page.update()
             else:
-                # AI не сработал — применяем fallback автоматически
                 log("   → AI недоступен. Применяется fallback.", WARN)
                 result = smart_correct_fallback(S["original"], S["profile"])
                 S["corrected"] = result
@@ -804,32 +799,6 @@ def main(page: ft.Page):
             log(f"❌ {t('err')}: {ex}", DANGER)
             page.update()
 
-    async def do_compress(e):
-        if S["original"] is None:
-            return
-        try:
-            await show_progress(t("progress_compress"))
-            await asyncio.sleep(0.15)
-
-            result = S["original"].convert("LAB").convert("RGB")
-            S["corrected"] = result
-            S["last_op"] = "compressed"
-
-            S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
-            log("", FG2)
-            log(t("log_compress_done"), SUCCESS)
-
-            if S["buttons"].get("save"): S["buttons"]["save"].disabled = False
-            if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = False
-            page.update()
-
-            await asyncio.sleep(0.15)
-            await hide_progress()
-        except Exception as ex:
-            await hide_progress()
-            log(f"❌ {t('err')}: {ex}", DANGER)
-            page.update()
-
     async def do_reset(e):
         if S["original"] is None:
             return
@@ -840,7 +809,6 @@ def main(page: ft.Page):
         if S["buttons"].get("save"): S["buttons"]["save"].disabled = True
         if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = True
         page.update()
-
 
     async def open_file(e):
         try:
@@ -868,7 +836,6 @@ def main(page: ft.Page):
                     log(t("log_click_check"), FG2)
 
                     if S["buttons"].get("check"): S["buttons"]["check"].disabled = False
-                    if S["buttons"].get("compress"): S["buttons"]["compress"].disabled = False
                     if S["buttons"].get("fix"): S["buttons"]["fix"].disabled = True
                     if S["buttons"].get("save"): S["buttons"]["save"].disabled = True
                     if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = True
@@ -883,7 +850,6 @@ def main(page: ft.Page):
 
     async def open_save(e):
         try:
-            # Имя на основе оригинала
             if S.get("image_path"):
                 base = os.path.splitext(os.path.basename(S["image_path"]))[0]
             else:
@@ -907,7 +873,154 @@ def main(page: ft.Page):
             log(f"❌ {t('err')}: {ex}", DANGER)
             page.update()
 
-    # ═══ ПАКЕТНАЯ ОБРАБОТКА ═══
+    # ═══ СЖАТИЕ ═══
+    async def compress_open_file(e):
+        try:
+            files = await ft.FilePicker().pick_files(
+                dialog_title=t("dialog_pick_title"),
+                allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+            )
+            if files and len(files) > 0:
+                fp = files[0].path
+                if fp:
+                    img = Image.open(fp).convert("RGB")
+                    S["compress_original"] = img
+                    S["compress_path"] = fp
+                    S["compress_corrected"] = None
+                    S["compress_preview"].src = f"data:image/png;base64,{pil_to_b64(img)}"
+                    S["compress_preview"].visible = True
+                    if S["compress_preview_hint"]:
+                        S["compress_preview_hint"].visible = False
+                    log(f"{t('log_loaded')} {os.path.basename(fp)}", SUCCESS)
+                    if S["compress_buttons"].get("run"):
+                        S["compress_buttons"]["run"].disabled = False
+                    if S["compress_buttons"].get("save"):
+                        S["compress_buttons"]["save"].disabled = True
+                    page.update()
+        except Exception as ex:
+            log(f"❌ {t('err')}: {ex}", DANGER)
+            page.update()
+
+    async def compress_do(e):
+        if S["compress_original"] is None:
+            return
+        try:
+            S["compress_progress_bar"].visible = True
+            page.update()
+            await asyncio.sleep(0.1)
+            result = S["compress_original"].convert("LAB").convert("RGB")
+            S["compress_corrected"] = result
+            S["compress_preview"].src = f"data:image/png;base64,{pil_to_b64(result)}"
+            log(t("log_compress_done"), SUCCESS)
+            if S["compress_buttons"].get("save"):
+                S["compress_buttons"]["save"].disabled = False
+            page.update()
+            await asyncio.sleep(0.1)
+            S["compress_progress_bar"].visible = False
+            page.update()
+        except Exception as ex:
+            S["compress_progress_bar"].visible = False
+            log(f"❌ {t('err')}: {ex}", DANGER)
+            page.update()
+
+    async def compress_save(e):
+        if S["compress_corrected"] is None:
+            return
+        try:
+            base = "albedo"
+            if S.get("compress_path"):
+                base = os.path.splitext(os.path.basename(S["compress_path"]))[0]
+            path = await ft.FilePicker().save_file(
+                dialog_title=t("dialog_save_title"),
+                file_name=f"{base}_compressed.png",
+                allowed_extensions=["png", "jpg", "tif"],
+            )
+            if path:
+                S["compress_corrected"].save(str(path))
+                log(f"{t('log_saved')} {os.path.basename(str(path))}", SUCCESS)
+                page.update()
+        except Exception as ex:
+            log(f"❌ {t('err')}: {ex}", DANGER)
+            page.update()
+
+    async def compress_select_folder(e):
+        try:
+            folder = await ft.FilePicker().get_directory_path(
+                dialog_title=t("batch_select_folder"))
+            if not folder:
+                return
+            exts = ('.png', '.jpg', '.jpeg', '.tif', '.tiff', '.bmp')
+            files = [os.path.join(folder, f) for f in os.listdir(folder)
+                     if f.lower().endswith(exts)]
+            S["compress_files"] = files
+            log(f"📁 {t('batch_folder')} {folder}", FG2)
+            log(f"   {t('batch_found')} {len(files)}", FG2)
+            update_compress_progress(0, len(files),
+                                     f"{t('batch_ready')}: {len(files)} {t('batch_files_count')}")
+        except Exception as ex:
+            log(f"❌ {t('err')}: {ex}", DANGER)
+            page.update()
+
+    async def compress_select_files(e):
+        try:
+            files = await ft.FilePicker().pick_files(
+                dialog_title=t("batch_select_files"),
+                allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+                allow_multiple=True,
+            )
+            if not files:
+                return
+            S["compress_files"] = [f.path for f in files if f.path]
+            log(f"📄 {t('batch_selected')} {len(S['compress_files'])}", FG2)
+            update_compress_progress(0, len(S["compress_files"]),
+                                     f"{t('batch_ready')}: {len(S['compress_files'])} {t('batch_files_count')}")
+        except Exception as ex:
+            log(f"❌ {t('err')}: {ex}", DANGER)
+            page.update()
+
+    async def compress_batch_run(e):
+        files = S["compress_files"]
+        if not files:
+            log(t("batch_no_files"), WARN)
+            page.update()
+            return
+
+        total = len(files)
+        base_dir = os.path.dirname(files[0])
+        out_dir = os.path.join(base_dir, "_compressed")
+        os.makedirs(out_dir, exist_ok=True)
+
+        log("", FG2)
+        log("━━━━━━━━━━━━━━━━━━━━━━", FG3)
+        log(f"{t('compress_batch_started')} {total}", FG)
+        log(f"   {t('compress_out')} {out_dir}", FG2)
+        page.update()
+
+        count = 0
+        for i, fp in enumerate(files, 1):
+            try:
+                img = Image.open(fp).convert("RGB")
+                result = img.convert("LAB").convert("RGB")
+                base = os.path.splitext(os.path.basename(fp))[0]
+                result.save(str(os.path.join(out_dir, f"{base}.png")))
+                img.close()
+                count += 1
+                log(f"  [{i}/{total}] ✓ {os.path.basename(fp)}", SUCCESS)
+                update_compress_progress(i, total)
+                if i % 5 == 0:
+                    gc.collect()
+                await asyncio.sleep(0.01)
+            except Exception as ex:
+                log(f"  ✗ {os.path.basename(fp)}: {ex}", DANGER)
+                update_compress_progress(i, total)
+
+        log(f"✅ {t('batch_processed')} {count} / {total}", SUCCESS)
+        log(f"📁 {out_dir}", FG2)
+        update_compress_progress(total, total, f"{t('batch_done')}: {count} / {total}")
+        S["compress_files"] = []
+        page.update()
+
+    # ═══ ПАКЕТНАЯ AI-ОБРАБОТКА ═══
     async def batch_select_folder(e):
         try:
             folder = await ft.FilePicker().get_directory_path(
@@ -952,23 +1065,18 @@ def main(page: ft.Page):
             page.update()
             return
 
-        mode = S["batch_mode"]
         total = len(files)
         update_batch_progress(0, total, f"Запуск... 0 / {total}")
 
         base_dir = os.path.dirname(files[0])
-        out_name = "_corrected" if mode == "fix" else "_compressed"
-        out_dir = os.path.join(base_dir, out_name)
+        out_dir = os.path.join(base_dir, "_corrected")
         os.makedirs(out_dir, exist_ok=True)
 
         log("", FG2)
         log("━━━━━━━━━━━━━━━━━━━━━━", FG3)
         log(f"{t('batch_started')} {total}", FG)
-        log(f"   {t('batch_mode_label')} {t('batch_mode_fix') if mode == 'fix' else t('batch_mode_compress')}", FG2)
         log(f"   {t('batch_out')} {out_dir}", FG2)
         page.update()
-        import time as _time
-        _batch_t0 = _time.time()
 
         count = 0
         done = 0
@@ -983,23 +1091,19 @@ def main(page: ft.Page):
                 ok = False
                 try:
                     img = Image.open(fp).convert("RGB")
-                    if mode == "fix":
-                        import time as _time
-                        _t0 = _time.time()
-                        ai_res, ai_ok = await asyncio.to_thread(
-                            smart_correct_ai, img
-                        )
-                        _dt = _time.time() - _t0
-                        log(f"   ⏱ {os.path.basename(fp)}: {_dt:.2f} сек", FG2)
-                        if ai_ok and ai_res is not None:
-                            result = ai_res
-                        else:
-                            result = await asyncio.to_thread(
-                                _fallback_standalone, img, S["profile"]
-                            )
+                    import time as _time
+                    _t0 = _time.time()
+                    ai_res, ai_ok = await asyncio.to_thread(
+                        smart_correct_ai, img
+                    )
+                    _dt = _time.time() - _t0
+                    log(f"   ⏱ {os.path.basename(fp)}: {_dt:.2f} сек", FG2)
+                    if ai_ok and ai_res is not None:
+                        result = ai_res
                     else:
-                        result = img.convert("LAB").convert("RGB")
-
+                        result = await asyncio.to_thread(
+                            _fallback_standalone, img, S["profile"]
+                        )
                     result.save(str(out_path))
                     img.close()
                     ok = True
@@ -1015,12 +1119,6 @@ def main(page: ft.Page):
                 page.update()
 
         await asyncio.gather(*[process_one(fp) for fp in files])
-
-        log(f"✅ {t('batch_processed')} {count} / {total}", SUCCESS)
-        log(f"📁 {out_dir}", FG2)
-        update_batch_progress(total, total, f"{t('batch_done')}: {count} / {total}")
-        S["batch_files"] = []
-        page.update()
 
         log(f"✅ {t('batch_processed')} {count} / {total}", SUCCESS)
         log(f"📁 {out_dir}", FG2)
@@ -1257,11 +1355,11 @@ def main(page: ft.Page):
                 ft.Container(height=16),
                 ft.Row([ft.Text(f"{t('about_version')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("1.1.0", color=FG, size=12,
+                        ft.Text("1.2.0", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_build')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("2026-09-12", color=FG, size=12,
+                        ft.Text("2026-09-13", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_author')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
@@ -1325,13 +1423,13 @@ def main(page: ft.Page):
 
         tab_btns = {}
 
-        def set_tab(name):
-            S["active_tab"] = name
-            for k, c in tab_btns_local.items():
-                c.bgcolor = ACCENT if k == name else CARD
-            single_view.visible = name == "single"
-            batch_view.visible = name == "batch"
-            pbr_view.visible = name == "pbr"
+        def set_info_tab(name):
+            help_content.visible = name == "help"
+            about_content.visible = name == "about"
+            support_content.visible = name == "support"
+            for k, b in tab_btns.items():
+                b.content.color = "#fff" if k == name else FG2
+                b.bgcolor = ACCENT if k == name else CARD
             page.update()
 
         def make_tab(key, label):
@@ -1340,23 +1438,41 @@ def main(page: ft.Page):
                                 weight=ft.FontWeight.W_600),
                 bgcolor=CARD, border_radius=8,
                 padding=ft.Padding.symmetric(vertical=8, horizontal=14),
-                ink=True, on_click=lambda e, k=key: set_tab(k),
+                ink=True, on_click=lambda e, k=key: set_info_tab(k),
             )
             tab_btns[key] = b
             return b
 
-        def close_dlg(e=None):
-            try:
-                dlg.open = False
-                page.update()
-            except Exception as ex:
-                print("close error:", ex)
+        def close_info(e=None):
+            dlg.open = False
+            page.update()
 
-        set_tab("help")
+        dlg = ft.AlertDialog(
+            modal=True,
+            title=ft.Row([
+                make_tab("help", t("info_tab_help")),
+                make_tab("about", t("info_tab_about")),
+                make_tab("support", t("info_tab_support")),
+                ft.Container(expand=True),
+                ft.Container(
+                    content=ft.Text("✕", color=FG, size=14,
+                                    font_family=FONT, weight=ft.FontWeight.BOLD),
+                    bgcolor=CARD, border_radius=8,
+                    padding=ft.Padding.symmetric(vertical=6, horizontal=12),
+                    ink=True, on_click=close_info,
+                ),
+            ], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            content=ft.Container(
+                content=ft.Column([help_content, about_content, support_content],
+                                  spacing=0),
+                width=600, height=420,
+            ),
+            bgcolor=PANEL,
+        )
+        set_info_tab("help")
         return dlg
 
     def show_fallback_dialog(current_img, stats):
-        """Диалог выбора: применить fallback или оставить AI."""
         dialog_ref = {"dlg": None}
 
         async def apply_fallback(e=None):
@@ -1391,7 +1507,6 @@ def main(page: ft.Page):
                 if S["buttons"].get("load"): S["buttons"]["load"].disabled = False
                 if S["buttons"].get("check"): S["buttons"]["check"].disabled = False
                 if S["buttons"].get("fix"): S["buttons"]["fix"].disabled = False
-                if S["buttons"].get("compress"): S["buttons"]["compress"].disabled = False
                 if S["buttons"].get("save"): S["buttons"]["save"].disabled = (S["corrected"] is None)
                 if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = (S["corrected"] is None)
                 page.update()
@@ -1454,8 +1569,6 @@ def main(page: ft.Page):
         buttons["check"] = make_btn(t("check"), do_check, ACCENT,
                                      disabled=(S["original"] is None))
         buttons["fix"] = make_btn(t("fix"), do_auto_correct, SUCCESS, disabled=True)
-        buttons["compress"] = make_btn(t("compress"), do_compress, "#1565c0",
-                                        disabled=(S["original"] is None))
         buttons["save"] = make_btn(t("save"), open_save, "#6a4a9f",
                                     disabled=(S["corrected"] is None))
         buttons["reset"] = make_btn(t("reset"), do_reset, "#555555",
@@ -1465,7 +1578,6 @@ def main(page: ft.Page):
             buttons["load"],
             buttons["check"],
             buttons["fix"],
-            buttons["compress"],
             ft.Container(expand=True),
             buttons["reset"],
             buttons["save"],
@@ -1474,8 +1586,6 @@ def main(page: ft.Page):
         preview_hint = ft.Text(t("preview_hint"), color=FG3, size=14,
                                 font_family=FONT)
 
-        # Стэк из подсказки и картинки — InteractiveViewer оборачивает его весь
-        
         preview_content = ft.Stack([
             ft.Container(content=preview_hint,
                          alignment=ft.Alignment.CENTER, expand=True),
@@ -1527,13 +1637,35 @@ def main(page: ft.Page):
             bgcolor=CARD, border_radius=12, padding=12,
             expand=1,
         )
-        
+
         log_panel_batch = ft.Container(
             content=ft.Column([
                 ft.Text(t("log_title"), size=10, weight=ft.FontWeight.BOLD,
                         color=FG3, font_family=FONT),
                 ft.Container(height=4),
                 S["log_column_batch"],
+            ], spacing=4, expand=True),
+            bgcolor=CARD, border_radius=12, padding=12,
+            expand=1,
+        )
+
+        log_panel_pbr = ft.Container(
+            content=ft.Column([
+                ft.Text(t("log_title"), size=10, weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=4),
+                S["log_column_pbr"],
+            ], spacing=4, expand=True),
+            bgcolor=CARD, border_radius=12, padding=12,
+            height=140,
+        )
+
+        log_panel_compress = ft.Container(
+            content=ft.Column([
+                ft.Text(t("log_title"), size=10, weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=4),
+                S["log_column_compress"],
             ], spacing=4, expand=True),
             bgcolor=CARD, border_radius=12, padding=12,
             expand=1,
@@ -1560,52 +1692,6 @@ def main(page: ft.Page):
             visible=True,
         )
 
-        # ═══ ВКЛАДКА ПАКЕТНАЯ ═══
-        batch_sel_row = ft.Row([
-            make_btn(t("batch_select_folder"), batch_select_folder, ACCENT),
-            make_btn(t("batch_select_files"), batch_select_files, ACCENT),
-        ], spacing=6)
-
-        batch_mode_group = ft.RadioGroup(
-            content=ft.Row([
-                ft.Radio(value="fix", label=t("batch_mode_fix"),
-                         fill_color=BATCH_COLOR),
-                ft.Radio(value="compress", label=t("batch_mode_compress"),
-                         fill_color=BATCH_COLOR),
-            ]),
-            value=S["batch_mode"],
-            on_change=lambda e: S.update({"batch_mode": e.control.value}),
-        )
-
-        batch_run_btn = make_btn(t("batch_run"), batch_run, SUCCESS)
-
-        batch_mode_card = ft.Container(
-            content=ft.Column([
-                ft.Text(t("batch_mode"), size=10, weight=ft.FontWeight.BOLD,
-                        color=FG3, font_family=FONT),
-                ft.Container(height=6),
-                batch_mode_group,
-            ], spacing=6),
-            bgcolor=PANEL, border_radius=12, padding=16,
-        )
-
-        batch_view = ft.Container(
-            content=ft.Column([
-                batch_sel_row,
-                ft.Container(height=8),
-                batch_mode_card,
-                ft.Container(height=8),
-                batch_run_btn,
-                ft.Container(height=8),
-                S["batch_progress_bar"],
-                S["batch_progress_text"],
-                ft.Container(height=8),
-                ft.Container(expand=2),   # пустой распор, чтобы лог не растянулся на всё
-                log_panel_batch,
-            ], spacing=0, expand=True),
-            expand=True, visible=False,
-        )
-
         # ═══ ВКЛАДКА PBR ═══
         pbr_preview = ft.Image(src="", visible=False, fit=ft.BoxFit.CONTAIN)
         S["pbr_preview"] = pbr_preview
@@ -1630,7 +1716,7 @@ def main(page: ft.Page):
             ("albedo", "🎨 Albedo"), ("height", "⛰ Height"),
             ("normal", "📐 Normal"), ("ao", "🌑 AO"),
             ("roughness", "🔧 Rough"), ("metallic", "⚙ Metal"),
-            ("edge", "🎯 Edge"),("orm", "📦 ORM"),
+            ("edge", "🎯 Edge"), ("orm", "📦 ORM"),
         ]
 
         def show_pbr_map(key):
@@ -1690,7 +1776,6 @@ def main(page: ft.Page):
             on_change=lambda e: S.update({"pbr_metallic": e.control.value}),
         )
 
-# Кнопки пресетов для PBR
         pbr_preset_row1 = []
         pbr_preset_row2 = []
         pbr_preset_row3 = []
@@ -1728,13 +1813,12 @@ def main(page: ft.Page):
             content=ft.Column([
                 ft.Text(t("pbr_params"), size=10, weight=ft.FontWeight.BOLD,
                         color=FG3, font_family=FONT),
-                                        ft.Text("🎯 Пресет:", color=FG2, size=11, font_family=FONT),
+                ft.Text("🎯 Пресет:", color=FG2, size=11, font_family=FONT),
                 pbr_preset_buttons,
                 ft.Divider(color=FG3, height=1),
                 ft.Text(t("pbr_metallic"), color=FG2, size=12, font_family=FONT),
                 pbr_metal_radio,
                 ft.Divider(color=FG3, height=1),
-                ft.Container(height=6),
                 make_pbr_slider(t("pbr_sl_strength"), "strength", 1.5, 0.1, 5.0, 0.1),
                 make_pbr_slider(t("pbr_sl_smooth"), "smooth", 1.5, 0.0, 5.0, 0.1),
                 make_pbr_slider(t("pbr_sl_threshold"), "threshold", 0.05, 0.0, 0.20, 0.01),
@@ -1781,6 +1865,124 @@ def main(page: ft.Page):
                     ft.Container(content=pbr_preview_box, expand=True),
                     pbr_params_panel,
                 ], spacing=12, expand=True),
+                ft.Container(height=8),
+                log_panel_pbr,
+            ], spacing=0, expand=True),
+            expand=True, visible=False,
+        )
+
+        # ═══ ВКЛАДКА СЖАТИЕ ═══
+        S["compress_preview"] = ft.Image(src="", visible=False, fit=ft.BoxFit.CONTAIN)
+        S["compress_preview_hint"] = ft.Text(t("preview_hint"),
+                                              color=FG3, size=14, font_family=FONT)
+
+        compress_preview_box = ft.Container(
+            content=ft.Stack([
+                ft.Container(content=S["compress_preview_hint"],
+                             alignment=ft.Alignment.CENTER, expand=True),
+                ft.Container(content=S["compress_preview"],
+                             alignment=ft.Alignment.CENTER, expand=True),
+            ], expand=True),
+            bgcolor=CARD, border_radius=12, padding=10, expand=True,
+        )
+
+        compress_open_btn = make_btn(t("load"), compress_open_file, ACCENT)
+        compress_run_btn = make_btn(t("compress_run"), compress_do, COMPRESS_COLOR,
+                                     disabled=True)
+        compress_save_btn = make_btn(t("save"), compress_save, "#6a4a9f",
+                                      disabled=True)
+        S["compress_buttons"] = {
+            "open": compress_open_btn,
+            "run": compress_run_btn,
+            "save": compress_save_btn,
+        }
+
+        compress_single_toolbar = ft.Row([
+            compress_open_btn,
+            compress_run_btn,
+            ft.Container(expand=True),
+            compress_save_btn,
+        ], spacing=6)
+
+        compress_single_card = ft.Container(
+            content=ft.Column([
+                ft.Text(t("compress_single"), size=10, weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=6),
+                compress_single_toolbar,
+                ft.Container(height=8),
+                ft.Container(
+                    content=ft.Row([
+                        ft.Container(content=compress_preview_box, expand=True),
+                    ], expand=True),
+                    expand=True,
+                ),
+            ], spacing=0, expand=True),
+            bgcolor=PANEL, border_radius=12, padding=16, expand=True,
+        )
+
+        compress_sel_row = ft.Row([
+            make_btn(t("batch_select_folder"), compress_select_folder, ACCENT),
+            make_btn(t("batch_select_files"), compress_select_files, ACCENT),
+            ft.Container(expand=True),
+            make_btn(t("compress_batch_run"), compress_batch_run, COMPRESS_COLOR),
+        ], spacing=6)
+
+        compress_batch_card = ft.Container(
+            content=ft.Column([
+                ft.Text(t("compress_batch"), size=10, weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=6),
+                compress_sel_row,
+                ft.Container(height=8),
+                S["compress_progress_bar"],
+                S["compress_progress_text"],
+            ], spacing=6),
+            bgcolor=PANEL, border_radius=12, padding=16,
+        )
+
+        compress_view = ft.Container(
+            content=ft.Column([
+                compress_single_card,
+                ft.Container(height=8),
+                compress_batch_card,
+                ft.Container(height=8),
+                log_panel_compress,
+            ], spacing=0, expand=True),
+            expand=True, visible=False,
+        )
+
+        # ═══ ВКЛАДКА ПАКЕТНАЯ ═══
+        batch_sel_row = ft.Row([
+            make_btn(t("batch_select_folder"), batch_select_folder, ACCENT),
+            make_btn(t("batch_select_files"), batch_select_files, ACCENT),
+        ], spacing=6)
+
+        batch_run_btn = make_btn(t("batch_run"), batch_run, SUCCESS)
+
+        batch_info_card = ft.Container(
+            content=ft.Column([
+                ft.Text("✨ AI-коррекция папки", size=10,
+                        weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=6),
+                ft.Text(t("batch_no_files"), color=FG3, size=11, visible=False),
+            ], spacing=6),
+            bgcolor=PANEL, border_radius=12, padding=16,
+        )
+
+        batch_view = ft.Container(
+            content=ft.Column([
+                batch_sel_row,
+                ft.Container(height=8),
+                batch_info_card,
+                ft.Container(height=8),
+                batch_run_btn,
+                ft.Container(height=8),
+                S["batch_progress_bar"],
+                S["batch_progress_text"],
+                ft.Container(height=8),
+                log_panel_batch,
             ], spacing=0, expand=True),
             expand=True, visible=False,
         )
@@ -1792,8 +1994,9 @@ def main(page: ft.Page):
             for k, c in tab_btns_local.items():
                 c.bgcolor = ACCENT if k == name else CARD
             single_view.visible = name == "single"
-            batch_view.visible = name == "batch"
             pbr_view.visible = name == "pbr"
+            compress_view.visible = name == "compress"
+            batch_view.visible = name == "batch"
             page.update()
 
         def make_tab(key, label):
@@ -1812,9 +2015,9 @@ def main(page: ft.Page):
             make_tab("single", t("tab_single")),
             make_tab("batch", t("tab_batch")),
             make_tab("pbr", t("tab_pbr")),
+            make_tab("compress", t("tab_compress")),
         ], spacing=8)
 
-        # Восстанавливаем активный таб после rebuild
         set_tab(S["active_tab"])
 
         header = ft.Container(
@@ -1825,7 +2028,7 @@ def main(page: ft.Page):
                                 weight=ft.FontWeight.BOLD,
                                 color=ACCENT, font_family=FONT),
                         ft.Container(
-                            content=ft.Text("v1.1.0", size=10, color=FG2,
+                            content=ft.Text("v1.2.0", size=10, color=FG2,
                                             font_family=FONT,
                                             weight=ft.FontWeight.W_600),
                             bgcolor=CARD, border_radius=6,
@@ -1861,7 +2064,7 @@ def main(page: ft.Page):
                 tabs_row,
                 ft.Container(height=12),
                 ft.Container(
-                    content=ft.Stack([single_view, batch_view, pbr_view],
+                    content=ft.Stack([single_view, pbr_view, compress_view, batch_view],
                                       expand=True),
                     expand=True,
                 ),
