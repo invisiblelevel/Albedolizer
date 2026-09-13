@@ -172,6 +172,41 @@ def pack_orm(ao_pil, rough_pil, metal_pil):
     return Image.fromarray(rgb, mode="RGB")
 
 
+def remove_soap_adaptive(pil, strength=0.5, window=15, threshold=25.0):
+    """
+    Адаптивный unsharp mask — усиливает детали только в мыльных зонах.
+    strength:  0.0 — выкл, 1.0 — максимум
+    window:    размер окна для оценки локальной дисперсии (нечётный)
+    threshold: порог дисперсии; ниже — считается мылом
+    """
+    if strength <= 0:
+        return pil
+
+    arr = np.array(pil.convert("RGB")).astype(np.float32)
+
+    # Локальная дисперсия по яркости
+    gray = cv2.cvtColor(arr.astype(np.uint8), cv2.COLOR_RGB2GRAY).astype(np.float32)
+    k = window if window % 2 == 1 else window + 1
+    mean = cv2.blur(gray, (k, k))
+    sq_mean = cv2.blur(gray ** 2, (k, k))
+    variance = np.maximum(sq_mean - mean ** 2, 0)
+
+    # Нормализуем: 0 — мыло, 1 — детали
+    var_norm = np.clip(variance / (threshold ** 2), 0, 1)
+    inv_var = 1.0 - var_norm
+
+    # High-pass (высокочастотные детали)
+    blurred = cv2.GaussianBlur(arr, (0, 0), sigmaX=2.0)
+    high_freq = arr - blurred
+
+    # Усиление только в мыльных зонах
+    mask = inv_var[..., np.newaxis]
+    result = arr + high_freq * strength * 6.0 * mask
+
+    result = np.clip(result, 0, 255).astype(np.uint8)
+    return Image.fromarray(result, mode="RGB")
+
+
 def generate_all_pbr(albedo_pil,
                      height_blur=2.0,
                      height_contrast=1.0,
