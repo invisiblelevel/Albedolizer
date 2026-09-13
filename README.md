@@ -25,9 +25,9 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - Detailed statistics: min / max / avg / median / percentiles
 
 ### ✨ AI Auto-Correction
-- Correction via the Autolevels neural network (XCiT model)
-- Fallback mathematical algorithm (CLAHE + soft-clip)
-- User dialog when AI result doesn't pass validation
+- **Two modes:** AI (via Autolevels XCiT model) or Math (CLAHE + soft-clip)
+- One-click switch in the sidebar — pick what works best for your texture
+- Fallback dialog if AI result doesn't pass validation
 
 ### 🎨 PBR Map Generation
 - **Height** — height map
@@ -39,8 +39,8 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - **Edge** — edge map (Sobel via OpenCV)
 
 ### 🎯 Texture Presets
-10 texture types with ready-to-use PBR parameters:
-🌳 Wood · 🪨 Stone · ⚙ Metal · 🌍 Ground · 🔴 Rust · 🧱 Brick · 🌿 Leaves · 🍂 Organic · Concrete · Moss
+9 texture types with ready-to-use PBR parameters:
+🌳 Wood · 🪨 Stone · ⚙ Metal · 🌍 Ground · 🔴 Rust · 🧱 Brick · 🌿 Leaves · 🍂 Organic · Concrete
 
 ### 🗂 Batch Processing
 - Process folders or file lists
@@ -159,7 +159,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.2.0  
+**Version:** 1.2.1  
 **Date:** 2026
 
 ---
@@ -187,9 +187,9 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - Детальная статистика: min / max / avg / median / перцентили
 
 ### ✨ AI-автокоррекция
-- Коррекция через нейросеть Autolevels (модель XCiT)
-- Резервный математический алгоритм (CLAHE + soft-clip)
-- Диалог выбора при неудовлетворительном результате AI
+- **Два режима:** AI (через модель Autolevels XCiT) или Math (CLAHE + soft-clip)
+- Переключатель в сайдбаре — выбирай что лучше для твоей текстуры
+- Диалог выбора если AI не прошёл валидацию
 
 ### 🎨 Генерация PBR-карт
 - **Height** — карта высот
@@ -201,8 +201,8 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **Edge** — карта граней (Sobel через OpenCV)
 
 ### 🎯 Пресеты текстур
-10 типов текстур с готовыми параметрами PBR:
-🌳 Дерево · 🪨 Камень · ⚙ Металл · 🌍 Земля · 🔴 Ржавчина · 🧱 Кирпич · 🌿 Листва · 🍂 Органика · Бетон · Мох
+9 типов текстур с готовыми параметрами PBR:
+🌳 Дерево · 🪨 Камень · ⚙ Металл · 🌍 Земля · 🔴 Ржавчина · 🧱 Кирпич · 🌿 Листва · 🍂 Органика · Бетон
 
 ### 🗂 Пакетная обработка
 - Обработка папок или списка файлов
@@ -321,5 +321,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.2.0  
+**Версия:** 1.2.1  
 **Дата:** 2026
