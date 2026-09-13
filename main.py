@@ -62,6 +62,7 @@ QUICK_PROFILES = [
     ("brick", "🧱"),
     ("leaves", "🌿"),
     ("organic", "🍂"),
+    ("concrete", "🧊"),
 ]
 
 
@@ -146,10 +147,13 @@ T = {
         "fix": "✨ Автокоррекция", "compress": "🗜 Сжать",
         "save": "💾 Сохранить", "reset": "↺ Сброс",
         "stats_title": "СТАТИСТИКА", "profile_title": "ТИП ТЕКСТУРЫ",
+        "correction_mode_title": "РЕЖИМ КОРРЕКЦИИ",
+        "correction_ai": "✨ AI",
+        "correction_math": "∑ Math",
         "all_types": "Все типы", "log_title": "ЛОГ",
         "info_btn": "ℹ Инфо", "lang_btn": "🌐 EN",
         "preview_hint": "🖼  Загрузи Albedo-текстуру, чтобы начать",
-        "welcome_1": "👋 Добро пожаловать в Albedolizer v1.2.0",
+        "welcome_1": "👋 Добро пожаловать в Albedolizer v1.2.1",
         "welcome_2": "→ Нажми «📂 Открыть» для начала",
         "log_loaded": "📂 Загружено:", "log_type": "→ Тип:",
         "log_click_check": "→ Нажми «Проверить» для анализа",
@@ -191,6 +195,7 @@ T = {
         "pbr_load": "📂 Загрузить Albedo", "pbr_gen": "🎨 Сгенерировать",
         "pbr_batch": "🗂 Из папки", "pbr_save": "💾 Сохранить все",
         "pbr_params": "ПАРАМЕТРЫ PBR",
+        "pbr_preset_label": "🎯 Пресет:",
         "pbr_metallic": "Metallic карта:",
         "pbr_metal_black": "Чёрная", "pbr_metal_white": "Белая",
         "pbr_sl_strength": "Сила нормалей", "pbr_sl_smooth": "Сглаживание",
@@ -212,6 +217,17 @@ T = {
         "dialog_save_title": "Сохранить результат",
         "dialog_pick_title": "Выбери текстуру",
         "err": "Ошибка",
+        "fb_dialog_title": "Результат AI не прошёл проверку",
+        "fb_dialog_text": "AI убрал цветовой сдвиг, но яркость вне порога:",
+        "fb_dialog_dark": "Тёмные:",
+        "fb_dialog_light": "Светлые:",
+        "fb_dialog_question": "Применить CLAHE fallback?",
+        "fb_dialog_keep_ai": "✅ Оставить AI",
+        "fb_dialog_apply": "⚡ Применить fallback",
+        "fb_dialog_kept": "   → Оставлен результат AI как есть",
+        "fb_dialog_applied": "   ✨ Fallback применён к результату AI",
+        "fb_dialog_progress": "Fallback коррекция...",
+        "fb_dialog_err": "Fallback ошибка:",
         "info_tab_help": "📖 Справка",
         "info_tab_about": "ℹ О программе",
         "info_tab_support": "💛 Поддержать",
@@ -249,10 +265,13 @@ T = {
         "fix": "✨ Auto-Correct", "compress": "🗜 Compress",
         "save": "💾 Save", "reset": "↺ Reset",
         "stats_title": "STATISTICS", "profile_title": "TEXTURE TYPE",
+        "correction_mode_title": "CORRECTION MODE",
+        "correction_ai": "✨ AI",
+        "correction_math": "∑ Math",
         "all_types": "All types", "log_title": "LOG",
         "info_btn": "ℹ Info", "lang_btn": "🌐 RU",
         "preview_hint": "🖼  Load an Albedo texture to start",
-        "welcome_1": "👋 Welcome to Albedolizer v1.2.0",
+        "welcome_1": "👋 Welcome to Albedolizer v1.2.1",
         "welcome_2": "→ Click «📂 Open» to start",
         "log_loaded": "📂 Loaded:", "log_type": "→ Type:",
         "log_click_check": "→ Click «Check» to analyze",
@@ -294,6 +313,7 @@ T = {
         "pbr_load": "📂 Load Albedo", "pbr_gen": "🎨 Generate",
         "pbr_batch": "🗂 From folder", "pbr_save": "💾 Save all",
         "pbr_params": "PBR PARAMETERS",
+        "pbr_preset_label": "🎯 Preset:",
         "pbr_metallic": "Metallic map:",
         "pbr_metal_black": "Black", "pbr_metal_white": "White",
         "pbr_sl_strength": "Normal strength", "pbr_sl_smooth": "Smoothing",
@@ -315,6 +335,17 @@ T = {
         "dialog_save_title": "Save result",
         "dialog_pick_title": "Select texture",
         "err": "Error",
+        "fb_dialog_title": "AI result failed validation",
+        "fb_dialog_text": "AI fixed the color cast, but brightness is out of range:",
+        "fb_dialog_dark": "Dark:",
+        "fb_dialog_light": "Light:",
+        "fb_dialog_question": "Apply CLAHE fallback?",
+        "fb_dialog_keep_ai": "✅ Keep AI",
+        "fb_dialog_apply": "⚡ Apply fallback",
+        "fb_dialog_kept": "   → Kept AI result as is",
+        "fb_dialog_applied": "   ✨ Fallback applied on top of AI result",
+        "fb_dialog_progress": "Fallback correction...",
+        "fb_dialog_err": "Fallback error:",
         "info_tab_help": "📖 Help",
         "info_tab_about": "ℹ About",
         "info_tab_support": "💛 Support",
@@ -346,10 +377,19 @@ T = {
     },
 }
 
+def _detect_system_lang():
+    """Определяет язык системы. ru → 'ru', всё остальное → 'en'."""
+    try:
+        sys_lang = (locale.getdefaultlocale()[0] or "").lower()
+    except Exception:
+        sys_lang = ""
+    if sys_lang.startswith("ru"):
+        return "ru"
+    return "en"
 
 def main(page: ft.Page):
     cv2.setNumThreads(os.cpu_count() or 4)
-    page.title = "Albedolizer v1.2.0"
+    page.title = "Albedolizer v1.2.1"
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 0
     page.spacing = 0
@@ -397,8 +437,9 @@ def main(page: ft.Page):
         "original": None,
         "corrected": None,
         "profile": "wood",
+        "correction_mode": "ai",
         "last_op": None,
-        "lang": "ru",
+        "lang": _detect_system_lang(),
         "log_lines": [],
         "stats_lines": [],
         "pbr_source": None,
@@ -745,6 +786,31 @@ def main(page: ft.Page):
             await show_progress(t("progress_fix"))
             await asyncio.sleep(0.15)
 
+            # ═══ РЕЖИМ MATH — только математика, без AI ═══
+            if S["correction_mode"] == "math":
+                log("   → Режим: ∑ математическая коррекция", FG2)
+                result = await asyncio.to_thread(
+                    smart_correct_fallback, S["original"], S["profile"]
+                )
+                S["corrected"] = result
+                S["last_op"] = "corrected"
+                S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
+                log("", FG2)
+                log(t("log_fix_done"), SUCCESS)
+
+                await asyncio.sleep(0.1)
+                run_check(result, False)
+                page.update()
+
+                if S["buttons"].get("save"): S["buttons"]["save"].disabled = False
+                if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = False
+                page.update()
+
+                await asyncio.sleep(0.1)
+                await hide_progress()
+                return
+
+            # ═══ РЕЖИМ AI — как раньше (AI → fallback при провале) ═══
             import time as _time
             _t0 = _time.time()
             ai_result, ai_ok = await asyncio.to_thread(
@@ -1091,19 +1157,24 @@ def main(page: ft.Page):
                 ok = False
                 try:
                     img = Image.open(fp).convert("RGB")
-                    import time as _time
-                    _t0 = _time.time()
-                    ai_res, ai_ok = await asyncio.to_thread(
-                        smart_correct_ai, img
-                    )
-                    _dt = _time.time() - _t0
-                    log(f"   ⏱ {os.path.basename(fp)}: {_dt:.2f} сек", FG2)
-                    if ai_ok and ai_res is not None:
-                        result = ai_res
-                    else:
+                    if S["correction_mode"] == "math":
                         result = await asyncio.to_thread(
                             _fallback_standalone, img, S["profile"]
                         )
+                    else:
+                        import time as _time
+                        _t0 = _time.time()
+                        ai_res, ai_ok = await asyncio.to_thread(
+                            smart_correct_ai, img
+                        )
+                        _dt = _time.time() - _t0
+                        log(f"   ⏱ {os.path.basename(fp)}: {_dt:.2f} сек", FG2)
+                        if ai_ok and ai_res is not None:
+                            result = ai_res
+                        else:
+                            result = await asyncio.to_thread(
+                                _fallback_standalone, img, S["profile"]
+                            )
                     result.save(str(out_path))
                     img.close()
                     ok = True
@@ -1312,6 +1383,44 @@ def main(page: ft.Page):
         log(f"{t('log_type')} {profile_label(key)}", FG2)
         rebuild_ui()
 
+    def make_correction_mode_switch():
+        ai_active = S["correction_mode"] == "ai"
+        math_active = S["correction_mode"] == "math"
+
+        def set_mode(mode):
+            S["correction_mode"] = mode
+            rebuild_ui()
+
+        ai_btn = ft.Container(
+            content=ft.Text(
+                t("correction_ai"),
+                color="#fff" if ai_active else FG2,
+                size=12, font_family=FONT,
+                weight=ft.FontWeight.W_600,
+                text_align=ft.TextAlign.CENTER,
+            ),
+            bgcolor=ACCENT if ai_active else CARD,
+            border_radius=8,
+            padding=ft.Padding.symmetric(vertical=8, horizontal=8),
+            expand=True, ink=True,
+            on_click=lambda e: set_mode("ai"),
+        )
+        math_btn = ft.Container(
+            content=ft.Text(
+                t("correction_math"),
+                color="#fff" if math_active else FG2,
+                size=12, font_family=FONT,
+                weight=ft.FontWeight.W_600,
+                text_align=ft.TextAlign.CENTER,
+            ),
+            bgcolor=ACCENT if math_active else CARD,
+            border_radius=8,
+            padding=ft.Padding.symmetric(vertical=8, horizontal=8),
+            expand=True, ink=True,
+            on_click=lambda e: set_mode("math"),
+        )
+        return ft.Row([ai_btn, math_btn], spacing=4)
+
     def make_profile_buttons():
         rows = []
         pair = []
@@ -1355,7 +1464,7 @@ def main(page: ft.Page):
                 ft.Container(height=16),
                 ft.Row([ft.Text(f"{t('about_version')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("1.2.0", color=FG, size=12,
+                        ft.Text("1.2.1", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_build')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
@@ -1473,6 +1582,7 @@ def main(page: ft.Page):
         return dlg
 
     def show_fallback_dialog(current_img, stats):
+        """Диалог выбора: применить fallback или оставить AI."""
         dialog_ref = {"dlg": None}
 
         async def apply_fallback(e=None):
@@ -1480,7 +1590,7 @@ def main(page: ft.Page):
                 dialog_ref["dlg"].open = False
                 page.update()
 
-                S["progress_text"].value = "Fallback коррекция..."
+                S["progress_text"].value = t("fb_dialog_progress")
                 S["progress_text"].visible = True
                 S["progress_bar"].visible = True
                 for b in S["buttons"].values():
@@ -1496,11 +1606,11 @@ def main(page: ft.Page):
                 S["last_op"] = "corrected"
                 S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
                 log("", FG2)
-                log("   ✨ Fallback применён к результату AI", SUCCESS)
+                log(t("fb_dialog_applied"), SUCCESS)
                 run_check(result, False)
                 page.update()
             except Exception as ex:
-                log(f"❌ Fallback ошибка: {ex}", DANGER)
+                log(f"❌ {t('fb_dialog_err')} {ex}", DANGER)
             finally:
                 S["progress_bar"].visible = False
                 S["progress_text"].visible = False
@@ -1515,35 +1625,35 @@ def main(page: ft.Page):
             try:
                 dialog_ref["dlg"].open = False
                 page.update()
-                log("   → Оставлен результат AI как есть", FG2)
+                log(t("fb_dialog_kept"), FG2)
                 page.update()
             except Exception:
                 pass
 
         dlg = ft.AlertDialog(
             modal=True,
-            title=ft.Text("Результат AI не прошёл проверку", color=FG, size=14),
+            title=ft.Text(t("fb_dialog_title"), color=FG, size=14),
             content=ft.Container(
                 content=ft.Column([
-                    ft.Text("AI убрал цветовой сдвиг, но яркость вне порога:",
+                    ft.Text(t("fb_dialog_text"),
                             color=FG2, size=12, font_family=FONT),
                     ft.Container(height=4),
-                    ft.Text(f"  Тёмные: {stats['dark_pct']:.2f}%",
+                    ft.Text(f"  {t('fb_dialog_dark')} {stats['dark_pct']:.2f}%",
                             color=DANGER if stats['dark_pct'] > 5 else SUCCESS,
                             size=12, font_family="Consolas"),
-                    ft.Text(f"  Светлые: {stats['light_pct']:.2f}%",
+                    ft.Text(f"  {t('fb_dialog_light')} {stats['light_pct']:.2f}%",
                             color=DANGER if stats['light_pct'] > 5 else SUCCESS,
                             size=12, font_family="Consolas"),
                     ft.Container(height=6),
-                    ft.Text("Применить CLAHE fallback?",
+                    ft.Text(t("fb_dialog_question"),
                             color=FG, size=12, font_family=FONT),
                 ], spacing=2, tight=True),
                 width=380,
                 height=140,
             ),
             actions=[
-                ft.TextButton("✅ Оставить AI", on_click=keep_ai),
-                ft.TextButton("⚡ Применить fallback", on_click=apply_fallback),
+                ft.TextButton(t("fb_dialog_keep_ai"), on_click=keep_ai),
+                ft.TextButton(t("fb_dialog_apply"), on_click=apply_fallback),
             ],
             inset_padding=ft.Padding.symmetric(horizontal=80, vertical=120),
             bgcolor=PANEL,
@@ -1616,6 +1726,14 @@ def main(page: ft.Page):
                         color=FG2, size=12, font_family=FONT),
                     bgcolor=INPUT, border_radius=8, padding=10,
                 ),
+                ft.Container(height=14),
+                ft.Divider(color=FG3, height=1),
+                ft.Container(height=10),
+                ft.Text(t("correction_mode_title"), size=10,
+                        weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=6),
+                make_correction_mode_switch(),
                 ft.Container(height=14),
                 ft.Divider(color=FG3, height=1),
                 ft.Container(height=10),
@@ -1813,7 +1931,7 @@ def main(page: ft.Page):
             content=ft.Column([
                 ft.Text(t("pbr_params"), size=10, weight=ft.FontWeight.BOLD,
                         color=FG3, font_family=FONT),
-                ft.Text("🎯 Пресет:", color=FG2, size=11, font_family=FONT),
+                ft.Text(t("pbr_preset_label"), color=FG2, size=11, font_family=FONT),
                 pbr_preset_buttons,
                 ft.Divider(color=FG3, height=1),
                 ft.Text(t("pbr_metallic"), color=FG2, size=12, font_family=FONT),
@@ -2028,7 +2146,7 @@ def main(page: ft.Page):
                                 weight=ft.FontWeight.BOLD,
                                 color=ACCENT, font_family=FONT),
                         ft.Container(
-                            content=ft.Text("v1.2.0", size=10, color=FG2,
+                            content=ft.Text("v1.2.1", size=10, color=FG2,
                                             font_family=FONT,
                                             weight=ft.FontWeight.W_600),
                             bgcolor=CARD, border_radius=6,
