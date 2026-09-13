@@ -11,7 +11,7 @@ import cv2
 import subprocess
 import tempfile
 import shutil
-from pbr_generator import generate_all_pbr
+from pbr_generator import generate_all_pbr, remove_soap_adaptive
 
 
 # ═══════════════════════════════════════════════════════════
@@ -28,42 +28,101 @@ WALLETS = [
 #  ПРОФИЛИ ТЕКСТУР
 # ═══════════════════════════════════════════════════════════
 TEXTURE_PROFILES = {
-    "wood":     {"dark": 25,  "light": 240, "ru": "Дерево",   "en": "Wood"},
-    "stone":    {"dark": 25,  "light": 235, "ru": "Камень",   "en": "Stone"},
-    "metal":    {"dark": 140, "light": 255, "ru": "Металл",   "en": "Metal"},
-    "ground":   {"dark": 20,  "light": 235, "ru": "Земля",    "en": "Ground"},
-    "concrete": {"dark": 30,  "light": 240, "ru": "Бетон",    "en": "Concrete"},
-    "brick":    {"dark": 25,  "light": 235, "ru": "Кирпич",   "en": "Brick"},
-    "rust":     {"dark": 20,  "light": 235, "ru": "Ржавчина", "en": "Rust"},
-    "moss":     {"dark": 10,  "light": 230, "ru": "Мох",      "en": "Moss"},
-    "leaves":   {"dark": 20,  "light": 245, "ru": "Листва",   "en": "Leaves"},
-    "organic":  {"dark": 15,  "light": 235, "ru": "Органика", "en": "Organic"},
+    # 🔥 METAL
+    "metal":          {"dark": 140, "light": 255, "ru": "Металл",        "en": "Metal",          "emoji": "⚙"},
+    "rust":           {"dark": 20,  "light": 235, "ru": "Ржавчина",       "en": "Rust",           "emoji": "🔴"},
+    "oxidized_metal": {"dark": 30,  "light": 240, "ru": "Окисл. металл",  "en": "Oxidized Metal", "emoji": "🟢"},
+    "patina":         {"dark": 25,  "light": 235, "ru": "Патина",         "en": "Patina",         "emoji": "🟩"},
+    "brass":          {"dark": 120, "light": 250, "ru": "Латунь",         "en": "Brass",          "emoji": "🟡"},
+    "aluminum":       {"dark": 130, "light": 250, "ru": "Алюминий",       "en": "Aluminum",       "emoji": "⚪"},
+    # 🌿 NATURE
+    "wood":           {"dark": 25,  "light": 240, "ru": "Дерево",         "en": "Wood",           "emoji": "🌳"},
+    "leaves":         {"dark": 20,  "light": 245, "ru": "Листва",         "en": "Leaves",         "emoji": "🌿"},
+    "moss":           {"dark": 10,  "light": 230, "ru": "Мох",            "en": "Moss",           "emoji": "🌱"},
+    "organic":        {"dark": 15,  "light": 235, "ru": "Органика",       "en": "Organic",        "emoji": "🍂"},
+    "grass":          {"dark": 20,  "light": 240, "ru": "Трава",          "en": "Grass",          "emoji": "🌾"},
+    "bark":           {"dark": 20,  "light": 230, "ru": "Кора",           "en": "Bark",           "emoji": "🪵"},
+    # 🪨 MINERAL
+    "stone":          {"dark": 25,  "light": 235, "ru": "Камень",         "en": "Stone",          "emoji": "🪨"},
+    "concrete":       {"dark": 30,  "light": 240, "ru": "Бетон",          "en": "Concrete",       "emoji": "🧊"},
+    "brick":          {"dark": 25,  "light": 235, "ru": "Кирпич",         "en": "Brick",          "emoji": "🧱"},
+    "ground":         {"dark": 20,  "light": 235, "ru": "Земля",          "en": "Ground",         "emoji": "🌍"},
+    "asphalt":        {"dark": 15,  "light": 200, "ru": "Асфальт",        "en": "Asphalt",        "emoji": "⬛"},
+    "marble":         {"dark": 35,  "light": 250, "ru": "Мрамор",         "en": "Marble",         "emoji": "⬜"},
+    "sand":           {"dark": 40,  "light": 245, "ru": "Песок",          "en": "Sand",           "emoji": "🟨"},
+    # 🧪 SYNTHETIC
+    "plastic":        {"dark": 30,  "light": 245, "ru": "Пластик",        "en": "Plastic",        "emoji": "🎨"},
+    "rubber":         {"dark": 20,  "light": 200, "ru": "Резина",         "en": "Rubber",         "emoji": "⚫"},
+    "glass":          {"dark": 50,  "light": 250, "ru": "Стекло",         "en": "Glass",          "emoji": "💎"},
+    "ceramic":        {"dark": 35,  "light": 245, "ru": "Керамика",       "en": "Ceramic",        "emoji": "🏺"},
+    "painted_metal":  {"dark": 25,  "light": 240, "ru": "Краш. металл",   "en": "Painted Metal",  "emoji": "🎭"},
+    # 💧 SPECIAL
+    "water":          {"dark": 40,  "light": 250, "ru": "Вода",           "en": "Water",          "emoji": "💧"},
+    "mud":            {"dark": 20,  "light": 220, "ru": "Грязь",          "en": "Mud",            "emoji": "🟤"},
+    "snow":           {"dark": 80,  "light": 255, "ru": "Снег",           "en": "Snow",           "emoji": "❄"},
+    "ice":            {"dark": 60,  "light": 250, "ru": "Лёд",            "en": "Ice",            "emoji": "🧊"},
+    # 🐾 FAUNA
+    "leather":        {"dark": 25,  "light": 235, "ru": "Кожа",           "en": "Leather",        "emoji": "🐂"},
+    "fur":            {"dark": 20,  "light": 245, "ru": "Мех",            "en": "Fur",            "emoji": "🦊"},
+    "skin":           {"dark": 30,  "light": 240, "ru": "Кожа (тело)",    "en": "Skin",           "emoji": "✋"},
+    "scales":         {"dark": 25,  "light": 245, "ru": "Чешуя",          "en": "Scales",         "emoji": "🐍"},
 }
 
 PBR_PRESETS = {
-    "wood":     {"strength": 1.2, "smooth": 1.5, "threshold": 0.05, "high_pass": 40, "height_blur": 2.0, "ao_radius": 8,  "ao_intensity": 1.2, "rough_base": 0.60, "rough_var": 0.30, "metallic": "black"},
-    "stone":    {"strength": 2.0, "smooth": 2.0, "threshold": 0.05, "high_pass": 50, "height_blur": 2.5, "ao_radius": 12, "ao_intensity": 2.0, "rough_base": 0.80, "rough_var": 0.20, "metallic": "black"},
-    "metal":    {"strength": 0.8, "smooth": 1.0, "threshold": 0.05, "high_pass": 30, "height_blur": 1.5, "ao_radius": 6,  "ao_intensity": 1.0, "rough_base": 0.30, "rough_var": 0.40, "metallic": "white"},
-    "ground":   {"strength": 1.8, "smooth": 2.0, "threshold": 0.05, "high_pass": 45, "height_blur": 2.0, "ao_radius": 10, "ao_intensity": 1.8, "rough_base": 0.85, "rough_var": 0.20, "metallic": "black"},
-    "rust":     {"strength": 1.5, "smooth": 1.5, "threshold": 0.05, "high_pass": 40, "height_blur": 2.0, "ao_radius": 10, "ao_intensity": 1.5, "rough_base": 0.80, "rough_var": 0.30, "metallic": "black"},
-    "concrete": {"strength": 1.5, "smooth": 2.0, "threshold": 0.05, "high_pass": 40, "height_blur": 2.5, "ao_radius": 10, "ao_intensity": 1.5, "rough_base": 0.90, "rough_var": 0.15, "metallic": "black"},
-    "brick":    {"strength": 1.8, "smooth": 1.5, "threshold": 0.05, "high_pass": 40, "height_blur": 2.0, "ao_radius": 10, "ao_intensity": 1.8, "rough_base": 0.85, "rough_var": 0.20, "metallic": "black"},
-    "moss":     {"strength": 1.2, "smooth": 2.0, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 8,  "ao_intensity": 1.3, "rough_base": 0.90, "rough_var": 0.15, "metallic": "black"},
-    "leaves":   {"strength": 1.0, "smooth": 1.5, "threshold": 0.05, "high_pass": 30, "height_blur": 1.5, "ao_radius": 6,  "ao_intensity": 1.0, "rough_base": 0.50, "rough_var": 0.30, "metallic": "black"},
-    "organic":  {"strength": 1.2, "smooth": 2.0, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 8,  "ao_intensity": 1.3, "rough_base": 0.80, "rough_var": 0.25, "metallic": "black"},
+    # 🔥 METAL
+    "metal":          {"strength": 0.8, "smooth": 1.0, "threshold": 0.05, "high_pass": 30, "height_blur": 1.5, "ao_radius": 6,  "ao_intensity": 1.0, "rough_base": 0.30, "rough_var": 0.40, "metallic": "white"},
+    "rust":           {"strength": 1.5, "smooth": 1.5, "threshold": 0.05, "high_pass": 40, "height_blur": 2.0, "ao_radius": 10, "ao_intensity": 1.5, "rough_base": 0.80, "rough_var": 0.30, "metallic": "black"},
+    "oxidized_metal": {"strength": 1.3, "smooth": 1.5, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 8,  "ao_intensity": 1.3, "rough_base": 0.55, "rough_var": 0.45, "metallic": "auto"},
+    "patina":         {"strength": 1.3, "smooth": 1.8, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 8,  "ao_intensity": 1.2, "rough_base": 0.80, "rough_var": 0.25, "metallic": "black"},
+    "brass":          {"strength": 0.8, "smooth": 1.0, "threshold": 0.05, "high_pass": 30, "height_blur": 1.5, "ao_radius": 6,  "ao_intensity": 1.0, "rough_base": 0.35, "rough_var": 0.35, "metallic": "white"},
+    "aluminum":       {"strength": 1.0, "smooth": 1.2, "threshold": 0.05, "high_pass": 25, "height_blur": 1.2, "ao_radius": 5,  "ao_intensity": 0.9, "rough_base": 0.40, "rough_var": 0.30, "metallic": "white"},
+    # 🌿 NATURE
+    "wood":           {"strength": 1.2, "smooth": 1.5, "threshold": 0.05, "high_pass": 40, "height_blur": 2.0, "ao_radius": 8,  "ao_intensity": 1.2, "rough_base": 0.60, "rough_var": 0.30, "metallic": "black"},
+    "leaves":         {"strength": 1.0, "smooth": 1.5, "threshold": 0.05, "high_pass": 30, "height_blur": 1.5, "ao_radius": 6,  "ao_intensity": 1.0, "rough_base": 0.50, "rough_var": 0.30, "metallic": "black"},
+    "moss":           {"strength": 1.2, "smooth": 2.0, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 8,  "ao_intensity": 1.3, "rough_base": 0.90, "rough_var": 0.15, "metallic": "black"},
+    "organic":        {"strength": 1.2, "smooth": 2.0, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 8,  "ao_intensity": 1.3, "rough_base": 0.80, "rough_var": 0.25, "metallic": "black"},
+    "grass":          {"strength": 1.1, "smooth": 1.8, "threshold": 0.05, "high_pass": 32, "height_blur": 1.8, "ao_radius": 7,  "ao_intensity": 1.1, "rough_base": 0.65, "rough_var": 0.30, "metallic": "black"},
+    "bark":           {"strength": 1.5, "smooth": 1.5, "threshold": 0.05, "high_pass": 45, "height_blur": 2.0, "ao_radius": 10, "ao_intensity": 1.6, "rough_base": 0.85, "rough_var": 0.25, "metallic": "black"},
+    # 🪨 MINERAL
+    "stone":          {"strength": 2.0, "smooth": 2.0, "threshold": 0.05, "high_pass": 50, "height_blur": 2.5, "ao_radius": 12, "ao_intensity": 2.0, "rough_base": 0.80, "rough_var": 0.20, "metallic": "black"},
+    "concrete":       {"strength": 1.5, "smooth": 2.0, "threshold": 0.05, "high_pass": 40, "height_blur": 2.5, "ao_radius": 10, "ao_intensity": 1.5, "rough_base": 0.90, "rough_var": 0.15, "metallic": "black"},
+    "brick":          {"strength": 1.8, "smooth": 1.5, "threshold": 0.05, "high_pass": 40, "height_blur": 2.0, "ao_radius": 10, "ao_intensity": 1.8, "rough_base": 0.85, "rough_var": 0.20, "metallic": "black"},
+    "ground":         {"strength": 1.8, "smooth": 2.0, "threshold": 0.05, "high_pass": 45, "height_blur": 2.0, "ao_radius": 10, "ao_intensity": 1.8, "rough_base": 0.85, "rough_var": 0.20, "metallic": "black"},
+    "asphalt":        {"strength": 1.6, "smooth": 2.0, "threshold": 0.05, "high_pass": 40, "height_blur": 2.0, "ao_radius": 9,  "ao_intensity": 1.6, "rough_base": 0.90, "rough_var": 0.15, "metallic": "black"},
+    "marble":         {"strength": 0.7, "smooth": 1.5, "threshold": 0.05, "high_pass": 30, "height_blur": 1.5, "ao_radius": 6,  "ao_intensity": 0.8, "rough_base": 0.25, "rough_var": 0.20, "metallic": "black"},
+    "sand":           {"strength": 1.2, "smooth": 2.0, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 8,  "ao_intensity": 1.3, "rough_base": 0.90, "rough_var": 0.20, "metallic": "black"},
+    # 🧪 SYNTHETIC
+    "plastic":        {"strength": 0.8, "smooth": 1.5, "threshold": 0.05, "high_pass": 30, "height_blur": 1.5, "ao_radius": 6,  "ao_intensity": 0.8, "rough_base": 0.35, "rough_var": 0.30, "metallic": "black"},
+    "rubber":         {"strength": 1.2, "smooth": 2.0, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 7,  "ao_intensity": 1.2, "rough_base": 0.90, "rough_var": 0.10, "metallic": "black"},
+    "glass":          {"strength": 0.5, "smooth": 1.5, "threshold": 0.05, "high_pass": 25, "height_blur": 1.0, "ao_radius": 5,  "ao_intensity": 0.6, "rough_base": 0.10, "rough_var": 0.15, "metallic": "black"},
+    "ceramic":        {"strength": 0.9, "smooth": 1.5, "threshold": 0.05, "high_pass": 32, "height_blur": 1.8, "ao_radius": 6,  "ao_intensity": 0.9, "rough_base": 0.30, "rough_var": 0.25, "metallic": "black"},
+    "painted_metal":  {"strength": 1.0, "smooth": 1.5, "threshold": 0.05, "high_pass": 32, "height_blur": 1.8, "ao_radius": 6,  "ao_intensity": 1.0, "rough_base": 0.45, "rough_var": 0.30, "metallic": "black"},
+    # 💧 SPECIAL
+    "water":          {"strength": 0.6, "smooth": 1.5, "threshold": 0.05, "high_pass": 25, "height_blur": 1.2, "ao_radius": 5,  "ao_intensity": 0.7, "rough_base": 0.05, "rough_var": 0.10, "metallic": "black"},
+    "mud":            {"strength": 1.5, "smooth": 2.0, "threshold": 0.05, "high_pass": 40, "height_blur": 2.0, "ao_radius": 9,  "ao_intensity": 1.5, "rough_base": 0.85, "rough_var": 0.20, "metallic": "black"},
+    "snow":           {"strength": 1.0, "smooth": 2.0, "threshold": 0.05, "high_pass": 30, "height_blur": 1.8, "ao_radius": 7,  "ao_intensity": 1.0, "rough_base": 0.40, "rough_var": 0.35, "metallic": "black"},
+    "ice":            {"strength": 0.9, "smooth": 1.8, "threshold": 0.05, "high_pass": 28, "height_blur": 1.5, "ao_radius": 6,  "ao_intensity": 0.9, "rough_base": 0.20, "rough_var": 0.30, "metallic": "black"},
+    # 🐾 FAUNA
+    "leather":        {"strength": 1.1, "smooth": 1.8, "threshold": 0.05, "high_pass": 38, "height_blur": 1.8, "ao_radius": 7,  "ao_intensity": 1.1, "rough_base": 0.65, "rough_var": 0.30, "metallic": "black"},
+    "fur":            {"strength": 1.2, "smooth": 2.0, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 8,  "ao_intensity": 1.2, "rough_base": 0.75, "rough_var": 0.30, "metallic": "black"},
+    "skin":           {"strength": 0.9, "smooth": 2.0, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 7,  "ao_intensity": 1.0, "rough_base": 0.50, "rough_var": 0.30, "metallic": "black"},
+    "scales":         {"strongth": 1.3, "smooth": 1.5, "threshold": 0.05, "high_pass": 38, "height_blur": 1.8, "ao_radius": 7,  "ao_intensity": 1.3, "rough_base": 0.45, "rough_var": 0.35, "metallic": "black"},
 }
 
-QUICK_PROFILES = [
-    ("wood", "🌳"),
-    ("stone", "🪨"),
-    ("metal", "⚙"),
-    ("ground", "🌍"),
-    ("rust", "🔴"),
-    ("brick", "🧱"),
-    ("leaves", "🌿"),
-    ("organic", "🍂"),
-    ("concrete", "🧊"),
-]
+PROFILE_CATEGORIES = {
+    "metal":   {"emoji": "🔥", "ru": "Металл",     "en": "Metal",
+                "items": ["metal", "rust", "oxidized_metal", "patina", "brass", "aluminum"]},
+    "nature":  {"emoji": "🌿", "ru": "Природа",    "en": "Nature",
+                "items": ["wood", "leaves", "moss", "organic", "grass", "bark"]},
+    "mineral": {"emoji": "🪨", "ru": "Минерал",    "en": "Mineral",
+                "items": ["stone", "concrete", "brick", "ground", "asphalt", "marble", "sand"]},
+    "synth":   {"emoji": "🧪", "ru": "Синтетика",  "en": "Synthetic",
+                "items": ["plastic", "rubber", "glass", "ceramic", "painted_metal"]},
+    "special": {"emoji": "💧", "ru": "Спецэффекты","en": "Special",
+                "items": ["water", "mud", "snow", "ice"]},
+    "fauna":   {"emoji": "🐾", "ru": "Фауна",      "en": "Fauna",
+                "items": ["leather", "fur", "skin", "scales"]},
+}
 
 
 def _fallback_standalone(pil, profile_key):
@@ -150,10 +209,15 @@ T = {
         "correction_mode_title": "РЕЖИМ КОРРЕКЦИИ",
         "correction_ai": "✨ AI",
         "correction_math": "∑ Math",
+        "soap_fix_title": "🔧 УБРАТЬ МЫЛО",
+        "soap_fix_label": "Сила детализации",
+        "soap_fix_button": "🔧 Убрать мыло",
+        "soap_fix_done": "🔧 Детализация применена",
+        "soap_fix_progress": "Убираем мыло...",
         "all_types": "Все типы", "log_title": "ЛОГ",
         "info_btn": "ℹ Инфо", "lang_btn": "🌐 EN",
         "preview_hint": "🖼  Загрузи Albedo-текстуру, чтобы начать",
-        "welcome_1": "👋 Добро пожаловать в Albedolizer v1.2.1",
+        "welcome_1": "👋 Добро пожаловать в Albedolizer v1.3.0-beta",
         "welcome_2": "→ Нажми «📂 Открыть» для начала",
         "log_loaded": "📂 Загружено:", "log_type": "→ Тип:",
         "log_click_check": "→ Нажми «Проверить» для анализа",
@@ -268,10 +332,15 @@ T = {
         "correction_mode_title": "CORRECTION MODE",
         "correction_ai": "✨ AI",
         "correction_math": "∑ Math",
+        "soap_fix_title": "🔧 REMOVE SOAP",
+        "soap_fix_label": "Detail strength",
+        "soap_fix_button": "🔧 Remove soap",
+        "soap_fix_done": "🔧 Detail enhanced",
+        "soap_fix_progress": "Removing soap...",
         "all_types": "All types", "log_title": "LOG",
         "info_btn": "ℹ Info", "lang_btn": "🌐 RU",
         "preview_hint": "🖼  Load an Albedo texture to start",
-        "welcome_1": "👋 Welcome to Albedolizer v1.2.1",
+        "welcome_1": "👋 Welcome to Albedolizer v1.3.0-beta",
         "welcome_2": "→ Click «📂 Open» to start",
         "log_loaded": "📂 Loaded:", "log_type": "→ Type:",
         "log_click_check": "→ Click «Check» to analyze",
@@ -378,18 +447,26 @@ T = {
 }
 
 def _detect_system_lang():
-    """Определяет язык системы. ru → 'ru', всё остальное → 'en'."""
+    """Определяет язык системы через Windows API. ru → 'ru', остальное → 'en'."""
     try:
-        sys_lang = (locale.getdefaultlocale()[0] or "").lower()
+        import ctypes
+        # GetUserDefaultUILanguage возвращает LANGID (0x0419 = Russian)
+        lang_id = ctypes.windll.kernel32.GetUserDefaultUILanguage()
+        # Проверяем primary language ID (младшие 10 бит)
+        primary = lang_id & 0x03FF
+        if primary == 0x19:  # LANG_RUSSIAN
+            return "ru"
+        return "en"
     except Exception:
-        sys_lang = ""
-    if sys_lang.startswith("ru"):
-        return "ru"
-    return "en"
+        try:
+            sys_lang = (locale.getdefaultlocale()[0] or "").lower()
+            return "ru" if sys_lang.startswith("ru") else "en"
+        except Exception:
+            return "en"
 
 def main(page: ft.Page):
     cv2.setNumThreads(os.cpu_count() or 4)
-    page.title = "Albedolizer v1.2.1"
+    page.title = "Albedolizer v1.3.0-beta"
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 0
     page.spacing = 0
@@ -436,8 +513,10 @@ def main(page: ft.Page):
         "image_path": None,
         "original": None,
         "corrected": None,
-        "profile": "wood",
+        "profile": "metal",
+        "profile_category": "metal",
         "correction_mode": "ai",
+        "soap_fix_strength": 1.0,
         "last_op": None,
         "lang": _detect_system_lang(),
         "log_lines": [],
@@ -451,6 +530,11 @@ def main(page: ft.Page):
         "pbr_preview": None,
         "pbr_preview_hint": None,
         "pbr_map_buttons": {},
+        "pbr_batch_results": {},
+        "pbr_batch_selected": None,
+        "pbr_batch_index": 0,
+        "pbr_batch_label": None,
+        "pbr_batch_nav_panel": None,
         "batch_files": [],
         "compress_files": [],
         "active_tab": "single",
@@ -792,6 +876,10 @@ def main(page: ft.Page):
                 result = await asyncio.to_thread(
                     smart_correct_fallback, S["original"], S["profile"]
                 )
+                if S["soap_fix_strength"] > 0:
+                    result = await asyncio.to_thread(
+                        remove_soap_adaptive, result, S["soap_fix_strength"]
+                    )
                 S["corrected"] = result
                 S["last_op"] = "corrected"
                 S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
@@ -844,6 +932,10 @@ def main(page: ft.Page):
             else:
                 log("   → AI недоступен. Применяется fallback.", WARN)
                 result = smart_correct_fallback(S["original"], S["profile"])
+                if S["soap_fix_strength"] > 0:
+                    result = await asyncio.to_thread(
+                        remove_soap_adaptive, result, S["soap_fix_strength"]
+                    )
                 S["corrected"] = result
                 S["last_op"] = "corrected"
                 S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
@@ -1175,6 +1267,10 @@ def main(page: ft.Page):
                             result = await asyncio.to_thread(
                                 _fallback_standalone, img, S["profile"]
                             )
+                    if S["soap_fix_strength"] > 0:
+                        result = await asyncio.to_thread(
+                            remove_soap_adaptive, result, S["soap_fix_strength"]
+                        )
                     result.save(str(out_path))
                     img.close()
                     ok = True
@@ -1328,6 +1424,7 @@ def main(page: ft.Page):
                 "metallic_mode": PBR_PRESETS.get(S["profile"], {}).get("metallic", S["pbr_metallic"]),
             }
 
+            S["pbr_batch_results"] = {}
             count = 0
             total_files = len(files)
             for i, fp in enumerate(files, 1):
@@ -1340,9 +1437,11 @@ def main(page: ft.Page):
                     base = os.path.splitext(os.path.basename(fp))[0]
                     sub = os.path.join(out_root, base)
                     os.makedirs(sub, exist_ok=True)
+                    img.save(str(os.path.join(sub, f"{base}_albedo.png")))
                     for k, m in result.items():
                         m.save(str(os.path.join(sub, f"{base}_{k}.png")))
                     count += 1
+                    S["pbr_batch_results"][base] = sub
                     log(f"  [{i}/{total_files}] ✓ {os.path.basename(fp)}", SUCCESS)
                     page.update()
 
@@ -1359,9 +1458,112 @@ def main(page: ft.Page):
             log(f"{t('pbr_log_batch_done')} {count} {t('pbr_log_files')}", SUCCESS)
             log(f"📁 {out_root}", FG2)
             await hide_pbr_progress()
+
+            if count > 0:
+                keys = list(S["pbr_batch_results"].keys())
+                S["pbr_batch_index"] = 0
+                rebuild_ui()
+                pbr_load_batch_texture(keys[0])
         except Exception as ex:
             await hide_pbr_progress()
             log(f"❌ PBR batch: {ex}", DANGER)
+            page.update()
+
+    def pbr_load_batch_texture(base_name):
+        """Загружает карты выбранной batch-текстуры в S['pbr_result']."""
+        if not base_name or base_name == "_none_":
+            return
+        folder = S["pbr_batch_results"].get(base_name)
+        if not folder or not os.path.exists(folder):
+            return
+
+        result = {}
+        for key in ("albedo", "height", "normal", "ao", "roughness", "metallic", "orm", "edge"):
+            path = os.path.join(folder, f"{base_name}_{key}.png")
+            if os.path.exists(path):
+                img = Image.open(path).convert("RGB")
+                img.load()
+                result[key] = img
+
+        if not result:
+            return
+
+        S["pbr_result"] = result
+        S["pbr_batch_selected"] = base_name
+        keys = list(S["pbr_batch_results"].keys())
+        if base_name in keys:
+            S["pbr_batch_index"] = keys.index(base_name)
+
+        # Показываем albedo, либо первую доступную карту
+        show_key = "albedo" if "albedo" in result else next(iter(result.keys()), None)
+        if show_key:
+            S["pbr_preview"].src = f"data:image/png;base64,{pil_to_b64(result[show_key])}"
+            S["pbr_preview"].visible = True
+            S["pbr_current_map"] = show_key
+            if S.get("pbr_preview_hint"):
+                S["pbr_preview_hint"].visible = False
+
+        pbr_batch_refresh_label()
+        log(f"📂 Batch: загружена {base_name}", FG2)
+        page.update()
+
+    def pbr_batch_refresh_label():
+        keys = list(S["pbr_batch_results"].keys())
+        if not keys:
+            if S.get("pbr_batch_label"):
+                S["pbr_batch_label"].value = ""
+            return
+        idx = S["pbr_batch_index"]
+        if idx >= len(keys):
+            idx = 0
+            S["pbr_batch_index"] = 0
+        if S.get("pbr_batch_label"):
+            S["pbr_batch_label"].value = f"{keys[idx]}  ({idx + 1}/{len(keys)})"
+
+    def pbr_batch_next(e=None):
+        keys = list(S["pbr_batch_results"].keys())
+        if not keys:
+            return
+        S["pbr_batch_index"] = (S["pbr_batch_index"] + 1) % len(keys)
+        pbr_load_batch_texture(keys[S["pbr_batch_index"]])
+        # Обновляем выделение кнопок карт
+        for k, b in S["pbr_map_buttons"].items():
+            b.bgcolor = ACCENT if k == S["pbr_current_map"] else CARD
+            b.content.color = "#fff" if k == S["pbr_current_map"] else FG2
+        page.update()
+
+    def pbr_batch_prev(e=None):
+        keys = list(S["pbr_batch_results"].keys())
+        if not keys:
+            return
+        S["pbr_batch_index"] = (S["pbr_batch_index"] - 1) % len(keys)
+        pbr_load_batch_texture(keys[S["pbr_batch_index"]])
+        for k, b in S["pbr_map_buttons"].items():
+            b.bgcolor = ACCENT if k == S["pbr_current_map"] else CARD
+            b.content.color = "#fff" if k == S["pbr_current_map"] else FG2
+        page.update()
+
+    async def do_remove_soap(e):
+        if S["corrected"] is None:
+            return
+        try:
+            await show_progress(t("soap_fix_progress"))
+            await asyncio.sleep(0.1)
+
+            result = await asyncio.to_thread(
+                remove_soap_adaptive, S["corrected"],
+                S["soap_fix_strength"], 15, 25.0     
+            )
+            S["corrected"] = result
+            S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
+            log(t("soap_fix_done"), SUCCESS)
+            page.update()
+
+            await asyncio.sleep(0.1)
+            await hide_progress()
+        except Exception as ex:
+            await hide_progress()
+            log(f"❌ {t('err')}: {ex}", DANGER)
             page.update()
 
     def make_btn(label, on_click, color=ACCENT, disabled=False):
@@ -1421,34 +1623,89 @@ def main(page: ft.Page):
         )
         return ft.Row([ai_btn, math_btn], spacing=4)
 
-    def make_profile_buttons():
+    def set_category(key):
+        S["profile_category"] = key
+        items = PROFILE_CATEGORIES[key]["items"]
+        if S["profile"] not in items:
+            S["profile"] = items[0]
+        S["pbr_sliders"] = {}
+        rebuild_ui()
+
+    def make_category_tabs(compact=False):
         rows = []
-        pair = []
-        for key, emoji in QUICK_PROFILES:
-            label = f"{emoji} {profile_label(key)}"
-            is_active = S["profile"] == key
+        row = []
+        per_row = 3
+        for key, cat in PROFILE_CATEGORIES.items():
+            is_active = S["profile_category"] == key
+            if compact:
+                label = f"{cat['emoji']}"
+                size = 16
+            else:
+                label = f"{cat['emoji']} {cat[S['lang']]}"
+                size = 12
             btn = ft.Container(
                 content=ft.Text(
                     label,
                     color="#fff" if is_active else FG2,
-                    size=13, font_family=FONT,
+                    size=size, font_family=FONT,
+                    weight=ft.FontWeight.W_600 if is_active else ft.FontWeight.W_500,
+                    text_align=ft.TextAlign.CENTER,
+                ),
+                bgcolor=ACCENT if is_active else CARD,
+                border_radius=8,
+                padding=ft.Padding.symmetric(vertical=8, horizontal=4),
+                expand=True, ink=True,
+                tooltip=f"{cat['emoji']} {cat[S['lang']]}",
+                on_click=lambda e, k=key: set_category(k),
+            )
+            row.append(btn)
+            if len(row) == per_row:
+                rows.append(ft.Row(row, spacing=4))
+                row = []
+        if row:
+            while len(row) < per_row:
+                row.append(ft.Container(expand=True))
+            rows.append(ft.Row(row, spacing=4))
+        return ft.Column(rows, spacing=4)
+
+    def make_preset_grid(compact=False):
+        cat_key = S["profile_category"]
+        items = PROFILE_CATEGORIES[cat_key]["items"]
+        rows = []
+        row = []
+        per_row = 3 if compact else 2
+        for key in items:
+            is_active = S["profile"] == key
+            prof = TEXTURE_PROFILES[key]
+            if compact:
+                label = f"{prof['emoji']}"
+                size = 14
+            else:
+                label = f"{prof['emoji']} {profile_label(key)}"
+                size = 12
+            btn = ft.Container(
+                content=ft.Text(
+                    label,
+                    color="#fff" if is_active else FG2,
+                    size=size, font_family=FONT,
                     weight=ft.FontWeight.W_600 if is_active else ft.FontWeight.W_500,
                     text_align=ft.TextAlign.CENTER,
                 ),
                 bgcolor=ACCENT if is_active else CARD,
                 border_radius=10,
-                padding=ft.Padding.symmetric(vertical=10, horizontal=8),
-                expand=True,
-                ink=True,
+                padding=ft.Padding.symmetric(vertical=8, horizontal=4),
+                expand=True, ink=True,
+                tooltip=profile_label(key),
                 on_click=lambda e, k=key: set_profile(k),
             )
-            pair.append(btn)
-            if len(pair) == 2:
-                rows.append(ft.Row(pair, spacing=4))
-                pair = []
-        if pair:
-            rows.append(ft.Row(pair, spacing=4))
-
+            row.append(btn)
+            if len(row) == per_row:
+                rows.append(ft.Row(row, spacing=4))
+                row = []
+        if row:
+            while len(row) < per_row:
+                row.append(ft.Container(expand=True))
+            rows.append(ft.Row(row, spacing=4))
         return ft.Column(rows, spacing=4)
 
     def create_info_dialog():
@@ -1464,7 +1721,7 @@ def main(page: ft.Page):
                 ft.Container(height=16),
                 ft.Row([ft.Text(f"{t('about_version')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("1.2.1", color=FG, size=12,
+                        ft.Text("1.3.0-beta", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_build')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
@@ -1602,6 +1859,10 @@ def main(page: ft.Page):
                     smart_correct_fallback, current_img, S["profile"]
                 )
 
+                if S["soap_fix_strength"] > 0:
+                    result = await asyncio.to_thread(
+                        remove_soap_adaptive, result, S["soap_fix_strength"]
+                    )
                 S["corrected"] = result
                 S["last_op"] = "corrected"
                 S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
@@ -1718,7 +1979,9 @@ def main(page: ft.Page):
                 ft.Text(t("profile_title"), size=10, weight=ft.FontWeight.BOLD,
                         color=FG3, font_family=FONT),
                 ft.Container(height=6),
-                make_profile_buttons(),
+                make_category_tabs(compact=True),
+                ft.Container(height=4),
+                make_preset_grid(compact=False),
                 ft.Container(height=6),
                 ft.Container(
                     content=ft.Text(
@@ -1734,6 +1997,23 @@ def main(page: ft.Page):
                         color=FG3, font_family=FONT),
                 ft.Container(height=6),
                 make_correction_mode_switch(),
+                ft.Container(height=14),
+                ft.Divider(color=FG3, height=1),
+                ft.Container(height=10),
+                ft.Text(t("soap_fix_title"), size=10,
+                        weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=6),
+                ft.Text(t("soap_fix_label"), color=FG2, size=11, font_family=FONT),
+                ft.Slider(
+                    min=0.0, max=3.0, divisions=15,
+                    value=S["soap_fix_strength"],
+                    label="{value}",
+                    active_color=ACCENT, inactive_color=INPUT,
+                    on_change=lambda e: S.update({"soap_fix_strength": e.control.value}),
+                ),
+                ft.Container(height=4),
+                make_btn(t("soap_fix_button"), do_remove_soap, "#6a4a9f"),
                 ft.Container(height=14),
                 ft.Divider(color=FG3, height=1),
                 ft.Container(height=10),
@@ -1818,15 +2098,57 @@ def main(page: ft.Page):
                                      color=FG3, size=14, font_family=FONT)
         S["pbr_preview_hint"] = pbr_preview_hint
 
+        batch_nav_label = ft.Text("", color=FG, size=12, font_family=FONT,
+                                   weight=ft.FontWeight.W_600)
+        S["pbr_batch_label"] = batch_nav_label
+
+        batch_nav_inner = ft.Container(
+            content=ft.Row([
+                ft.Container(
+                    content=ft.Text("◀", color="#fff", size=14),
+                    bgcolor=INPUT, border_radius=6,
+                    padding=ft.Padding.symmetric(vertical=6, horizontal=10),
+                    ink=True, on_click=lambda e: pbr_batch_prev(),
+                ),
+                batch_nav_label,
+                ft.Container(
+                    content=ft.Text("▶", color="#fff", size=14),
+                    bgcolor=INPUT, border_radius=6,
+                    padding=ft.Padding.symmetric(vertical=6, horizontal=10),
+                    ink=True, on_click=lambda e: pbr_batch_next(),
+                ),
+            ], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER,
+               tight=True),
+            bgcolor=PANEL, border_radius=8, padding=6,
+        )
+
+        batch_nav_panel = ft.Container(
+            content=ft.Row([batch_nav_inner],
+                           alignment=ft.MainAxisAlignment.END),
+            visible=len(S["pbr_batch_results"]) > 0,
+        )
+        S["pbr_batch_nav_panel"] = batch_nav_panel
+
         pbr_preview_box = ft.Container(
             content=ft.Stack([
                 ft.Container(content=pbr_preview_hint,
                              alignment=ft.Alignment.CENTER, expand=True),
                 ft.Container(content=pbr_preview,
                              alignment=ft.Alignment.CENTER, expand=True),
+                ft.Container(content=batch_nav_panel,
+                             alignment=ft.Alignment.BOTTOM_RIGHT,
+                             padding=12),
             ], expand=True),
             bgcolor=CARD, border_radius=12, padding=10, expand=True,
         )
+        
+        # Восстановление превью и активной карты после rebuild
+        if S["pbr_result"] and S.get("pbr_batch_selected"):
+            key = S["pbr_current_map"] if S["pbr_current_map"] in S["pbr_result"] else "albedo"
+            if key in S["pbr_result"]:
+                pbr_preview.src = f"data:image/png;base64,{pil_to_b64(S['pbr_result'][key])}"
+                pbr_preview.visible = True
+                pbr_preview_hint.visible = False
 
         map_buttons = {}
         S["pbr_map_buttons"] = map_buttons
@@ -1839,9 +2161,16 @@ def main(page: ft.Page):
 
         def show_pbr_map(key):
             S["pbr_current_map"] = key
-            if key == "albedo":
+            if S["pbr_batch_selected"] and S["pbr_result"] and key in S["pbr_result"]:
+                # batch-режим: показываем карту из result
+                pbr_preview.src = f"data:image/png;base64,{pil_to_b64(S['pbr_result'][key])}"
+                pbr_preview.visible = True
+            elif key == "albedo":
                 if S["pbr_source"] is not None:
                     pbr_preview.src = f"data:image/png;base64,{pil_to_b64(S['pbr_source'])}"
+                    pbr_preview.visible = True
+                elif S["pbr_result"] and "albedo" in S["pbr_result"]:
+                    pbr_preview.src = f"data:image/png;base64,{pil_to_b64(S['pbr_result']['albedo'])}"
                     pbr_preview.visible = True
             else:
                 if S["pbr_result"] and key in S["pbr_result"]:
@@ -1854,7 +2183,7 @@ def main(page: ft.Page):
 
         map_row = ft.Row([], spacing=4)
         for key, label in map_keys:
-            is_active = key == "albedo"
+            is_active = key == S["pbr_current_map"]
             b = ft.Container(
                 content=ft.Text(label, color="#fff" if is_active else FG2,
                                 size=12, font_family=FONT,
@@ -1894,38 +2223,11 @@ def main(page: ft.Page):
             on_change=lambda e: S.update({"pbr_metallic": e.control.value}),
         )
 
-        pbr_preset_row1 = []
-        pbr_preset_row2 = []
-        pbr_preset_row3 = []
-        for i, (key, emoji) in enumerate(QUICK_PROFILES):
-            is_active = S["profile"] == key
-            btn = ft.Container(
-                content=ft.Text(
-                    f"{emoji}",
-                    color="#fff" if is_active else FG2,
-                    size=14,
-                    text_align=ft.TextAlign.CENTER,
-                ),
-                bgcolor=ACCENT if is_active else CARD,
-                border_radius=8,
-                padding=ft.Padding.symmetric(vertical=6, horizontal=4),
-                expand=True,
-                ink=True,
-                tooltip=profile_label(key),
-                on_click=lambda e, k=key: set_profile(k),
-            )
-            if i < 3:
-                pbr_preset_row1.append(btn)
-            elif i < 6:
-                pbr_preset_row2.append(btn)
-            else:
-                pbr_preset_row3.append(btn)
-
         pbr_preset_buttons = ft.Column([
-            ft.Row(pbr_preset_row1, spacing=4) if pbr_preset_row1 else ft.Container(),
-            ft.Row(pbr_preset_row2, spacing=4) if pbr_preset_row2 else ft.Container(),
-            ft.Row(pbr_preset_row3, spacing=4) if pbr_preset_row3 else ft.Container(),
-        ], spacing=4)
+            make_category_tabs(compact=True),
+            ft.Container(height=4),
+            make_preset_grid(compact=True),
+        ], spacing=0)
 
         pbr_params_panel = ft.Container(
             content=ft.Column([
@@ -2146,7 +2448,7 @@ def main(page: ft.Page):
                                 weight=ft.FontWeight.BOLD,
                                 color=ACCENT, font_family=FONT),
                         ft.Container(
-                            content=ft.Text("v1.2.1", size=10, color=FG2,
+                            content=ft.Text("v1.3.0-beta", size=10, color=FG2,
                                             font_family=FONT,
                                             weight=ft.FontWeight.W_600),
                             bgcolor=CARD, border_radius=6,
