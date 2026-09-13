@@ -172,38 +172,67 @@ def pack_orm(ao_pil, rough_pil, metal_pil):
     return Image.fromarray(rgb, mode="RGB")
 
 
-def remove_soap_adaptive(pil, strength=0.5, window=15, threshold=25.0):
+def remove_soap_adaptive(pil, strength=1.0, window=15, threshold=25.0, original=None):
     """
-    Адаптивный unsharp mask — усиливает детали только в мыльных зонах.
-    strength:  0.0 — выкл, 1.0 — максимум
-    window:    размер окна для оценки локальной дисперсии (нечётный)
-    threshold: порог дисперсии; ниже — считается мылом
+    Финальный pipeline:
+    - unsharp по средним частотам
+    - bilateral шлифовка
+    - SOFT-CLIP через tanh — плавное сжатие без плато/камуфляжа
     """
     if strength <= 0:
         return pil
 
-    arr = np.array(pil.convert("RGB")).astype(np.float32)
+    rgb = np.array(pil.convert("RGB"))
+    lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+    L = lab[:, :, 0]
 
-    # Локальная дисперсия по яркости
-    gray = cv2.cvtColor(arr.astype(np.uint8), cv2.COLOR_RGB2GRAY).astype(np.float32)
+    # ═══ Детектор мыла ═══
     k = window if window % 2 == 1 else window + 1
-    mean = cv2.blur(gray, (k, k))
-    sq_mean = cv2.blur(gray ** 2, (k, k))
-    variance = np.maximum(sq_mean - mean ** 2, 0)
+    mean = cv2.blur(L, (k, k))
+    sq_mean = cv2.blur(L * L, (k, k))
+    std = np.sqrt(np.maximum(sq_mean - mean * mean, 0))
+    med = float(np.median(std)) + 1e-6
+    ratio = std / med
+    deficit = np.clip((1.2 - ratio) / 0.6, 0, 1)
+    deficit = cv2.GaussianBlur(deficit, (0, 0), sigmaX=window / 3.0)
+    deficit = np.where(deficit < 0.20, 0.0, deficit)
 
-    # Нормализуем: 0 — мыло, 1 — детали
-    var_norm = np.clip(variance / (threshold ** 2), 0, 1)
-    inv_var = 1.0 - var_norm
+    if deficit.max() < 0.05:
+        return pil
 
-    # High-pass (высокочастотные детали)
-    blurred = cv2.GaussianBlur(arr, (0, 0), sigmaX=2.0)
-    high_freq = arr - blurred
+    # ═══ ШАГ 1: Unsharp по средним частотам ═══
+    hp2 = L - cv2.GaussianBlur(L, (0, 0), sigmaX=2.5)
+    hp3 = L - cv2.GaussianBlur(L, (0, 0), sigmaX=6.0)
+    boost = strength * 3.0
+    detail_sum = hp2 * 0.7 + hp3 * 0.4
+    L_sharp = L + detail_sum * boost * deficit
 
-    # Усиление только в мыльных зонах
-    mask = inv_var[..., np.newaxis]
-    result = arr + high_freq * strength * 6.0 * mask
+    # ═══ ШАГ 2: Bilateral ═══
+    L_u8 = np.clip(L_sharp, 0, 255).astype(np.uint8)
+    L_clean = cv2.bilateralFilter(L_u8, d=5, sigmaColor=18, sigmaSpace=7).astype(np.float32)
 
-    result = np.clip(result, 0, 255).astype(np.uint8)
+    # ═══ ШАГ 3: SOFT-CLIP через tanh ═══
+    # Локальное среднее (не медиана — не даёт червей)
+    local_mean = cv2.GaussianBlur(L_clean, (0, 0), sigmaX=3.0)
+
+    # Отклонение от локального среднего
+    excess = L_clean - local_mean
+
+    # CLIP — «мягкая граница», tanh плавно её сжимает
+    CLIP = 14.0
+    scaled = excess / CLIP
+    # tanh(x) даёт плавное сжатие: x → ±1 асимптотически
+    soft_excess = CLIP * np.tanh(scaled)
+
+    L_clipped = local_mean + soft_excess
+
+    # ═══ Финальный микс — только мыльные зоны ═══
+    L_final = L * (1 - deficit) + L_clipped * deficit
+    L_final = np.clip(L_final, 0, 255)
+
+    lab[:, :, 0] = L_final
+    lab = np.clip(lab, 0, 255).astype(np.uint8)
+    result = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
     return Image.fromarray(result, mode="RGB")
 
 
