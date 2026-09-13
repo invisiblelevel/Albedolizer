@@ -2,7 +2,7 @@
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.2.1-blue)
+![Version](https://img.shields.io/badge/version-1.3.0-beta-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -23,6 +23,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - Dark and light pixel check against standards for each texture type
 - Problem zone visualization (heatmap)
 - Detailed statistics: min / max / avg / median / percentiles
+- Soap Removal. Adaptive unsharp mask that fixes blurry patches after AI correction or upscaling.
 
 ### ✨ AI Auto-Correction
 - **Two modes:** AI (via Autolevels XCiT model) or Math (CLAHE + soft-clip)
@@ -38,9 +39,8 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - **ORM** — packed map (AO in R, Roughness in G, Metallic in B)
 - **Edge** — edge map (Sobel via OpenCV)
 
-### 🎯 Texture Presets
-9 texture types with ready-to-use PBR parameters:
-🌳 Wood · 🪨 Stone · ⚙ Metal · 🌍 Ground · 🔴 Rust · 🧱 Brick · 🌿 Leaves · 🍂 Organic · Concrete
+### 🎯 32 Texture Presets in 6 Categories
+**🔥 Metal** · **🌿 Nature** · **🪨 Mineral** · **🧪 Synthetic** · **💧 Special** · **🐾 Fauna**
 
 ### 🗂 Batch Processing
 - Process folders or file lists
@@ -159,7 +159,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.2.1  
+**Version:** 1.3.0  
 **Date:** 2026
 
 ---
@@ -185,6 +185,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - Проверка тёмных и светлых пикселей по стандартам для каждого типа текстуры
 - Визуализация проблемных зон (heatmap)
 - Детальная статистика: min / max / avg / median / перцентили
+- Устранение «мыла». Адаптивный фильтр повышения резкости (unsharp mask), устраняющий размытые участки, возникающие после коррекции или масштабирования с помощью ИИ.
 
 ### ✨ AI-автокоррекция
 - **Два режима:** AI (через модель Autolevels XCiT) или Math (CLAHE + soft-clip)
@@ -200,9 +201,8 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **ORM** — упакованная карта (AO в R, Roughness в G, Metallic в B)
 - **Edge** — карта граней (Sobel через OpenCV)
 
-### 🎯 Пресеты текстур
-9 типов текстур с готовыми параметрами PBR:
-🌳 Дерево · 🪨 Камень · ⚙ Металл · 🌍 Земля · 🔴 Ржавчина · 🧱 Кирпич · 🌿 Листва · 🍂 Органика · Бетон
+### 🎯 32 пресета текстур в 6 категориях
+**🔥 Металл** · **🌿 Природа** · **🪨 Минерал** · **🧪 Синтетика** · **💧 Спецэффекты** · **🐾 Фауна**
 
 ### 🗂 Пакетная обработка
 - Обработка папок или списка файлов
@@ -321,5 +321,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.2.1  
+**Версия:** 1.3.0
 **Дата:** 2026
