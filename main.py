@@ -25,6 +25,40 @@ WALLETS = [
 
 
 # ═══════════════════════════════════════════════════════════
+#  ТЕМЫ
+# ═══════════════════════════════════════════════════════════
+THEME_DARK = {
+    "bg":      "#1a1d23",
+    "panel":   "#20242b",
+    "card":    "#282c34",
+    "input":   "#32373f",
+    "fg":      "#e8eaed",
+    "fg2":     "#9aa0a6",
+    "fg3":     "#5f6368",
+    "accent":  "#5b8dd9",
+    "success": "#4caf50",
+    "danger":  "#e53935",
+    "warn":    "#ff9800",
+    "mode":    ft.ThemeMode.DARK if False else None,  # placeholder — переопределим в main
+}
+
+THEME_LIGHT = {
+    "bg":      "#f0f2f5",
+    "panel":   "#ffffff",
+    "card":    "#e8eaed",
+    "input":   "#dde1e6",
+    "fg":      "#1a1d23",
+    "fg2":     "#5f6368",
+    "fg3":     "#8a8f96",
+    "accent":  "#3d6fb8",
+    "success": "#2e7d32",
+    "danger":  "#c62828",
+    "warn":    "#ef6c00",
+    "mode":    None,
+}
+
+
+# ═══════════════════════════════════════════════════════════
 #  ПРОФИЛИ ТЕКСТУР
 # ═══════════════════════════════════════════════════════════
 TEXTURE_PROFILES = {
@@ -106,7 +140,7 @@ PBR_PRESETS = {
     "leather":        {"strength": 1.1, "smooth": 1.8, "threshold": 0.05, "high_pass": 38, "height_blur": 1.8, "ao_radius": 7,  "ao_intensity": 1.1, "rough_base": 0.65, "rough_var": 0.30, "metallic": "black"},
     "fur":            {"strength": 1.2, "smooth": 2.0, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 8,  "ao_intensity": 1.2, "rough_base": 0.75, "rough_var": 0.30, "metallic": "black"},
     "skin":           {"strength": 0.9, "smooth": 2.0, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 7,  "ao_intensity": 1.0, "rough_base": 0.50, "rough_var": 0.30, "metallic": "black"},
-    "scales":         {"strongth": 1.3, "smooth": 1.5, "threshold": 0.05, "high_pass": 38, "height_blur": 1.8, "ao_radius": 7,  "ao_intensity": 1.3, "rough_base": 0.45, "rough_var": 0.35, "metallic": "black"},
+    "scales":         {"strength": 1.3, "smooth": 1.5, "threshold": 0.05, "high_pass": 38, "height_blur": 1.8, "ao_radius": 7,  "ao_intensity": 1.3, "rough_base": 0.45, "rough_var": 0.35, "metallic": "black"},
 }
 
 PROFILE_CATEGORIES = {
@@ -217,7 +251,7 @@ T = {
         "all_types": "Все типы", "log_title": "ЛОГ",
         "info_btn": "ℹ Инфо", "lang_btn": "🌐 EN",
         "preview_hint": "🖼  Загрузи Albedo-текстуру, чтобы начать",
-        "welcome_1": "👋 Добро пожаловать в Albedolizer v1.3.0-beta",
+        "welcome_1": "👋 Добро пожаловать в Albedolizer v1.3.1-beta",
         "welcome_2": "→ Нажми «📂 Открыть» для начала",
         "log_loaded": "📂 Загружено:", "log_type": "→ Тип:",
         "log_click_check": "→ Нажми «Проверить» для анализа",
@@ -340,7 +374,7 @@ T = {
         "all_types": "All types", "log_title": "LOG",
         "info_btn": "ℹ Info", "lang_btn": "🌐 RU",
         "preview_hint": "🖼  Load an Albedo texture to start",
-        "welcome_1": "👋 Welcome to Albedolizer v1.3.0-beta",
+        "welcome_1": "👋 Welcome to Albedolizer v1.3.1-beta",
         "welcome_2": "→ Click «📂 Open» to start",
         "log_loaded": "📂 Loaded:", "log_type": "→ Type:",
         "log_click_check": "→ Click «Check» to analyze",
@@ -446,69 +480,22 @@ T = {
     },
 }
 
+
 def _detect_system_lang():
     """Определяет язык системы через Windows API. ru → 'ru', остальное → 'en'."""
     try:
         import ctypes
-        # GetUserDefaultUILanguage возвращает LANGID (0x0419 = Russian)
         lang_id = ctypes.windll.kernel32.GetUserDefaultUILanguage()
-        # Проверяем primary language ID (младшие 10 бит)
         primary = lang_id & 0x03FF
-        if primary == 0x19:  # LANG_RUSSIAN
+        if primary == 0x19:
             return "ru"
         return "en"
     except Exception:
-        try:
-            sys_lang = (locale.getdefaultlocale()[0] or "").lower()
-            return "ru" if sys_lang.startswith("ru") else "en"
-        except Exception:
-            return "en"
+        return "en"
+
 
 def main(page: ft.Page):
-    cv2.setNumThreads(os.cpu_count() or 4)
-    page.title = "Albedolizer v1.3.0-beta"
-    page.theme_mode = ft.ThemeMode.DARK
-    page.padding = 0
-    page.spacing = 0
-    page.window.width = 1280
-    page.window.height = 820
-    page.window.opacity = 0.97
-    page.bgcolor = "#1a1d23"
-
-    # Иконка окна
-    if getattr(sys, 'frozen', False):
-        _base = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
-        _icon_path = os.path.join(_base, "icon.ico")
-    else:
-        _icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.ico")
-    if os.path.exists(_icon_path):
-        page.window.icon = _icon_path
-
-    # ═══ ПУТИ К AUTOLEVELS И МОДЕЛИ ═══
-    if getattr(sys, 'frozen', False):
-        _base_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
-    else:
-        _base_dir = os.path.dirname(os.path.abspath(__file__))
-
-    AUTOLEVELS_EXE = os.path.join(_base_dir, "autolevels.exe")
-    AUTOLEVELS_MODEL = os.path.join(_base_dir, "free_xcittiny_wa14.onnx")
-
-    BG = "#1a1d23"
-    PANEL = "#20242b"
-    CARD = "#282c34"
-    INPUT = "#32373f"
-    FG = "#e8eaed"
-    FG2 = "#9aa0a6"
-    FG3 = "#5f6368"
-    ACCENT = "#5b8dd9"
-    SUCCESS = "#4caf50"
-    DANGER = "#e53935"
-    WARN = "#ff9800"
-    FONT = "Segoe UI"
-    PBR_COLOR = "#4caf50"
-    BATCH_COLOR = "#ff9800"
-    COMPRESS_COLOR = "#1565c0"
-
+    # ═══ Состояние ═══
     S = {
         "image_path": None,
         "original": None,
@@ -519,6 +506,7 @@ def main(page: ft.Page):
         "soap_fix_strength": 1.0,
         "last_op": None,
         "lang": _detect_system_lang(),
+        "theme": "dark",
         "log_lines": [],
         "stats_lines": [],
         "pbr_source": None,
@@ -538,11 +526,59 @@ def main(page: ft.Page):
         "batch_files": [],
         "compress_files": [],
         "active_tab": "single",
-        # Compress tab states
         "compress_original": None,
         "compress_corrected": None,
         "compress_path": None,
     }
+
+    # ═══ Цвета темы ═══
+    _theme = THEME_DARK if S["theme"] == "dark" else THEME_LIGHT
+    BG = _theme["bg"]
+    PANEL = _theme["panel"]
+    CARD = _theme["card"]
+    INPUT = _theme["input"]
+    FG = _theme["fg"]
+    FG2 = _theme["fg2"]
+    FG3 = _theme["fg3"]
+    ACCENT = _theme["accent"]
+    SUCCESS = _theme["success"]
+    DANGER = _theme["danger"]
+    WARN = _theme["warn"]
+    FONT = "Segoe UI"
+    PBR_COLOR = SUCCESS
+    BATCH_COLOR = WARN
+    COMPRESS_COLOR = "#1565c0" if S["theme"] == "dark" else "#3d6fb8"
+    SAVE_COLOR = "#6a4a9f"
+    RESET_COLOR = "#555555" if S["theme"] == "dark" else "#9aa0a6"
+    ON_ACCENT = "#ffffff"
+
+    cv2.setNumThreads(os.cpu_count() or 4)
+    page.title = "Albedolizer v1.3.1-beta"
+    page.theme_mode = ft.ThemeMode.DARK if S["theme"] == "dark" else ft.ThemeMode.LIGHT
+    page.padding = 0
+    page.spacing = 0
+    page.window.width = 1280
+    page.window.height = 820
+    page.window.opacity = 0.97
+    page.bgcolor = BG
+
+    # Иконка окна
+    if getattr(sys, 'frozen', False):
+        _base = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+        _icon_path = os.path.join(_base, "icon.ico")
+    else:
+        _icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.ico")
+    if os.path.exists(_icon_path):
+        page.window.icon = _icon_path
+
+    # ═══ ПУТИ К AUTOLEVELS И МОДЕЛИ ═══
+    if getattr(sys, 'frozen', False):
+        _base_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+    else:
+        _base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    AUTOLEVELS_EXE = os.path.join(_base_dir, "autolevels.exe")
+    AUTOLEVELS_MODEL = os.path.join(_base_dir, "free_xcittiny_wa14.onnx")
 
     def t(key):
         return T[S["lang"]].get(key, key)
@@ -669,56 +705,29 @@ def main(page: ft.Page):
         return Image.fromarray(arr_back, mode="RGB")
 
     # ═══ UI ЭЛЕМЕНТЫ ═══
-    S["log_column"] = ft.ListView(
-        spacing=3,
-        auto_scroll=True,
-        expand=True,
-        padding=4,
-    )
-    S["log_column_batch"] = ft.ListView(
-        spacing=3,
-        auto_scroll=True,
-        expand=True,
-        padding=4,
-    )
-    S["log_column_pbr"] = ft.ListView(
-        spacing=3,
-        auto_scroll=True,
-        expand=True,
-        padding=4,
-    )
-    S["log_column_compress"] = ft.ListView(
-        spacing=3,
-        auto_scroll=True,
-        expand=True,
-        padding=4,
-    )
+    S["log_column"] = ft.ListView(spacing=3, auto_scroll=True, expand=True, padding=4)
+    S["log_column_batch"] = ft.ListView(spacing=3, auto_scroll=True, expand=True, padding=4)
+    S["log_column_pbr"] = ft.ListView(spacing=3, auto_scroll=True, expand=True, padding=4)
+    S["log_column_compress"] = ft.ListView(spacing=3, auto_scroll=True, expand=True, padding=4)
 
     S["stats_column"] = ft.Column([], spacing=4)
     S["preview_image"] = ft.Image(src="", visible=False, fit=ft.BoxFit.CONTAIN)
     S["progress_bar"] = ft.ProgressBar(value=None, visible=False, color=ACCENT,
                                         bgcolor=INPUT, height=4, bar_height=4)
-    S["progress_text"] = ft.Text("", color=FG2, size=12,
-                                   font_family=FONT, visible=False)
-    S["pbr_progress_bar"] = ft.ProgressBar(value=None, visible=False,
-                                             color=PBR_COLOR, bgcolor=INPUT,
-                                             height=4, bar_height=4)
-    S["pbr_progress_text"] = ft.Text("", color=FG2, size=12,
-                                       font_family=FONT, visible=False)
-    S["batch_progress_bar"] = ft.ProgressBar(value=0, visible=True,
-                                               color=BATCH_COLOR, bgcolor=INPUT,
-                                               height=4, bar_height=4)
-    S["batch_progress_text"] = ft.Text("", color=FG2, size=12,
-                                         font_family=FONT)
-    S["compress_progress_bar"] = ft.ProgressBar(value=0, visible=True,
-                                                  color=COMPRESS_COLOR, bgcolor=INPUT,
-                                                  height=4, bar_height=4)
-    S["compress_progress_text"] = ft.Text("", color=FG2, size=12,
-                                            font_family=FONT)
+    S["progress_text"] = ft.Text("", color=FG2, size=12, font_family=FONT, visible=False)
+    S["pbr_progress_bar"] = ft.ProgressBar(value=None, visible=False, color=PBR_COLOR,
+                                             bgcolor=INPUT, height=4, bar_height=4)
+    S["pbr_progress_text"] = ft.Text("", color=FG2, size=12, font_family=FONT, visible=False)
+    S["batch_progress_bar"] = ft.ProgressBar(value=0, visible=True, color=BATCH_COLOR,
+                                               bgcolor=INPUT, height=4, bar_height=4)
+    S["batch_progress_text"] = ft.Text("", color=FG2, size=12, font_family=FONT)
+    S["compress_progress_bar"] = ft.ProgressBar(value=0, visible=True, color=COMPRESS_COLOR,
+                                                  bgcolor=INPUT, height=4, bar_height=4)
+    S["compress_progress_text"] = ft.Text("", color=FG2, size=12, font_family=FONT)
     S["buttons"] = {}
 
-    def log(text, color=FG2):
-        S["log_lines"].append((text, color))
+    def log(text, color=None):
+        S["log_lines"].append((text, color or FG2))
         if len(S["log_lines"]) > 200:
             S["log_lines"].pop(0)
         refresh_log()
@@ -737,12 +746,12 @@ def main(page: ft.Page):
         S["stats_lines"].clear()
         S["stats_column"].controls.clear()
 
-    def add_stat(label, value, color=FG2):
-        S["stats_lines"].append((label, value, color))
+    def add_stat(label, value, color=None):
+        S["stats_lines"].append((label, value, color or FG2))
         S["stats_column"].controls.append(
             ft.Row([
                 ft.Text(label, color=FG3, size=13, font_family=FONT, width=95),
-                ft.Text(value, color=color, size=13, font_family="Consolas",
+                ft.Text(value, color=color or FG2, size=13, font_family="Consolas",
                         weight=ft.FontWeight.W_600),
             ], spacing=8)
         )
@@ -870,7 +879,7 @@ def main(page: ft.Page):
             await show_progress(t("progress_fix"))
             await asyncio.sleep(0.15)
 
-            # ═══ РЕЖИМ MATH — только математика, без AI ═══
+            # ═══ РЕЖИМ MATH ═══
             if S["correction_mode"] == "math":
                 log("   → Режим: ∑ математическая коррекция", FG2)
                 result = await asyncio.to_thread(
@@ -898,7 +907,7 @@ def main(page: ft.Page):
                 await hide_progress()
                 return
 
-            # ═══ РЕЖИМ AI — как раньше (AI → fallback при провале) ═══
+            # ═══ РЕЖИМ AI ═══
             import time as _time
             _t0 = _time.time()
             ai_result, ai_ok = await asyncio.to_thread(
@@ -1063,21 +1072,31 @@ def main(page: ft.Page):
         if S["compress_original"] is None:
             return
         try:
+            S["compress_progress_text"].value = t("progress_compress")
+            S["compress_progress_text"].visible = True
+            S["compress_progress_bar"].value = None
             S["compress_progress_bar"].visible = True
             page.update()
             await asyncio.sleep(0.1)
-            result = S["compress_original"].convert("LAB").convert("RGB")
+
+            result = await asyncio.to_thread(
+                lambda: S["compress_original"].convert("LAB").convert("RGB")
+            )
             S["compress_corrected"] = result
             S["compress_preview"].src = f"data:image/png;base64,{pil_to_b64(result)}"
             log(t("log_compress_done"), SUCCESS)
+
             if S["compress_buttons"].get("save"):
                 S["compress_buttons"]["save"].disabled = False
             page.update()
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.15)
+
             S["compress_progress_bar"].visible = False
+            S["compress_progress_text"].visible = False
             page.update()
         except Exception as ex:
             S["compress_progress_bar"].visible = False
+            S["compress_progress_text"].visible = False
             log(f"❌ {t('err')}: {ex}", DANGER)
             page.update()
 
@@ -1088,16 +1107,31 @@ def main(page: ft.Page):
             base = "albedo"
             if S.get("compress_path"):
                 base = os.path.splitext(os.path.basename(S["compress_path"]))[0]
+
             path = await ft.FilePicker().save_file(
                 dialog_title=t("dialog_save_title"),
                 file_name=f"{base}_compressed.png",
                 allowed_extensions=["png", "jpg", "tif"],
             )
-            if path:
-                S["compress_corrected"].save(str(path))
-                log(f"{t('log_saved')} {os.path.basename(str(path))}", SUCCESS)
-                page.update()
+            if not path:
+                return
+
+            S["compress_progress_text"].value = "💾 Сохранение..."
+            S["compress_progress_text"].visible = True
+            S["compress_progress_bar"].value = None
+            S["compress_progress_bar"].visible = True
+            page.update()
+            await asyncio.sleep(0.05)
+
+            await asyncio.to_thread(S["compress_corrected"].save, str(path))
+            log(f"{t('log_saved')} {os.path.basename(str(path))}", SUCCESS)
+
+            S["compress_progress_bar"].visible = False
+            S["compress_progress_text"].visible = False
+            page.update()
         except Exception as ex:
+            S["compress_progress_bar"].visible = False
+            S["compress_progress_text"].visible = False
             log(f"❌ {t('err')}: {ex}", DANGER)
             page.update()
 
@@ -1256,9 +1290,7 @@ def main(page: ft.Page):
                     else:
                         import time as _time
                         _t0 = _time.time()
-                        ai_res, ai_ok = await asyncio.to_thread(
-                            smart_correct_ai, img
-                        )
+                        ai_res, ai_ok = await asyncio.to_thread(smart_correct_ai, img)
                         _dt = _time.time() - _t0
                         log(f"   ⏱ {os.path.basename(fp)}: {_dt:.2f} сек", FG2)
                         if ai_ok and ai_res is not None:
@@ -1494,7 +1526,6 @@ def main(page: ft.Page):
         if base_name in keys:
             S["pbr_batch_index"] = keys.index(base_name)
 
-        # Показываем albedo, либо первую доступную карту
         show_key = "albedo" if "albedo" in result else next(iter(result.keys()), None)
         if show_key:
             S["pbr_preview"].src = f"data:image/png;base64,{pil_to_b64(result[show_key])}"
@@ -1526,10 +1557,9 @@ def main(page: ft.Page):
             return
         S["pbr_batch_index"] = (S["pbr_batch_index"] + 1) % len(keys)
         pbr_load_batch_texture(keys[S["pbr_batch_index"]])
-        # Обновляем выделение кнопок карт
         for k, b in S["pbr_map_buttons"].items():
             b.bgcolor = ACCENT if k == S["pbr_current_map"] else CARD
-            b.content.color = "#fff" if k == S["pbr_current_map"] else FG2
+            b.content.color = ON_ACCENT if k == S["pbr_current_map"] else FG2
         page.update()
 
     def pbr_batch_prev(e=None):
@@ -1540,25 +1570,32 @@ def main(page: ft.Page):
         pbr_load_batch_texture(keys[S["pbr_batch_index"]])
         for k, b in S["pbr_map_buttons"].items():
             b.bgcolor = ACCENT if k == S["pbr_current_map"] else CARD
-            b.content.color = "#fff" if k == S["pbr_current_map"] else FG2
+            b.content.color = ON_ACCENT if k == S["pbr_current_map"] else FG2
         page.update()
 
     async def do_remove_soap(e):
-        if S["corrected"] is None:
+        source = S["corrected"] if S["corrected"] is not None else S["original"]
+        if source is None:
+            log("   ⚠ Сначала загрузи текстуру", WARN)
+            page.update()
             return
         try:
             await show_progress(t("soap_fix_progress"))
             await asyncio.sleep(0.1)
 
             result = await asyncio.to_thread(
-                remove_soap_adaptive, S["corrected"],
-                S["soap_fix_strength"], 15, 25.0     
+                remove_soap_adaptive, source,
+                S["soap_fix_strength"], 15, 25.0, None
             )
             S["corrected"] = result
+            S["last_op"] = "soap_fix"
             S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
             log(t("soap_fix_done"), SUCCESS)
-            page.update()
 
+            if S["buttons"].get("save"): S["buttons"]["save"].disabled = False
+            if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = False
+
+            page.update()
             await asyncio.sleep(0.1)
             await hide_progress()
         except Exception as ex:
@@ -1566,13 +1603,14 @@ def main(page: ft.Page):
             log(f"❌ {t('err')}: {ex}", DANGER)
             page.update()
 
-    def make_btn(label, on_click, color=ACCENT, disabled=False):
+    def make_btn(label, on_click, color=None, disabled=False):
+        color = color or ACCENT
         return ft.FilledButton(
-            content=ft.Text(label, color="#fff", size=14,
+            content=ft.Text(label, color=ON_ACCENT, size=14,
                             font_family=FONT, weight=ft.FontWeight.W_600,
                             text_align=ft.TextAlign.CENTER),
             style=ft.ButtonStyle(
-                bgcolor=color, color="#fff",
+                bgcolor=color, color=ON_ACCENT,
                 padding=ft.Padding.symmetric(vertical=15, horizontal=14),
                 shape=ft.RoundedRectangleBorder(radius=10),
             ),
@@ -1596,7 +1634,7 @@ def main(page: ft.Page):
         ai_btn = ft.Container(
             content=ft.Text(
                 t("correction_ai"),
-                color="#fff" if ai_active else FG2,
+                color=ON_ACCENT if ai_active else FG2,
                 size=12, font_family=FONT,
                 weight=ft.FontWeight.W_600,
                 text_align=ft.TextAlign.CENTER,
@@ -1610,7 +1648,7 @@ def main(page: ft.Page):
         math_btn = ft.Container(
             content=ft.Text(
                 t("correction_math"),
-                color="#fff" if math_active else FG2,
+                color=ON_ACCENT if math_active else FG2,
                 size=12, font_family=FONT,
                 weight=ft.FontWeight.W_600,
                 text_align=ft.TextAlign.CENTER,
@@ -1646,7 +1684,7 @@ def main(page: ft.Page):
             btn = ft.Container(
                 content=ft.Text(
                     label,
-                    color="#fff" if is_active else FG2,
+                    color=ON_ACCENT if is_active else FG2,
                     size=size, font_family=FONT,
                     weight=ft.FontWeight.W_600 if is_active else ft.FontWeight.W_500,
                     text_align=ft.TextAlign.CENTER,
@@ -1686,7 +1724,7 @@ def main(page: ft.Page):
             btn = ft.Container(
                 content=ft.Text(
                     label,
-                    color="#fff" if is_active else FG2,
+                    color=ON_ACCENT if is_active else FG2,
                     size=size, font_family=FONT,
                     weight=ft.FontWeight.W_600 if is_active else ft.FontWeight.W_500,
                     text_align=ft.TextAlign.CENTER,
@@ -1721,7 +1759,7 @@ def main(page: ft.Page):
                 ft.Container(height=16),
                 ft.Row([ft.Text(f"{t('about_version')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("1.3.0-beta", color=FG, size=12,
+                        ft.Text("1.3.1-beta", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_build')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
@@ -1794,7 +1832,7 @@ def main(page: ft.Page):
             about_content.visible = name == "about"
             support_content.visible = name == "support"
             for k, b in tab_btns.items():
-                b.content.color = "#fff" if k == name else FG2
+                b.content.color = ON_ACCENT if k == name else FG2
                 b.bgcolor = ACCENT if k == name else CARD
             page.update()
 
@@ -1839,7 +1877,6 @@ def main(page: ft.Page):
         return dlg
 
     def show_fallback_dialog(current_img, stats):
-        """Диалог выбора: применить fallback или оставить AI."""
         dialog_ref = {"dlg": None}
 
         async def apply_fallback(e=None):
@@ -1934,15 +1971,42 @@ def main(page: ft.Page):
         S["lang"] = "en" if S["lang"] == "ru" else "ru"
         rebuild_ui()
 
+    def toggle_theme(e):
+        nonlocal BG, PANEL, CARD, INPUT, FG, FG2, FG3, ACCENT, SUCCESS, DANGER, WARN
+        nonlocal PBR_COLOR, BATCH_COLOR, COMPRESS_COLOR, SAVE_COLOR, RESET_COLOR
+
+        S["theme"] = "light" if S["theme"] == "dark" else "dark"
+        th = THEME_DARK if S["theme"] == "dark" else THEME_LIGHT
+
+        BG = th["bg"]
+        PANEL = th["panel"]
+        CARD = th["card"]
+        INPUT = th["input"]
+        FG = th["fg"]
+        FG2 = th["fg2"]
+        FG3 = th["fg3"]
+        ACCENT = th["accent"]
+        SUCCESS = th["success"]
+        DANGER = th["danger"]
+        WARN = th["warn"]
+        PBR_COLOR = th["success"]
+        BATCH_COLOR = th["warn"]
+        COMPRESS_COLOR = "#1565c0" if S["theme"] == "dark" else "#3d6fb8"
+        RESET_COLOR = "#555555" if S["theme"] == "dark" else "#9aa0a6"
+
+        page.bgcolor = BG
+        page.theme_mode = ft.ThemeMode.DARK if S["theme"] == "dark" else ft.ThemeMode.LIGHT
+        rebuild_ui()
+
     def build_screen():
         buttons = S["buttons"]
         buttons["load"] = make_btn(t("load"), open_file, ACCENT)
         buttons["check"] = make_btn(t("check"), do_check, ACCENT,
                                      disabled=(S["original"] is None))
         buttons["fix"] = make_btn(t("fix"), do_auto_correct, SUCCESS, disabled=True)
-        buttons["save"] = make_btn(t("save"), open_save, "#6a4a9f",
+        buttons["save"] = make_btn(t("save"), open_save, SAVE_COLOR,
                                     disabled=(S["corrected"] is None))
-        buttons["reset"] = make_btn(t("reset"), do_reset, "#555555",
+        buttons["reset"] = make_btn(t("reset"), do_reset, RESET_COLOR,
                                      disabled=(S["corrected"] is None))
 
         toolbar = ft.Row([
@@ -2013,7 +2077,7 @@ def main(page: ft.Page):
                     on_change=lambda e: S.update({"soap_fix_strength": e.control.value}),
                 ),
                 ft.Container(height=4),
-                make_btn(t("soap_fix_button"), do_remove_soap, "#6a4a9f"),
+                make_btn(t("soap_fix_button"), do_remove_soap, SAVE_COLOR),
                 ft.Container(height=14),
                 ft.Divider(color=FG3, height=1),
                 ft.Container(height=10),
@@ -2105,14 +2169,14 @@ def main(page: ft.Page):
         batch_nav_inner = ft.Container(
             content=ft.Row([
                 ft.Container(
-                    content=ft.Text("◀", color="#fff", size=14),
+                    content=ft.Text("◀", color=FG, size=14),
                     bgcolor=INPUT, border_radius=6,
                     padding=ft.Padding.symmetric(vertical=6, horizontal=10),
                     ink=True, on_click=lambda e: pbr_batch_prev(),
                 ),
                 batch_nav_label,
                 ft.Container(
-                    content=ft.Text("▶", color="#fff", size=14),
+                    content=ft.Text("▶", color=FG, size=14),
                     bgcolor=INPUT, border_radius=6,
                     padding=ft.Padding.symmetric(vertical=6, horizontal=10),
                     ink=True, on_click=lambda e: pbr_batch_next(),
@@ -2141,8 +2205,7 @@ def main(page: ft.Page):
             ], expand=True),
             bgcolor=CARD, border_radius=12, padding=10, expand=True,
         )
-        
-        # Восстановление превью и активной карты после rebuild
+
         if S["pbr_result"] and S.get("pbr_batch_selected"):
             key = S["pbr_current_map"] if S["pbr_current_map"] in S["pbr_result"] else "albedo"
             if key in S["pbr_result"]:
@@ -2162,7 +2225,6 @@ def main(page: ft.Page):
         def show_pbr_map(key):
             S["pbr_current_map"] = key
             if S["pbr_batch_selected"] and S["pbr_result"] and key in S["pbr_result"]:
-                # batch-режим: показываем карту из result
                 pbr_preview.src = f"data:image/png;base64,{pil_to_b64(S['pbr_result'][key])}"
                 pbr_preview.visible = True
             elif key == "albedo":
@@ -2178,14 +2240,14 @@ def main(page: ft.Page):
                     pbr_preview.visible = True
             for k, b in map_buttons.items():
                 b.bgcolor = ACCENT if k == key else CARD
-                b.content.color = "#fff" if k == key else FG2
+                b.content.color = ON_ACCENT if k == key else FG2
             page.update()
 
         map_row = ft.Row([], spacing=4)
         for key, label in map_keys:
             is_active = key == S["pbr_current_map"]
             b = ft.Container(
-                content=ft.Text(label, color="#fff" if is_active else FG2,
+                content=ft.Text(label, color=ON_ACCENT if is_active else FG2,
                                 size=12, font_family=FONT,
                                 weight=ft.FontWeight.W_600),
                 bgcolor=ACCENT if is_active else CARD,
@@ -2255,8 +2317,8 @@ def main(page: ft.Page):
         pbr_load_btn = make_btn(t("pbr_load"), pbr_do_load, ACCENT)
         pbr_gen_btn = make_btn(t("pbr_gen"), pbr_do_generate, SUCCESS,
                                 disabled=(S["pbr_source"] is None))
-        pbr_batch_btn = make_btn(t("pbr_batch"), pbr_do_batch, "#1565c0")
-        pbr_save_btn = make_btn(t("pbr_save"), pbr_do_save, "#6a4a9f",
+        pbr_batch_btn = make_btn(t("pbr_batch"), pbr_do_batch, COMPRESS_COLOR)
+        pbr_save_btn = make_btn(t("pbr_save"), pbr_do_save, SAVE_COLOR,
                                  disabled=(S["pbr_result"] is None))
 
         S["pbr_buttons"] = {
@@ -2309,7 +2371,7 @@ def main(page: ft.Page):
         compress_open_btn = make_btn(t("load"), compress_open_file, ACCENT)
         compress_run_btn = make_btn(t("compress_run"), compress_do, COMPRESS_COLOR,
                                      disabled=True)
-        compress_save_btn = make_btn(t("save"), compress_save, "#6a4a9f",
+        compress_save_btn = make_btn(t("save"), compress_save, SAVE_COLOR,
                                       disabled=True)
         S["compress_buttons"] = {
             "open": compress_open_btn,
@@ -2354,15 +2416,15 @@ def main(page: ft.Page):
                         color=FG3, font_family=FONT),
                 ft.Container(height=6),
                 compress_sel_row,
-                ft.Container(height=8),
-                S["compress_progress_bar"],
-                S["compress_progress_text"],
             ], spacing=6),
             bgcolor=PANEL, border_radius=12, padding=16,
         )
 
         compress_view = ft.Container(
             content=ft.Column([
+                S["compress_progress_bar"],
+                S["compress_progress_text"],
+                ft.Container(height=6),
                 compress_single_card,
                 ft.Container(height=8),
                 compress_batch_card,
@@ -2413,6 +2475,7 @@ def main(page: ft.Page):
             S["active_tab"] = name
             for k, c in tab_btns_local.items():
                 c.bgcolor = ACCENT if k == name else CARD
+                c.content.color = ON_ACCENT if k == name else FG
             single_view.visible = name == "single"
             pbr_view.visible = name == "pbr"
             compress_view.visible = name == "compress"
@@ -2421,7 +2484,7 @@ def main(page: ft.Page):
 
         def make_tab(key, label):
             c = ft.Container(
-                content=ft.Text(label, color="#fff", size=14, font_family=FONT,
+                content=ft.Text(label, color=ON_ACCENT, size=14, font_family=FONT,
                                 weight=ft.FontWeight.W_600),
                 bgcolor=ACCENT if key == "single" else CARD,
                 border_radius=10,
@@ -2440,6 +2503,8 @@ def main(page: ft.Page):
 
         set_tab(S["active_tab"])
 
+        theme_icon = "☀" if S["theme"] == "dark" else "🌙"
+
         header = ft.Container(
             content=ft.Row([
                 ft.Column([
@@ -2448,7 +2513,7 @@ def main(page: ft.Page):
                                 weight=ft.FontWeight.BOLD,
                                 color=ACCENT, font_family=FONT),
                         ft.Container(
-                            content=ft.Text("v1.3.0-beta", size=10, color=FG2,
+                            content=ft.Text("v1.3.1-beta", size=10, color=FG2,
                                             font_family=FONT,
                                             weight=ft.FontWeight.W_600),
                             bgcolor=CARD, border_radius=6,
@@ -2458,6 +2523,15 @@ def main(page: ft.Page):
                     ft.Text(t("subtitle"), size=11, color=FG2, font_family=FONT),
                 ], spacing=2),
                 ft.Container(expand=True),
+                ft.Container(
+                    content=ft.Text(theme_icon, color=FG, size=14,
+                                    font_family=FONT),
+                    bgcolor=CARD, border_radius=8,
+                    padding=ft.Padding.symmetric(vertical=10, horizontal=16),
+                    ink=True, on_click=toggle_theme,
+                    tooltip="Toggle theme",
+                ),
+                ft.Container(width=8),
                 ft.Container(
                     content=ft.Text(t("lang_btn"), color=FG, size=13,
                                     font_family=FONT, weight=ft.FontWeight.W_600),
