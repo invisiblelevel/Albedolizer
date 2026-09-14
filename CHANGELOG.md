@@ -2,6 +2,22 @@
 
 All notable changes to Albedolizer are documented in this file.
 
+
+## [1.3.1-beta] — 2026-09-14
+
+### ✨ Added
+- **Light theme** — switch between dark and light theme with the ☀ / 🌙 button in the header
+- **Theme toggle** in the header, next to the language switcher
+
+### 🐛 Fixed
+- Progress bar now shows during single compression and save in the Compress tab
+
+### 🛠 Improved
+- Fixed typo in the "Scales" preset (`strongth` → `strength`)
+- Minor code cleanup
+
+---
+
 ## [1.3.0-beta] — 2026-09-13
 
 ### ✨ Added
