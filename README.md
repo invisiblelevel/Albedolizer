@@ -2,7 +2,7 @@
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.3.0--beta-blue)
+![Version](https://img.shields.io/badge/version-1.3.0--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -24,6 +24,8 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - Problem zone visualization (heatmap)
 - Detailed statistics: min / max / avg / median / percentiles
 - Soap Removal. Adaptive unsharp mask that fixes blurry patches after AI correction or upscaling.
+### 🌓 Themes
+- Dark and light theme with one-click toggle in the header.
 
 ### ✨ AI Auto-Correction
 - **Two modes:** AI (via Autolevels XCiT model) or Math (CLAHE + soft-clip)
@@ -159,7 +161,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.3.0  
+**Version:** 1.3.1-beta  
 **Date:** 2026
 
 ---
@@ -186,6 +188,8 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - Визуализация проблемных зон (heatmap)
 - Детальная статистика: min / max / avg / median / перцентили
 - Устранение «мыла». Адаптивный фильтр повышения резкости (unsharp mask), устраняющий размытые участки, возникающие после коррекции или масштабирования с помощью ИИ.
+### 🌓 Темы
+- Тёмная и светлая тема с переключением одной кнопкой в хедере.
 
 ### ✨ AI-автокоррекция
 - **Два режима:** AI (через модель Autolevels XCiT) или Math (CLAHE + soft-clip)
@@ -321,5 +325,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.3.0
+**Версия:** 1.3.1-beta
 **Дата:** 2026
