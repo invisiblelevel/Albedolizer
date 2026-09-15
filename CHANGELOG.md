@@ -3,6 +3,23 @@
 All notable changes to Albedolizer are documented in this file.
 
 
+## [1.3.3-beta] — 2026-09-15
+
+### ✨ Added
+- **Simple / Advanced modes** — Simple mode hides all advanced tools and gives you one-click workflow (Open → AI correct → Saturation boost). Switch via header button.
+- **Saturation boost** — slider (0.8–1.5) + button to fix washed-out colors after AI correction. Works in HSV, preserves hue and brightness.
+- **Tiling checker** — 3×3 preview button to spot seams on tileable textures.
+- **16-bit PNG output** — Height and Normal maps can now be saved in 16-bit for pro pipelines.
+- **8 / 16-bit toggle** in PBR parameters panel.
+
+### 🛠 Improved
+- Info dialog text now scrollable — long help text no longer overflows
+- Internal PBR pipeline runs in float32 for higher precision
+- Extracted `ao_range` from hardcoded value into a parameter
+- Removed dead `mode` field from theme dicts
+
+---
+
 ## [1.3.2-beta] — 2026-09-15
 
 ### ✨ Added
