@@ -3,6 +3,19 @@
 All notable changes to Albedolizer are documented in this file.
 
 
+## [1.4.0-beta] — 2026-09-15
+
+### ✨ Added
+- **Built-in 3D viewer** (`viewer.exe`) — real-time PBR preview via OpenGL (Moderngl + GLFW). Rotate with LMB, zoom with wheel, HDRI lighting with blurred reflections
+- **Built-in HTML manual** — full user guide with screenshots and annotations, RU/EN switch, opens via **Info → 📖 Manual** button
+- **Inno Setup installer** — single `Albedolizer_Setup_v1.4.0-beta.exe` for clean installation to Program Files
+- **9 annotated screenshots** in the manual (Simple, Type, PBR, Viewer, Advanced, Batch, Info, Compress, Adv toggle)
+- Smart file lookup: exe first checks inside itself (`_MEIPASS`), then falls back to its own folder
+
+  ### 🛠 Improved
+- `open_manual()` now uses the shared `_base_dir` with proper fallback
+- Version bumped to 1.4.0-beta across UI, About dialog, and installer
+
 ## [1.3.3-beta] — 2026-09-15
 
 ### ✨ Added
