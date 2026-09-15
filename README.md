@@ -1,8 +1,9 @@
+markdown
 # ◐ Albedolizer
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.3.3--beta-orange)
+![Version](https://img.shields.io/badge/version-1.4.0--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -13,7 +14,7 @@
 
 ## 📖 What is it
 
-Albedolizer is a tool for 3D artists, game designers, and anyone working with PBR textures. It checks Albedo maps against standards, automatically corrects color via an AI model, and generates a full set of PBR maps.
+Albedolizer is a tool for 3D artists, game designers, and anyone working with PBR textures. It checks Albedo maps against standards, automatically corrects color via an AI model, generates a full set of PBR maps, and lets you preview the result in a built-in 3D viewer.
 
 ---
 
@@ -23,10 +24,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - Dark and light pixel check against standards for each texture type
 - Problem zone visualization (heatmap)
 - Detailed statistics: min / max / avg / median / percentiles
-- Soap Removal. Adaptive unsharp mask that fixes blurry patches after AI correction or upscaling.
-### 🌓 Themes
-- Dark and light theme with one-click toggle in the header.
-- **Simple / Advanced modes** — one-click workflow or full control
+- **Soap removal** — adaptive unsharp mask that fixes blurry patches after AI correction or upscaling
 
 ### ✨ AI Auto-Correction
 - **Two modes:** AI (via Autolevels XCiT model) or Math (CLAHE + soft-clip)
@@ -42,8 +40,20 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - **Metallic** — metalness (black / white / auto)
 - **ORM** — packed map (AO in R, Roughness in G, Metallic in B)
 - **Edge** — edge map (Sobel via OpenCV)
+- **16-bit PNG output** — Height and Normal maps in full precision
 
-### 🎯 32 Texture Presets in 6 Categories
+### 👁 Built-in 3D Viewer
+- Real-time PBR preview via OpenGL (`viewer.exe`)
+- Rotate with LMB, zoom with mouse wheel
+- Powered by Moderngl + GLFW
+- HDRI environment lighting with blurred reflections
+
+### 📖 Built-in Manual
+- Full HTML manual with screenshots and annotations
+- Russian / English — switch inside the manual
+- Opens in your browser from the **Info → 📖 Manual** button
+
+### 🎯 37 Texture Presets in 6 Categories
 **🔥 Metal** · **🌿 Nature** · **🪨 Mineral** · **🧪 Synthetic** · **💧 Special** · **🐾 Fauna**
 
 ### 🗂 Batch Processing
@@ -51,42 +61,33 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - Two modes: AI correction or compression
 - Progress bar with ETA
 
+### 🌓 Themes & Modes
+- Dark and light theme with one-click toggle
+- **Simple / Advanced modes** — one-click workflow or full control
+- Tiling checker (3×3 preview) to spot seams
+
 ### 🌐 Interface
-- Russian / English
-- Dark theme
+- Russian / English with auto-detection
 - Interactive preview with zoom (0.5x–8x)
 
 ---
 
 ## 🚀 Installation
 
-### Pre-built binary (recommended)
+### Installer (recommended)
 
-1. Download `Albedolizer.exe` from the [latest release](../../releases/latest)
-2. Run it — no installation required
-3. Windows 10/11, 64-bit
+1. Download `Albedolizer_Setup_v1.4.0-beta.exe` from the [latest release](../../releases/latest)
+2. Run the installer — it places everything in `Program Files\Albedolizer`
+3. Launch from Start Menu or Desktop shortcut
+
+**Requirements:** Windows 10/11, 64-bit
 
 ### From source
 
-```bash
-git clone https://github.com/invisiblelevel/Albedolizer.git
-cd Albedolizer
-pip install -r requirements.txt
-python main.py
-```
-
-### Building the exe
-
-```bash
-python -m PyInstaller --onefile --windowed --name Albedolizer ^
-  --icon=icon.ico ^
-  --add-data "autolevels.exe;." ^
-  --add-data "free_xcittiny_wa14.onnx;." ^
-  --add-data "icon.ico;." ^
-  --clean main.py
-```
-
-Output: `dist/Albedolizer.exe`
+    git clone https://github.com/invisiblelevel/Albedolizer.git
+    cd Albedolizer
+    pip install -r requirements.txt
+    python main.py
 
 ---
 
@@ -99,17 +100,15 @@ Output: `dist/Albedolizer.exe`
 4. If FAIL → **✨ Auto-Correct** (AI + fallback)
 5. **💾 Save** the result
 
-### PBR generation
+### PBR generation + 3D preview
 1. **🎨 PBR** tab
 2. **📂 Load Albedo**
 3. Pick a **preset** (sliders auto-tune)
 4. Adjust sliders if needed
 5. **🎨 Generate** → 7 maps
 6. Switch between maps with buttons on top
-7. **💾 Save all** — creates a `<name>_pbr/` folder
-
-8. **16-bit PNG output** — Height and Normal maps in full precision
-9. **Tiling checker** — 3×3 preview to spot seams
+7. **👁 3D Preview** — opens the OpenGL viewer
+8. **💾 Save all** — creates a `<name>_pbr/` folder
 
 ### Batch processing
 1. **Batch** tab
@@ -124,6 +123,9 @@ Output: `dist/Albedolizer.exe`
 3. **🗜 Compress** or **▶ Compress folder**
 4. Output to `_compressed` folder next to sources
 
+### Manual
+Click **ℹ Info** in the header → **📖 Manual** tab.
+
 ---
 
 ## 🛠 Tech Stack
@@ -132,24 +134,8 @@ Output: `dist/Albedolizer.exe`
 - **[NumPy](https://numpy.org/)** — math and array operations
 - **[Pillow](https://python-pillow.org/)** — image processing
 - **[OpenCV](https://opencv.org/)** — Sobel filters for Edge Map
+- **[Moderngl](https://moderngl.readthedocs.io/)** + **[GLFW](https://www.glfw.org/)** — 3D viewer
 - **Autolevels** (XCiT-tiny) — AI color correction model
-
----
-
-## 📁 Project Structure
-
-```
-Albedolizer/
-├── main.py                  # Main file: UI and logic
-├── pbr_generator.py         # PBR map generator
-├── autolevels.exe           # AI correction (external process)
-├── free_xcittiny_wa14.onnx  # AI model
-├── icon.ico                 # App icon
-├── main.spec                # PyInstaller config
-├── requirements.txt
-├── README.md
-└── LICENSE
-```
 
 ---
 
@@ -166,7 +152,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.3.3-beta  
+**Version:** 1.4.0-beta  
 **Date:** 2026
 
 ---
@@ -182,7 +168,7 @@ MIT — free to use, including in commercial projects.
 
 ## 📖 Что это
 
-Albedolizer — инструмент для 3D-художников, геймдизайнеров и всех, кто работает с PBR-текстурами. Он проверяет Albedo-карты на соответствие стандартам, автоматически корректирует цвет через AI-модель и генерирует полный набор PBR-карт.
+Albedolizer — инструмент для 3D-художников, геймдизайнеров и всех, кто работает с PBR-текстурами. Он проверяет Albedo-карты на соответствие стандартам, автоматически корректирует цвет через AI-модель, генерирует полный набор PBR-карт и позволяет посмотреть результат во встроенном 3D-вьюере.
 
 ---
 
@@ -192,10 +178,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - Проверка тёмных и светлых пикселей по стандартам для каждого типа текстуры
 - Визуализация проблемных зон (heatmap)
 - Детальная статистика: min / max / avg / median / перцентили
-- Устранение «мыла». Адаптивный фильтр повышения резкости (unsharp mask), устраняющий размытые участки, возникающие после коррекции или масштабирования с помощью ИИ.
-### 🌓 Темы
-- Тёмная и светлая тема с переключением одной кнопкой в хедере.
-- **Simple / Advanced режимы** — workflow в одну кнопку или полный контроль
+- **Устранение «мыла»** — адаптивный unsharp mask, чинит размытые участки после AI-коррекции
 
 ### ✨ AI-автокоррекция
 - **Два режима:** AI (через модель Autolevels XCiT) или Math (CLAHE + soft-clip)
@@ -211,11 +194,20 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **Metallic** — металличность (чёрная / белая / авто)
 - **ORM** — упакованная карта (AO в R, Roughness в G, Metallic в B)
 - **Edge** — карта граней (Sobel через OpenCV)
- 
 - **16-битный PNG** — Height и Normal в полной точности
-- **Тайлинг-чекер** — 3×3 превью для поиска швов
 
-### 🎯 32 пресета текстур в 6 категориях
+### 👁 Встроенный 3D-вьюер
+- Просмотр PBR в реальном времени через OpenGL (`viewer.exe`)
+- Вращение ЛКМ, зум колесом
+- На базе Moderngl + GLFW
+- HDRI-освещение с размытыми отражениями
+
+### 📖 Встроенный мануал
+- Полный HTML-мануал со скринами и разметкой
+- Русский / English — переключение внутри мануала
+- Открывается из **Info → 📖 Мануал**
+
+### 🎯 37 пресетов текстур в 6 категориях
 **🔥 Металл** · **🌿 Природа** · **🪨 Минерал** · **🧪 Синтетика** · **💧 Спецэффекты** · **🐾 Фауна**
 
 ### 🗂 Пакетная обработка
@@ -223,42 +215,33 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - Два режима: AI-коррекция или сжатие
 - Прогресс-бар с ETA
 
+### 🌓 Темы и режимы
+- Тёмная и светлая тема одной кнопкой
+- **Simple / Advanced режимы** — workflow в одну кнопку или полный контроль
+- Тайлинг-чекер (3×3) для поиска швов
+
 ### 🌐 Интерфейс
-- Русский / English
-- Тёмная тема
+- Русский / English с автоопределением системы
 - Интерактивное превью с зумом (0.5x–8x)
 
 ---
 
 ## 🚀 Установка
 
-### Готовый билд (рекомендуется)
+### Инсталлер (рекомендуется)
 
-1. Скачай `Albedolizer.exe` из [последнего релиза](../../releases/latest)
-2. Запусти — установка не требуется
-3. Windows 10/11, 64-bit
+1. Скачай `Albedolizer_Setup_v1.4.0-beta.exe` из [последнего релиза](../../releases/latest)
+2. Запусти установщик — всё встанет в `Program Files\Albedolizer`
+3. Запускай из меню Пуск или ярлыка на рабочем столе
+
+**Требования:** Windows 10/11, 64-bit
 
 ### Из исходников
 
-```bash
-git clone https://github.com/invisiblelevel/Albedolizer.git
-cd Albedolizer
-pip install -r requirements.txt
-python main.py
-```
-
-### Сборка exe
-
-```bash
-python -m PyInstaller --onefile --windowed --name Albedolizer ^
-  --icon=icon.ico ^
-  --add-data "autolevels.exe;." ^
-  --add-data "free_xcittiny_wa14.onnx;." ^
-  --add-data "icon.ico;." ^
-  --clean main.py
-```
-
-Готовый файл: `dist/Albedolizer.exe`
+    git clone https://github.com/invisiblelevel/Albedolizer.git
+    cd Albedolizer
+    pip install -r requirements.txt
+    python main.py
 
 ---
 
@@ -271,14 +254,15 @@ python -m PyInstaller --onefile --windowed --name Albedolizer ^
 4. Если FAIL → **✨ Автокоррекция** (AI + fallback)
 5. **💾 Сохранить** результат
 
-### PBR-генерация
+### PBR-генерация + 3D-превью
 1. Вкладка **🎨 PBR**
 2. **📂 Загрузить Albedo**
 3. Выбери **пресет** (слайдеры настроятся автоматически)
 4. При необходимости подкрути параметры
 5. **🎨 Сгенерировать** → 7 карт
 6. Переключайся между картами кнопками сверху
-7. **💾 Сохранить все** — создастся папка `<имя>_pbr/`
+7. **👁 3D Preview** — открывает OpenGL-вьюер
+8. **💾 Сохранить все** — создастся папка `<имя>_pbr/`
 
 ### Пакетная обработка
 1. Вкладка **Пакетная**
@@ -293,6 +277,9 @@ python -m PyInstaller --onefile --windowed --name Albedolizer ^
 3. **🗜 Сжать** или **▶ Сжать папку**
 4. Результат в папке `_compressed` рядом с исходниками
 
+### Мануал
+Нажми **ℹ Инфо** в хедере → вкладка **📖 Мануал**.
+
 ---
 
 ## 🛠 Технологии
@@ -301,24 +288,8 @@ python -m PyInstaller --onefile --windowed --name Albedolizer ^
 - **[NumPy](https://numpy.org/)** — математика и работа с массивами
 - **[Pillow](https://python-pillow.org/)** — работа с изображениями
 - **[OpenCV](https://opencv.org/)** — Sobel-фильтры для Edge Map
+- **[Moderngl](https://moderngl.readthedocs.io/)** + **[GLFW](https://www.glfw.org/)** — 3D-вьюер
 - **Autolevels** (XCiT-tiny) — AI-модель цветокоррекции
-
----
-
-## 📁 Структура проекта
-
-```
-Albedolizer/
-├── main.py                  # Главный файл: UI и логика
-├── pbr_generator.py         # Генератор PBR-карт
-├── autolevels.exe           # AI-коррекция (внешний процесс)
-├── free_xcittiny_wa14.onnx  # AI-модель
-├── icon.ico                 # Иконка приложения
-├── main.spec                # Конфиг PyInstaller
-├── requirements.txt
-├── README.md
-└── LICENSE
-```
 
 ---
 
@@ -335,5 +306,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.3.3-beta
+**Версия:** 1.4.0-beta  
 **Дата:** 2026
