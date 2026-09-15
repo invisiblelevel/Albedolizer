@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Albedolizer — Manual</title>
+<style>
+  :root {
+    --bg: #1a1d23;
+    --panel: #20242b;
+    --card: #282c34;
+    --input: #32373f;
+    --fg: #e8eaed;
+    --fg2: #9aa0a6;
+    --fg3: #5f6368;
+    --accent: #5b8dd9;
+    --success: #4caf50;
+    --danger: #e53935;
+    --warn: #ff9800;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--fg);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.6;
+  }
+  .wrapper { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  header {
+    display: flex; align-items: center; gap: 16px;
+    padding-bottom: 24px; border-bottom: 2px solid var(--card);
+    margin-bottom: 32px;
+  }
+  header h1 { margin: 0; font-size: 32px; color: var(--accent); }
+  header .version {
+    background: var(--card); color: var(--fg2);
+    padding: 3px 10px; border-radius: 6px;
+    font-size: 13px; font-weight: 600;
+  }
+  .lang-switch { margin-left: auto; display: flex; gap: 8px; }
+  .lang-switch button {
+    background: var(--card); color: var(--fg2);
+    border: none; padding: 10px 20px; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .lang-switch button.active { background: var(--accent); color: #fff; }
+  .lang-switch button:hover { background: var(--input); }
+  .lang-switch button.active:hover { background: var(--accent); }
+
+  .toc {
+    background: var(--panel); border-radius: 12px;
+    padding: 24px; margin-bottom: 40px;
+  }
+  .toc h2 {
+    margin: 0 0 16px; font-size: 16px;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--fg3);
+  }
+  .toc ol {
+    margin: 0; padding-left: 20px;
+    column-count: 2; column-gap: 40px;
+  }
+  .toc li { margin-bottom: 8px; break-inside: avoid; }
+  .toc a { color: var(--accent); text-decoration: none; font-size: 15px; }
+  .toc a:hover { text-decoration: underline; }
+
+  section { margin-bottom: 60px; scroll-margin-top: 20px; }
+  section h2 {
+    font-size: 24px; color: var(--accent);
+    margin: 0 0 8px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--card);
+  }
+  section h3 { font-size: 18px; margin: 24px 0 8px; color: var(--fg); }
+  section p, section li { color: var(--fg2); font-size: 15px; }
+  section strong { color: var(--fg); }
+  section code {
+    background: var(--input); color: var(--success);
+    padding: 2px 6px; border-radius: 4px;
+    font-family: 'Consolas', monospace; font-size: 13px;
+  }
+  .back-top {
+    display: inline-block; margin-top: 12px;
+    font-size: 13px; color: var(--fg3); text-decoration: none;
+  }
+  .back-top:hover { color: var(--accent); }
+
+  .shot {
+    position: relative; display: inline-block; width: 100%;
+    margin: 16px 0 24px; border-radius: 12px;
+    overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .shot img { width: 100%; display: block; }
+  .hl {
+    position: absolute; border: 3px solid red;
+    border-radius: 6px; pointer-events: none;
+  }
+  .hl.yellow { border-color: #ff9800; }
+  .hl.blue { border-color: #5b8dd9; }
+  .hl.green { border-color: #4caf50; }
+  .hl .num {
+    position: absolute; top: -14px; left: -14px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: red; color: #fff; font-weight: bold;
+    font-size: 15px; text-align: center; line-height: 28px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  }
+  .hl.yellow .num { background: #ff9800; }
+  .hl.blue .num { background: #5b8dd9; }
+  .hl.green .num { background: #4caf50; }
+
+  .legend {
+    background: var(--panel); border-radius: 8px;
+    padding: 14px 18px; margin-bottom: 16px;
+    font-size: 14px; color: var(--fg2);
+  }
+  .legend strong { color: var(--fg); }
+  .legend .swatch {
+    display: inline-block; width: 14px; height: 14px;
+    border-radius: 3px; margin: 0 6px 0 12px;
+    vertical-align: middle;
+  }
+  .swatch.red { background: #e53935; }
+  .swatch.yellow { background: #ff9800; }
+  .swatch.blue { background: #5b8dd9; }
+
+  .en, .ru { display: none; }
+  html[data-lang="ru"] .ru { display: block; }
+  html[data-lang="ru"] .ru.inline { display: inline; }
+  html[data-lang="en"] .en { display: block; }
+  html[data-lang="en"] .en.inline { display: inline; }
+
+  @media (max-width: 700px) {
+    .toc ol { column-count: 1; }
+    header h1 { font-size: 24px; }
+    .wrapper { padding: 24px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+<header>
+  <h1>◐ Albedolizer</h1>
+  <span class="version">v1.3.3-beta</span>
+  <div class="lang-switch">
+    <button id="btn-ru" onclick="setLang('ru')">RU</button>
+    <button id="btn-en" class="active" onclick="setLang('en')">EN</button>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2><span class="ru">📑 Содержание</span><span class="en">📑 Table of Contents</span></h2>
+  <ol>
+    <li><a href="#quickstart"><span class="ru inline">Быстрый старт</span><span class="en inline">Quick Start</span></a></li>
+    <li><a href="#single"><span class="ru inline">Одиночная</span><span class="en inline">Single</span></a></li>
+    <li><a href="#pbr"><span class="ru inline">PBR + Viewer</span><span class="en inline">PBR + Viewer</span></a></li>
+    <li><a href="#batch"><span class="ru inline">Пакетная</span><span class="en inline">Batch</span></a></li>
+    <li><a href="#compress"><span class="ru inline">Сжатие</span><span class="en inline">Compression</span></a></li>
+    <li><a href="#advanced"><span class="ru inline">Advanced режим</span><span class="en inline">Advanced Mode</span></a></li>
+    <li><a href="#info"><span class="ru inline">Окно Info</span><span class="en inline">Info Dialog</span></a></li>
+    <li><a href="#faq"><span class="ru inline">FAQ</span><span class="en inline">FAQ</span></a></li>
+  </ol>
+</nav>
+
+<!-- ═══ 1. БЫСТРЫЙ СТАРТ ═══ -->
+<section id="quickstart">
+  <h2><span class="ru">1. Быстрый старт</span><span class="en">1. Quick Start</span></h2>
+
+  <div class="legend">
+    <strong class="ru inline">Легенда:</strong><strong class="en inline">Legend:</strong>
+    <span class="swatch red"></span><span class="ru inline">Главное</span><span class="en inline">Main</span>
+    <span class="swatch yellow"></span><span class="ru inline">Второстепенное</span><span class="en inline">Secondary</span>
+    <span class="swatch blue"></span><span class="ru inline">Инфо</span><span class="en inline">Info</span>
+  </div>
+
+  <p class="ru"><strong>Simple режим — три шага:</strong></p>
+  <p class="en"><strong>Simple mode — three steps:</strong></p>
+  <ol>
+    <li><span class="ru inline">Выбери тип текстуры справа</span><span class="en inline">Pick texture type on the right</span></li>
+    <li><span class="ru inline">Нажми <code>✨ Auto-Correct</code></span><span class="en inline">Click <code>✨ Auto-Correct</code></span></li>
+    <li><span class="ru inline">Нажми <code>💾 Save</code></span><span class="en inline">Click <code>💾 Save</code></span></li>
+  </ol>
+
+  <div class="shot">
+    <img src="screenshots/01_simple.png" alt="Simple Mode">
+    <div class="hl red"    style="top: 1.5%; left: 1%;   width: 96%;  height: 7%;">
+      <span class="num">1</span>
+    </div>
+    <div class="hl red"    style="top: 16%; left: 1.5%;  width: 14%;  height: 4.5%;">
+      <span class="num">2</span>
+    </div>
+    <div class="hl yellow" style="top: 24%; left: 20%;  width: 58%;  height: 50%;">
+      <span class="num">3</span>
+    </div>
+    <div class="hl blue"   style="top: 22%; left: 80%;  width: 19%;  height: 45%;">
+      <span class="num">4</span>
+    </div>
+    <div class="hl blue"   style="top: 78%; left: 1%;   width: 98%;  height: 20%;">
+      <span class="num">5</span>
+    </div>
+  </div>
+
+  <ol>
+    <li><span class="ru inline"><strong>Хедер</strong> — лого, версия, кнопки: Simple/Advanced, тема, язык, инфо</span><span class="en inline"><strong>Header</strong> — logo, version, buttons: Simple/Advanced, theme, language, info</span></li>
+    <li><span class="ru inline"><strong>Auto-Correct</strong> — главная кнопка</span><span class="en inline"><strong>Auto-Correct</strong> — main button</span></li>
+    <li><span class="ru inline"><strong>Превью</strong> — текстура и heatmap</span><span class="en inline"><strong>Preview</strong> — texture and heatmap</span></li>
+    <li><span class="ru inline"><strong>Тип текстуры</strong> — категории и пресеты</span><span class="en inline"><strong>Texture type</strong> — categories and presets</span></li>
+    <li><span class="ru inline"><strong>Лог</strong> — что происходит</span><span class="en inline"><strong>Log</strong> — what's happening</span></li>
+  </ol>
+
+  <!-- Скрин 2: выбор типа -->
+  <h3><span class="ru">Как выбрать тип текстуры</span><span class="en">How to pick texture type</span></h3>
+
+  <div class="shot">
+    <img src="screenshots/02_type.png" alt="Texture type">
+    <div class="hl red"    style="top: 22%; left: 80%;  width: 19%;  height: 12%;">
+      <span class="num">1</span>
+    </div>
+    <div class="hl yellow" style="top: 37%; left: 80%;  width: 19%;  height: 20%;">
+      <span class="num">2</span>
+    </div>
+  </div>
+
+  <ol>
+    <li><span class="ru inline"><strong>Категории</strong> — 6 групп: 🔥 Металл, 🌿 Природа, 🪨 Минерал, 🧪 Синтетика, 💧 Спецэффекты, 🐾 Фауна</span><span class="en inline"><strong>Categories</strong> — 6 groups: 🔥 Metal, 🌿 Nature, 🪨 Mineral, 🧪 Synthetic, 💧 Special, 🐾 Fauna</span></li>
+    <li><span class="ru inline"><strong>Пресеты</strong> — конкретные материалы внутри категории</span><span class="en inline"><strong>Presets</strong> — specific materials inside category</span></li>
+  </ol>
+
+  <!-- Скрин 3: где тыкнуть Advanced -->
+  <h3><span class="ru">Как открыть Advanced режим</span><span class="en">How to open Advanced mode</span></h3>
+
+  <div class="shot">
+    <img src="screenshots/01_simple_adv.png" alt="Advanced toggle">
+    <div class="hl red"    style="top: 3%; left: 66%;  width: 10%;  height: 5%;">
+      <span class="num">1</span>
+    </div>
+  </div>
+
+  <ol>
+    <li><span class="ru inline"><strong>Кнопка ⚙ Advanced</strong> в хедере — тыкни, чтобы открыть все инструменты (коррекция AI/Math, soap, saturation, batch, compress)</span><span class="en inline"><strong>⚙ Advanced button</strong> in header — click to unlock all tools (AI/Math, soap, saturation, batch, compress)</span></li>
+  </ol>
+
+  <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+</section>
+
+<!-- ═══ 2. ОДИНОЧНАЯ ═══ -->
+<section id="single">
+  <h2><span class="ru">2. Одиночная обработка (Advanced)</span><span class="en">2. Single Processing (Advanced)</span></h2>
+
+  <p class="ru">Simple делает всё одной кнопкой. Advanced даёт полный контроль.</p>
+  <p class="en">Simple does everything in one click. Advanced gives full control.</p>
+
+  <div class="shot">
+    <img src="screenshots/05_advanced.png" alt="Advanced Mode">
+    <div class="hl red"    style="top: 16%; left: 1.5%;  width: 18%;  height: 4.5%;">
+      <span class="num">1</span>
+    </div>
+    <div class="hl blue"   style="top: 22%; left: 80%;  width: 19%;  height: 50%;">
+      <span class="num">2</span>
+    </div>
+    <div class="hl yellow" style="top: 55%; left: 80%;  width: 19%;  height: 5%;">
+      <span class="num">3</span>
+    </div>
+    <div class="hl yellow" style="top: 63%; left: 80%;  width: 19%;  height: 5%;">
+      <span class="num">4</span>
+    </div>
+  </div>
+
+  <ol>
+    <li><span class="ru inline"><strong>Open / Check / Auto-Correct / Reset / Save</strong> — отдельные кнопки</span><span class="en inline"><strong>Open / Check / Auto-Correct / Reset / Save</strong> — separate buttons</span></li>
+    <li><span class="ru inline"><strong>Правая панель</strong> — все настройки</span><span class="en inline"><strong>Right panel</strong> — all settings</span></li>
+    <li><span class="ru inline"><strong>Correction mode</strong> — <code>AI</code> или <code>Math</code></span><span class="en inline"><strong>Correction mode</strong> — <code>AI</code> or <code>Math</code></span></li>
+    <li><span class="ru inline"><strong>Tiling 3×3</strong> — проверка бесшовности</span><span class="en inline"><strong>Tiling 3×3</strong> — seamless check</span></li>
+  </ol>
+
+  <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+</section>
+
+<!-- ═══ 3. PBR + VIEWER ═══ -->
+<section id="pbr">
+  <h2><span class="ru">3. PBR + 3D Viewer</span><span class="en">3. PBR + 3D Viewer</span></h2>
+
+  <p class="ru">Во вкладке <strong>PBR</strong> — 7 карт из одного Albedo + просмотр в 3D-вьюере.</p>
+  <p class="en">In the <strong>PBR</strong> tab — 7 maps from one Albedo + 3D viewer preview.</p>
+
+  <div class="shot">
+    <img src="screenshots/03_pbr.png" alt="PBR tab">
+    <div class="hl red"    style="top: 16%; left: 1.5%;  width: 12%;  height: 4.5%;">
+      <span class="num">1</span>
+    </div>
+    <div class="hl yellow" style="top: 21%; left: 3%;   width: 94%;  height: 4.5%;">
+      <span class="num">2</span>
+    </div>
+    <div class="hl red"    style="top: 16%; left: 79%;  width: 12%;  height: 4.5%;">
+      <span class="num">3</span>
+    </div>
+    <div class="hl blue"   style="top: 16%; left: 92%;  width: 7%;   height: 4.5%;">
+      <span class="num">4</span>
+    </div>
+    <div class="hl blue"   style="top: 28%; left: 80%;  width: 19%;  height: 8%;">
+      <span class="num">5</span>
+    </div>
+  </div>
+
+  <ol>
+    <li><span class="ru inline"><strong>🎨 Generate</strong> — сгенерировать карты</span><span class="en inline"><strong>🎨 Generate</strong> — generate maps</span></li>
+    <li><span class="ru inline"><strong>Кнопки карт</strong> — Albedo / Height / Normal / AO / Rough / Metal / Edge / ORM</span><span class="en inline"><strong>Map buttons</strong> — Albedo / Height / Normal / AO / Rough / Metal / Edge / ORM</span></li>
+    <li><span class="ru inline"><strong>👁 3D Preview</strong> — открыть 3D-вьюер</span><span class="en inline"><strong>👁 3D Preview</strong> — open 3D viewer</span></li>
+    <li><span class="ru inline"><strong>💾 Save all</strong> — сохранить все 7 карт</span><span class="en inline"><strong>💾 Save all</strong> — save all 7 maps</span></li>
+    <li><span class="ru inline"><strong>PNG bit depth</strong> — 8-bit или 16-bit</span><span class="en inline"><strong>PNG bit depth</strong> — 8-bit or 16-bit</span></li>
+  </ol>
+
+  <h3><span class="ru">3D Viewer — управление</span><span class="en">3D Viewer — controls</span></h3>
+
+  <div class="shot">
+    <img src="screenshots/04_viewer.png" alt="3D Viewer">
+  </div>
+
+  <ul>
+    <li><span class="ru inline"><strong>ЛКМ + движение</strong> — вращение камеры</span><span class="en inline"><strong>LMB + drag</strong> — rotate camera</span></li>
+    <li><span class="ru inline"><strong>Колесо мыши</strong> — зум</span><span class="en inline"><strong>Mouse wheel</strong> — zoom</span></li>
+    <li><span class="ru inline"><strong>Esc</strong> — закрыть</span><span class="en inline"><strong>Esc</strong> — close</span></li>
+  </ul>
+
+  <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+</section>
+
+<!-- ═══ 4. ПАКЕТНАЯ ═══ -->
+<section id="batch">
+  <h2><span class="ru">4. Пакетная обработка</span><span class="en">4. Batch Processing</span></h2>
+
+  <p class="ru">Вкладка <strong>Batch</strong>. Обрабатывает целую папку одним запуском.</p>
+  <p class="en">The <strong>Batch</strong> tab. Processes a whole folder in one run.</p>
+
+  <div class="shot">
+    <img src="screenshots/06_batch.png" alt="Batch">
+    <div class="hl yellow" style="top: 17%; left: 1.5%;  width: 12%;  height: 4%;">
+      <span class="num">1</span>
+    </div>
+    <div class="hl red"    style="top: 28%; left: 1.5%;  width: 12%;  height: 4%;">
+      <span class="num">2</span>
+    </div>
+    <div class="hl blue"   style="top: 38%; left: 1%;   width: 98%;  height: 55%;">
+      <span class="num">3</span>
+    </div>
+  </div>
+
+  <ol>
+    <li><span class="ru inline"><strong>Select folder / files</strong> — выбери папку или файлы</span><span class="en inline"><strong>Select folder / files</strong> — pick folder or files</span></li>
+    <li><span class="ru inline"><strong>Run processing</strong> — запуск</span><span class="en inline"><strong>Run processing</strong> — start</span></li>
+    <li><span class="ru inline"><strong>Лог</strong> — по каждому файлу время и статус. Результат в папке <code>_corrected</code></span><span class="en inline"><strong>Log</strong> — time and status per file. Output to <code>_corrected</code></span></li>
+  </ol>
+
+  <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+</section>
+
+<!-- ═══ 5. СЖАТИЕ ═══ -->
+<section id="compress">
+  <h2><span class="ru">5. Сжатие</span><span class="en">5. Compression</span></h2>
+
+  <p class="ru">Вкладка <strong>Compress</strong>. Сжимает Albedo через LAB-преобразование.</p>
+  <p class="en">The <strong>Compress</strong> tab. Compresses Albedo via LAB roundtrip.</p>
+
+  <div class="shot">
+    <img src="screenshots/08_compress.png" alt="Compress">
+    <div class="hl blue"   style="top: 17%; left: 1%;   width: 98%;  height: 32%;">
+      <span class="num">1</span>
+    </div>
+    <div class="hl yellow" style="top: 22%; left: 3.5%; width: 20%;  height: 4%;">
+      <span class="num">2</span>
+    </div>
+    <div class="hl red"    style="top: 22%; left: 88%;  width: 11%;  height: 4%;">
+      <span class="num">3</span>
+    </div>
+    <div class="hl blue"   style="top: 57%; left: 1%;   width: 98%;  height: 10%;">
+      <span class="num">4</span>
+    </div>
+  </div>
+
+  <ol>
+    <li><span class="ru inline"><strong>Одиночное сжатие</strong> — секция сверху. Обрабатывает один файл</span><span class="en inline"><strong>Single compression</strong> — top section. Processes one file</span></li>
+    <li><span class="ru inline"><strong>Открыть / Сжать</strong> — выбери файл и сожми</span><span class="en inline"><strong>Open / Compress</strong> — pick file and compress</span></li>
+    <li><span class="ru inline"><strong>Сохранить</strong> — сохранить результат</span><span class="en inline"><strong>Save</strong> — save result</span></li>
+    <li><span class="ru inline"><strong>Пакетное сжатие</strong> — секция ниже. Целая папка. Результат в <code>_compressed</code></span><span class="en inline"><strong>Batch compression</strong> — bottom section. Whole folder. Output to <code>_compressed</code></span></li>
+  </ol>
+
+  <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+</section>
+
+<!-- ═══ 6. ADVANCED ═══ -->
+<section id="advanced">
+  <h2><span class="ru">6. Advanced — что внутри</span><span class="en">6. Advanced — what's inside</span></h2>
+
+  <p class="ru">Advanced открывает все инструменты. Тоггл — кнопка <code>⚙ Advanced</code> / <code>⚙ Simple</code> в хедере.</p>
+  <p class="en">Advanced unlocks all tools. Toggle — the <code>⚙ Advanced</code> / <code>⚙ Simple</code> button in the header.</p>
+
+  <div class="shot">
+    <img src="screenshots/09_adv_toggle.png" alt="Advanced tools">
+    <div class="hl red"    style="top: 23.5%; left: 76%; width: 20%; height: 4.5%;">
+      <span class="num">1</span>
+    </div>
+    <div class="hl yellow" style="top: 30.5%; left: 76%; width: 20%; height: 4.5%;">
+      <span class="num">2</span>
+    </div>
+    <div class="hl yellow" style="top: 38%;   left: 76%; width: 20%; height: 12%;">
+      <span class="num">3</span>
+    </div>
+    <div class="hl yellow" style="top: 55.5%; left: 76%; width: 20%; height: 12%;">
+      <span class="num">4</span>
+    </div>
+    <div class="hl blue"   style="top: 71.5%; left: 76%; width: 20%; height: 4%;">
+      <span class="num">5</span>
+    </div>
+  </div>
+
+  <ol>
+    <li><span class="ru inline"><strong>Режим коррекции</strong> — <code>AI</code> (нейросеть autolevels) или <code>Math</code> (CLAHE fallback). AI качественнее, Math быстрее.</span><span class="en inline"><strong>Correction mode</strong> — <code>AI</code> (autolevels neural net) or <code>Math</code> (CLAHE fallback). AI is better, Math is faster.</span></li>
+    <li><span class="ru inline"><strong>Tiling 3×3</strong> — раскладывает текстуру в сетку 3×3 для проверки бесшовности.</span><span class="en inline"><strong>Tiling 3×3</strong> — tiles texture into 3×3 grid for seamless check.</span></li>
+    <li><span class="ru inline"><strong>Remove soap</strong> — убирает «мыльные» размытые участки после AI. Слайдер — сила детализации (0–3).</span><span class="en inline"><strong>Remove soap</strong> — removes blurry patches after AI. Slider — detail strength (0–3).</span></li>
+    <li><span class="ru inline"><strong>Boost saturation</strong> — поднимает насыщенность. Множитель 0.8–1.5 (дефолт 1.15 = +15%).</span><span class="en inline"><strong>Boost saturation</strong> — boosts saturation. Multiplier 0.8–1.5 (default 1.15 = +15%).</span></li>
+    <li><span class="ru inline"><strong>Statistics</strong> — Min/Max/Avg/Median/1%/99% яркости. Обновляется после «🔍 Check».</span><span class="en inline"><strong>Statistics</strong> — Min/Max/Avg/Median/1%/99% luminance. Updates after «🔍 Check».</span></li>
+  </ol>
+
+  <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+</section>
+
+<script>
+  function setLang(lang) {
+    document.documentElement.setAttribute('data-lang', lang);
+    document.body.setAttribute('data-lang', lang);
+    document.getElementById('btn-ru').classList.toggle('active', lang === 'ru');
+    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    localStorage.setItem('albedolizer_manual_lang', lang);
+  }
+  (function() {
+    const saved = localStorage.getItem('albedolizer_manual_lang');
+    if (saved) { setLang(saved); }
+  })();
+</script>
+</body>
+</html>
