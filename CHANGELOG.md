@@ -3,6 +3,20 @@
 All notable changes to Albedolizer are documented in this file.
 
 
+## [1.3.2-beta] — 2026-09-15
+
+### ✨ Added
+- **16-bit PNG output** — Height and Normal maps can now be saved in 16-bit for pro pipelines
+- **16 / 8-bit toggle** in the PBR parameters panel
+- **Tiling checker** — 3×3 preview button to spot seams on tileable textures
+
+### 🛠 Improved
+- Internal PBR pipeline now runs in float32 for higher precision
+- `ao_range` parameter extracted from hardcoded magic number (was 50)
+- Removed dead `mode` field from theme dicts
+
+---
+
 ## [1.3.1-beta] — 2026-09-14
 
 ### ✨ Added
