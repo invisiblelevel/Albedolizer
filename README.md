@@ -2,7 +2,7 @@
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.3.1--beta-orange)
+![Version](https://img.shields.io/badge/version-1.3.2--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -106,6 +106,9 @@ Output: `dist/Albedolizer.exe`
 6. Switch between maps with buttons on top
 7. **💾 Save all** — creates a `<name>_pbr/` folder
 
+8. **16-bit PNG output** — Height and Normal maps in full precision
+9. **Tiling checker** — 3×3 preview to spot seams
+
 ### Batch processing
 1. **Batch** tab
 2. **📁 Select folder** or **📄 Select files**
@@ -161,7 +164,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.3.1-beta  
+**Version:** 1.3.2-beta  
 **Date:** 2026
 
 ---
@@ -204,6 +207,9 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **Metallic** — металличность (чёрная / белая / авто)
 - **ORM** — упакованная карта (AO в R, Roughness в G, Metallic в B)
 - **Edge** — карта граней (Sobel через OpenCV)
+ 
+- **16-битный PNG** — Height и Normal в полной точности
+- **Тайлинг-чекер** — 3×3 превью для поиска швов
 
 ### 🎯 32 пресета текстур в 6 категориях
 **🔥 Металл** · **🌿 Природа** · **🪨 Минерал** · **🧪 Синтетика** · **💧 Спецэффекты** · **🐾 Фауна**
@@ -325,5 +331,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.3.1-beta
+**Версия:** 1.3.2-beta
 **Дата:** 2026
