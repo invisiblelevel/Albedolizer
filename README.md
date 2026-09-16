@@ -140,6 +140,10 @@ Click **ℹ Info** in the header → **📖 Manual** tab.
 
 ---
 
+## 🙏 Credits
+
+- **LUTwithBGrid** (ECCV 2024) — Wontae Kim, Nam Ik Cho — [Apache 2.0](https://github.com/WontaeaeKim/LUTwithBGrid)
+
 ## 🤝 Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you'd like to change.
