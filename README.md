@@ -3,7 +3,7 @@ markdown
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.4.0--beta-orange)
+![Version](https://img.shields.io/badge/version-1.5.0--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -27,7 +27,8 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - **Soap removal** — adaptive unsharp mask that fixes blurry patches after AI correction or upscaling
 
 ### ✨ AI Auto-Correction
-- **Two modes:** AI (via Autolevels XCiT model) or Math (CLAHE + soft-clip)
+- **Three methods:** Autolevels (XCiT model), LUTwithBGrid (ECCV 2024, ONNX), or Math (CLAHE + soft-clip)
+- **Switch models** in the sidebar — pick what works best for your texture
 - One-click switch in the sidebar — pick what works best for your texture
 - Fallback dialog if AI result doesn't pass validation
 - **Saturation boost** — fix washed-out colors after AI correction
@@ -152,7 +153,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.4.0-beta  
+**Version:** 1.5.0-beta  
 **Date:** 2026
 
 ---
@@ -181,7 +182,8 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **Устранение «мыла»** — адаптивный unsharp mask, чинит размытые участки после AI-коррекции
 
 ### ✨ AI-автокоррекция
-- **Два режима:** AI (через модель Autolevels XCiT) или Math (CLAHE + soft-clip)
+- **Три метода:** Autolevels (модель XCiT), LUTwithBGrid (ECCV 2024, ONNX) или Math (CLAHE + soft-clip)
+- **Переключай модели** в сайдбаре — выбирай что лучше для твоей текстуры
 - Переключатель в сайдбаре — выбирай что лучше для твоей текстуры
 - Диалог выбора если AI не прошёл валидацию
 - **Насыщенность** — фикс блеклых цветов после AI-коррекции
@@ -306,5 +308,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.4.0-beta  
+**Версия:** 1.5.0-beta  
 **Дата:** 2026
