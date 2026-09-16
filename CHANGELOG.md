@@ -3,6 +3,23 @@
 All notable changes to Albedolizer are documented in this file.
 
 
+## [1.6.0-beta] — 2026-09-17
+
+### ✨ Added
+- **🤖 Material auto-detection** — CLIP-based classifier (OpenAI ViT-B/32, ONNX, 269 MB) with zero-shot classification. Automatically picks the best preset for your texture from 47 options.
+- **New Fabric category** — 6 new presets: cotton, wool, silk, denim, carpet, velvet.
+- **New presets in existing categories:** copper (Metal), clay + granite (Mineral), carbon (Synthetic).
+- **Total presets: 47** (was 37) across 7 categories.
+- **Viewer window now floats on top** — opens focused and stays above the main app.
+
+### 🛠 Improved
+- **Rewritten CLIP prompts** — unified PBR prefix (`"a close-up PBR albedo texture of X"`), 5-8 prompts per class for better accuracy.
+- **All UI strings for auto-detection** moved to translations (RU + EN).
+- Version bumped to 1.6.0-beta.
+
+---
+
+
 ## [1.5.0-beta] — 2026-09-16
 
 ### ✨ Added
