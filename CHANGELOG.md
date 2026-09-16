@@ -3,6 +3,20 @@
 All notable changes to Albedolizer are documented in this file.
 
 
+## [1.5.0-beta] — 2026-09-16
+
+### ✨ Added
+- **LUTwithBGrid AI model** — second AI correction method (ONNX, 1.9 MB). Based on LUTwithBGrid (ECCV 2024) — image-adaptive 3D LUT with bilateral grid. Runs on CPU via onnxruntime.
+- **Three correction methods** — now choose between Autolevels, LUTwithBGrid, or Math via the new pyramid switch in the sidebar (works in both Simple and Advanced modes).
+- **Hybrid LUTwithBGrid mode** — takes brightness from the model, keeps original color. Prevents color cast on PBR textures.
+
+### 🛠 Improved
+- `smart_correct_ai()` now selects the model based on user choice (saved in config.json)
+- Version bumped to 1.5.0-beta
+
+---
+
+
 ## [1.4.0-beta] — 2026-09-15
 
 ### ✨ Added
