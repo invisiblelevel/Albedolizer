@@ -3,7 +3,7 @@ markdown
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.5.0--beta-orange)
+![Version](https://img.shields.io/badge/version-1.6.0--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -29,6 +29,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 ### ✨ AI Auto-Correction
 - **Three methods:** Autolevels (XCiT model), LUTwithBGrid (ECCV 2024, ONNX), or Math (CLAHE + soft-clip)
 - **Switch models** in the sidebar — pick what works best for your texture
+- **🤖 Material auto-detection** — CLIP-based classifier (ViT-B/32) automatically picks the right preset from 47 options
 - One-click switch in the sidebar — pick what works best for your texture
 - Fallback dialog if AI result doesn't pass validation
 - **Saturation boost** — fix washed-out colors after AI correction
@@ -54,8 +55,8 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - Russian / English — switch inside the manual
 - Opens in your browser from the **Info → 📖 Manual** button
 
-### 🎯 37 Texture Presets in 6 Categories
-**🔥 Metal** · **🌿 Nature** · **🪨 Mineral** · **🧪 Synthetic** · **💧 Special** · **🐾 Fauna**
+### 🎯 47 Texture Presets in 7 Categories
+**🔥 Metal** · **🌿 Nature** · **🪨 Mineral** · **🧪 Synthetic** · **🧵 Fabric** · **💧 Special** · **🐾 Fauna**
 
 ### 🗂 Batch Processing
 - Process folders or file lists
@@ -157,7 +158,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.5.0-beta  
+**Version:** 1.6.0-beta  
 **Date:** 2026
 
 ---
@@ -188,6 +189,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 ### ✨ AI-автокоррекция
 - **Три метода:** Autolevels (модель XCiT), LUTwithBGrid (ECCV 2024, ONNX) или Math (CLAHE + soft-clip)
 - **Переключай модели** в сайдбаре — выбирай что лучше для твоей текстуры
+- **🤖 Автоопределение материала** — CLIP-классификатор (ViT-B/32) сам подбирает пресет из 47 доступных
 - Переключатель в сайдбаре — выбирай что лучше для твоей текстуры
 - Диалог выбора если AI не прошёл валидацию
 - **Насыщенность** — фикс блеклых цветов после AI-коррекции
@@ -213,8 +215,8 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - Русский / English — переключение внутри мануала
 - Открывается из **Info → 📖 Мануал**
 
-### 🎯 37 пресетов текстур в 6 категориях
-**🔥 Металл** · **🌿 Природа** · **🪨 Минерал** · **🧪 Синтетика** · **💧 Спецэффекты** · **🐾 Фауна**
+### 🎯 47 пресетов текстур в 7 категориях
+**🔥 Металл** · **🌿 Природа** · **🪨 Минерал** · **🧪 Синтетика** · **🧵 Ткани** · **💧 Спецэффекты** · **🐾 Фауна**
 
 ### 🗂 Пакетная обработка
 - Обработка папок или списка файлов
@@ -312,5 +314,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.5.0-beta  
+**Версия:** 1.6.0-beta  
 **Дата:** 2026
