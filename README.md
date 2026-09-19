@@ -1,9 +1,8 @@
-markdown
 # ◐ Albedolizer
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.6.0--beta-orange)
+![Version](https://img.shields.io/badge/version-1.6.1--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -15,6 +14,22 @@ markdown
 ## 📖 What is it
 
 Albedolizer is a tool for 3D artists, game designers, and anyone working with PBR textures. It checks Albedo maps against standards, automatically corrects color via an AI model, generates a full set of PBR maps, and lets you preview the result in a built-in 3D viewer.
+
+---
+
+## 🆕 What's new in v1.6.1-beta
+
+- **Slimmer exe** — CUDA/TensorRT/ffmpeg binaries stripped (~268 MB → ~140 MB)
+- **CLIP vision quantized** — INT8, faster CPU inference
+- **CLIP tokenizer bundled** — no longer downloads from HuggingFace on first launch
+- **Viewer — UV seam fix** (texture stretching + pole tearing)
+- **Viewer — lighting tuning** (Cook-Torrance BRDF + IBL)
+- **Tiling** — new `🔲 Seamless` button (radial mask + scatter)
+- **FilePicker** — single instance across the app (fixes memory leaks)
+- **UI** — wider right panel (320px), log moved under preview
+- **Math button** stretched to full width
+- **Window transparency removed**
+- **lut_model** — fixed LAB→RGB conversion
 
 ---
 
@@ -30,7 +45,6 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - **Three methods:** Autolevels (XCiT model), LUTwithBGrid (ECCV 2024, ONNX), or Math (CLAHE + soft-clip)
 - **Switch models** in the sidebar — pick what works best for your texture
 - **🤖 Material auto-detection** — CLIP-based classifier (ViT-B/32) automatically picks the right preset from 47 options
-- One-click switch in the sidebar — pick what works best for your texture
 - Fallback dialog if AI result doesn't pass validation
 - **Saturation boost** — fix washed-out colors after AI correction
 
@@ -49,6 +63,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - Rotate with LMB, zoom with mouse wheel
 - Powered by Moderngl + GLFW
 - HDRI environment lighting with blurred reflections
+- Correct UV mapping — no seams or stretching
 
 ### 📖 Built-in Manual
 - Full HTML manual with screenshots and annotations
@@ -78,7 +93,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 
 ### Installer (recommended)
 
-1. Download `Albedolizer_Setup_v1.4.0-beta.exe` from the [latest release](../../releases/latest)
+1. Download `Albedolizer_Setup_v1.6.1-beta.exe` from the [latest release](../../releases/latest)
 2. Run the installer — it places everything in `Program Files\Albedolizer`
 3. Launch from Start Menu or Desktop shortcut
 
@@ -137,6 +152,8 @@ Click **ℹ Info** in the header → **📖 Manual** tab.
 - **[Pillow](https://python-pillow.org/)** — image processing
 - **[OpenCV](https://opencv.org/)** — Sobel filters for Edge Map
 - **[Moderngl](https://moderngl.readthedocs.io/)** + **[GLFW](https://www.glfw.org/)** — 3D viewer
+- **[ONNX Runtime](https://onnxruntime.ai/)** — inference for CLIP and LUTwithBGrid
+- **[Transformers](https://huggingface.co/docs/transformers/)** + **[Tokenizers](https://huggingface.co/docs/tokenizers/)** — CLIP tokenizer
 - **Autolevels** (XCiT-tiny) — AI color correction model
 
 ---
@@ -158,7 +175,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.6.0-beta  
+**Version:** 1.6.1-beta  
 **Date:** 2026
 
 ---
@@ -178,6 +195,22 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ---
 
+## 🆕 Что нового в v1.6.1-beta
+
+- **exe похудел** — вырезаны CUDA/TensorRT/ffmpeg бинари (~268 МБ → ~140 МБ)
+- **CLIP vision квантизован** — INT8, инференс быстрее
+- **CLIP tokenizer забандлен** — больше не тянет с HuggingFace при первом запуске
+- **Вьюер — фикс UV-шва** (растяжение текстуры + разрыв на полюсах)
+- **Вьюер — тюнинг освещения** (Cook-Torrance BRDF + IBL)
+- **Тайлинг** — новая кнопка `🔲 Seamless` (radial mask + scatter)
+- **FilePicker** — один инстанс на всё приложение (фикс утечек)
+- **UI** — правая панель шире (320px), лог сдвинут под превью
+- **Math-кнопка** растянута на всю ширину
+- **Прозрачность окна убрана**
+- **lut_model** — фикс конвертации LAB→RGB
+
+---
+
 ## ✨ Возможности
 
 ### 🔍 Анализ Albedo
@@ -190,7 +223,6 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **Три метода:** Autolevels (модель XCiT), LUTwithBGrid (ECCV 2024, ONNX) или Math (CLAHE + soft-clip)
 - **Переключай модели** в сайдбаре — выбирай что лучше для твоей текстуры
 - **🤖 Автоопределение материала** — CLIP-классификатор (ViT-B/32) сам подбирает пресет из 47 доступных
-- Переключатель в сайдбаре — выбирай что лучше для твоей текстуры
 - Диалог выбора если AI не прошёл валидацию
 - **Насыщенность** — фикс блеклых цветов после AI-коррекции
 
@@ -209,6 +241,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - Вращение ЛКМ, зум колесом
 - На базе Moderngl + GLFW
 - HDRI-освещение с размытыми отражениями
+- Корректный UV-маппинг — без швов и растяжения
 
 ### 📖 Встроенный мануал
 - Полный HTML-мануал со скринами и разметкой
@@ -238,7 +271,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ### Инсталлер (рекомендуется)
 
-1. Скачай `Albedolizer_Setup_v1.4.0-beta.exe` из [последнего релиза](../../releases/latest)
+1. Скачай `Albedolizer_Setup_v1.6.1-beta.exe` из [последнего релиза](../../releases/latest)
 2. Запусти установщик — всё встанет в `Program Files\Albedolizer`
 3. Запускай из меню Пуск или ярлыка на рабочем столе
 
@@ -297,6 +330,8 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **[Pillow](https://python-pillow.org/)** — работа с изображениями
 - **[OpenCV](https://opencv.org/)** — Sobel-фильтры для Edge Map
 - **[Moderngl](https://moderngl.readthedocs.io/)** + **[GLFW](https://www.glfw.org/)** — 3D-вьюер
+- **[ONNX Runtime](https://onnxruntime.ai/)** — инференс CLIP и LUTwithBGrid
+- **[Transformers](https://huggingface.co/docs/transformers/)** + **[Tokenizers](https://huggingface.co/docs/tokenizers/)** — CLIP-токенайзер
 - **Autolevels** (XCiT-tiny) — AI-модель цветокоррекции
 
 ---
@@ -314,5 +349,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.6.0-beta  
+**Версия:** 1.6.1-beta  
 **Дата:** 2026
