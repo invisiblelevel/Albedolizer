@@ -296,3 +296,62 @@ def boost_saturation(pil, strength=1.15):
     hsv = hsv.astype(np.uint8)
     result = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
     return Image.fromarray(result, mode="RGB")
+    
+def make_seamless(pil, inner_radius=0.6, outer_radius=1.0,
+                   scatter_strength=0.3, blend_curve="smootherstep"):
+    """
+    Radial mask blend — делает текстуру бесшовной.
+    
+    inner_radius: где начинается бленд (0.0-1.0). Меньше = больше сохраняется центр.
+    outer_radius: где заканчивается (должен быть > inner_radius).
+    scatter_strength: волнистость границы (0 = идеальный круг, 0.5 = сильно рваная).
+    blend_curve: "linear" | "cosine" | "smoothstep" | "smootherstep".
+    """
+    import cv2
+
+    arr = np.array(pil.convert("RGB")).astype(np.float32) / 255.0
+    h, w, c = arr.shape
+
+    # Радиальное расстояние от центра (0 = центр, 1 = угол)
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    cy, cx = h / 2.0, w / 2.0
+    ny = (yy - cy) / cy
+    nx = (xx - cx) / cx
+    dist = np.sqrt(nx * nx + ny * ny)
+    dist = np.clip(dist / np.sqrt(2.0), 0, 1)
+
+    # Scatter — волнистость границы
+    if scatter_strength > 0:
+        angle = np.arctan2(ny, nx)
+        scatter = (
+            0.08 * np.sin(angle * 5.0) +
+            0.05 * np.sin(angle * 11.0) +
+            0.03 * np.sin(angle * 17.0)
+        ) * scatter_strength
+        dist = dist + scatter
+        dist = np.clip(dist, 0, 1)
+
+    # Нормализуем радиус в t ∈ [0,1]
+    span = max(outer_radius - inner_radius, 1e-6)
+    t = np.clip((dist - inner_radius) / span, 0.0, 1.0)
+
+    # Кривая бленда
+    if blend_curve == "cosine":
+        mask = 0.5 * (1.0 - np.cos(np.pi * t))
+    elif blend_curve == "smoothstep":
+        mask = t * t * (3.0 - 2.0 * t)
+    elif blend_curve == "smootherstep":
+        mask = t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
+    else:  # linear
+        mask = t
+
+    # Инвертируем: центр = 1, край = 0
+    mask = 1.0 - mask
+    mask = np.stack([mask] * 3, axis=2)
+
+    # Размытая версия для бленда краёв
+    sigma = w * 0.15
+    blurred = cv2.GaussianBlur(arr, (0, 0), sigmaX=sigma)
+
+    result = arr * mask + blurred * (1.0 - mask)
+    return Image.fromarray((np.clip(result, 0, 1) * 255).astype(np.uint8))

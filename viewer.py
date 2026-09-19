@@ -52,8 +52,8 @@ in vec2 v_uv;
 uniform sampler2D u_albedo;
 uniform sampler2D u_roughness;
 uniform sampler2D u_metallic;
-uniform sampler2D u_env;         // чёткая HDRI
-uniform sampler2D u_env_blur;    // размытая HDRI
+uniform sampler2D u_env;
+uniform sampler2D u_env_blur;
 
 uniform vec3 u_cam_pos;
 uniform float u_exposure;
@@ -62,6 +62,7 @@ out vec4 frag_color;
 
 const float PI = 3.14159265359;
 
+// ═══ Mapping direction to equirect UV ═══
 vec2 dir_to_uv(vec3 dir) {
     float u = atan(dir.z, dir.x) / (2.0 * PI) + 0.5;
     float v = acos(clamp(dir.y, -1.0, 1.0)) / PI;
@@ -76,54 +77,106 @@ vec3 sample_env_blur(vec3 dir) {
     return texture(u_env_blur, dir_to_uv(dir)).rgb;
 }
 
-void main() {
-    vec3 albedo = texture(u_albedo, v_uv).rgb;
-    vec3 N = normalize(v_normal);
-    float roughness = clamp(texture(u_roughness, v_uv).r, 0.05, 1.0);
-    float metallic = clamp(texture(u_metallic, v_uv).r, 0.0, 1.0);
+// ═══ BRDF функции (из LearnOpenGL) ═══
+float DistributionGGX(vec3 N, vec3 H, float roughness) {
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH * NdotH;
 
+    float nom = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+
+    return nom / max(denom, 0.0001);
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness) {
+    float r = (roughness + 1.0);
+    float k = (r * r) / 8.0;
+
+    float nom = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+
+    return nom / max(denom, 0.0001);
+}
+
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0) {
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness) {
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+// ═══ Основной свет (для объёма) ═══
+const vec3 LIGHT_DIR = normalize(vec3(-0.5, 0.8, 0.6));
+const vec3 LIGHT_COLOR = vec3(1.0, 0.95, 0.9);
+
+void main() {
+    vec2 uv = vec2(v_uv.x * 4.0, v_uv.y * 2.0);
+    vec3 albedo = texture(u_albedo, uv).rgb;
+    vec3 N = normalize(v_normal);
     vec3 V = normalize(u_cam_pos - v_world_pos);
     vec3 R = reflect(-V, N);
 
-    // Diffuse — всегда размытая HDRI
-    vec3 env_diff = sample_env_blur(N);
+    float roughness = clamp(texture(u_roughness, uv).r, 0.05, 1.0);
+    float metallic = clamp(texture(u_metallic, uv).r, 0.0, 1.0);
 
-    // Specular
-    vec3 env_refl;
-    if (metallic > 0.5) {
-        // Металл — чёткая HDRI с лёгким размытием по roughness
-        vec3 blur_dir = normalize(mix(N, R, 1.0 - roughness * 0.5));
-        env_refl = mix(sample_env(blur_dir), sample_env_blur(blur_dir), roughness);
-    } else {
-        // Диэлектрик — сильно размытая HDRI
-        env_refl = sample_env_blur(R);
-    }
+    // F0: диэлектрики = 0.04, металлы = albedo
+    vec3 F0 = vec3(0.04);
+    F0 = mix(F0, albedo, metallic);
 
-    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    // ═══ Прямой свет (для объёма) ═══
+    vec3 L = LIGHT_DIR;
+    vec3 H = normalize(V + L);
+    float NdotL = max(dot(N, L), 0.0);
+    float NdotV = max(dot(N, V), 0.0);
 
-    // ═══ Diffuse (только для неметаллов) ═══
-    vec3 diffuse = albedo * (1.0 - metallic) * env_diff * 2.0;
+    // Cook-Torrance BRDF
+    float D = DistributionGGX(N, H, roughness);
+    float G = GeometrySmith(N, V, L, roughness);
+    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
-    // ═══ Ambient — мягкая подсветка теней ═══
-    vec3 fill = sample_env_blur(N) * albedo * (1.0 - metallic) * 0.4;
-    diffuse += fill;
+    vec3 numerator = D * G * F;
+    float denominator = 4.0 * max(NdotV, 0.001) * NdotL;
+    vec3 specular_direct = numerator / max(denominator, 0.001);
 
-    // ═══ Specular ═══
-    float spec_strength = mix(0.4, 6.0, metallic);
-    vec3 specular = env_refl * F0 * (1.0 - roughness * 0.3) * spec_strength;
+    // kS = F, kD = (1 - kS) * (1 - metallic)
+    vec3 kS = F;
+    vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic);
 
-    // ═══ Ambient для металлов ═══
-    vec3 ambient = env_diff * F0 * 0.5 * metallic;
+    vec3 Lo_direct = (kD * albedo / PI + specular_direct) * LIGHT_COLOR * NdotL;
 
-    vec3 color = diffuse + specular + ambient;
+    // ═══ IBL (ambient от env-карты) ═══
+    vec3 F_ibl = fresnelSchlickRoughness(NdotV, F0, roughness);
+    vec3 kS_ibl = F_ibl;
+    vec3 kD_ibl = (vec3(1.0) - kS_ibl) * (1.0 - metallic);
 
-    // ACES tone mapping
-    const float a = 2.51;
-    const float b = 0.03;
-    const float c = 2.43;
-    const float d = 0.59;
-    const float e = 0.14;
-    color = clamp((color * (a * color + b)) / (color * (c * color + d) + e), 0.0, 1.0);
+    // Diffuse IBL — размытая HDRI
+    vec3 irradiance = sample_env_blur(N);
+
+    // Specular IBL — чёткая HDRI для металлов, размытая для диэлектриков
+    vec3 reflection_env = mix(sample_env_blur(R), sample_env(R), metallic);
+
+    // Упрощённая IBL-аппроксимация (без prefiltered cubemap)
+    vec3 diffuse_ibl = irradiance * albedo * kD_ibl;
+    // Спекуляр IBL — жёстко только для металлов
+    vec3 specular_ibl = reflection_env * F_ibl * (metallic * 8.0 + (1.0 - metallic) * 0.05) * (1.0 - roughness * 0.5);
+
+    vec3 color = Lo_direct + diffuse_ibl * 0.8 + specular_ibl;
+
+    // ═══ Tone map (Reinhard) + gamma ═══
+    color = color / (color + vec3(1.0));
     color = pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
     color *= u_exposure;
 
@@ -137,26 +190,29 @@ void main() {
 # ═══════════════════════════════════════════════════════════
 
 def create_sphere(radius=1.0, segments=64, rings=64):
+    cols = segments + 1  # +1 дублирующий столбец для корректного UV-шва
     verts = []
     for ring in range(rings + 1):
         phi = math.pi * ring / rings
-        for seg in range(segments + 1):
+        for seg in range(cols):
             theta = 2.0 * math.pi * seg / segments
             x = radius * math.sin(phi) * math.cos(theta)
             y = radius * math.cos(phi)
             z = radius * math.sin(phi) * math.sin(theta)
             nx, ny, nz = x / radius, y / radius, z / radius
-            u = (seg / segments) * 3.0        # 3 повтора по горизонтали
-            v = (1.0 - ring / rings) * 3.0    # 3 повтора по вертикали
+            u = seg / segments      # 0.0 ... 1.0 (дубль столбца = u=1.0)
+            v = 1.0 - ring / rings
             verts.append((x, y, z, nx, ny, nz, u, v))
 
     idx = []
     for ring in range(rings):
         for seg in range(segments):
-            a = ring * (segments + 1) + seg
-            b = a + segments + 1
-            idx.extend([a, b, a + 1])
-            idx.extend([a + 1, b, b + 1])
+            a = ring * cols + seg
+            b = a + cols
+            a_next = a + 1
+            b_next = b + 1
+            idx.extend([a, b, a_next])
+            idx.extend([a_next, b, b_next])
     return np.array(verts, dtype='f4'), np.array(idx, dtype='i4')
 
 

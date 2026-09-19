@@ -65,7 +65,8 @@ class LUTwithBGridModel:
             out_lab = cv2.cvtColor(out_arr, cv2.COLOR_RGB2LAB).astype(np.float32)
 
             orig_lab[:, :, 0] = out_lab[:, :, 0]
-            result_final = cv2.cvtColor(orig_lab.astype(np.uint8), cv2.COLOR_LAB2RGB)
+            orig_lab = np.clip(orig_lab, 0, 255).astype(np.uint8)
+            result_final = cv2.cvtColor(orig_lab, cv2.COLOR_LAB2RGB)
 
             return Image.fromarray(result_final, mode="RGB")
         except Exception as e:

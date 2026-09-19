@@ -2,6 +2,7 @@
 clip_model.py — классификатор материалов через CLIP (ONNX).
 Использует OpenAI CLIP ViT-B/32 + zero-shot classification.
 """
+import sys
 import os
 import numpy as np
 import onnxruntime as ort
@@ -396,11 +397,23 @@ class CLIPMaterialClassifier:
                 text_path, providers=['CPUExecutionProvider']
             )
             
-            # Токенайзер CLIP
+            # Токенайзер CLIP — локальный (рядом с exe)
             from transformers import CLIPTokenizer
-            self._tokenizer = CLIPTokenizer.from_pretrained(
-                "openai/clip-vit-base-patch32"
-            )
+            import os as _os
+            if getattr(sys, 'frozen', False):
+                # В exe-режиме ищем СНАЧАЛА рядом с exe, потом в _MEIPASS
+                _exe_dir = _os.path.dirname(sys.executable)
+                _meipass = getattr(sys, '_MEIPASS', None)
+                if _os.path.exists(_os.path.join(_exe_dir, "clip_tokenizer")):
+                    _base = _exe_dir
+                elif _meipass and _os.path.exists(_os.path.join(_meipass, "clip_tokenizer")):
+                    _base = _meipass
+                else:
+                    _base = _exe_dir  # fallback
+            else:
+                _base = _os.path.dirname(_os.path.abspath(__file__))
+            _tok_dir = _os.path.join(_base, "clip_tokenizer")
+            self._tokenizer = CLIPTokenizer.from_pretrained(_tok_dir)
             
             # Собираем все промпты плоским списком
             self._class_keys = list(CLASS_PROMPTS.keys())

@@ -13,7 +13,7 @@ import tempfile
 import shutil
 from pbr_generator import (
     generate_all_pbr, remove_soap_adaptive,
-    boost_saturation,
+    boost_saturation, make_seamless,
     to_preview_pil, save_pbr_map,
 )
 from config import (
@@ -105,13 +105,16 @@ def main(page: ft.Page):
     ON_ACCENT = "#ffffff"
 
     cv2.setNumThreads(os.cpu_count() or 4)
-    page.title = "Albedolizer v1.4.0-beta"
+    page.title = "Albedolizer v1.6.1-beta"
+
+    # ═══ FilePicker — один на всё приложение ═══
+    picker = ft.FilePicker()
     page.theme_mode = ft.ThemeMode.DARK if S["theme"] == "dark" else ft.ThemeMode.LIGHT
     page.padding = 0
     page.spacing = 0
     page.window.width = 1280
     page.window.height = 820
-    page.window.opacity = 0.97
+    page.window.opacity = 1.0
     page.bgcolor = BG
 
     if getattr(sys, 'frozen', False):
@@ -135,7 +138,7 @@ def main(page: ft.Page):
 
     AUTOLEVELS_EXE = os.path.join(_base_dir, "autolevels.exe")
     AUTOLEVELS_MODEL = os.path.join(_base_dir, "free_xcittiny_wa14.onnx")
-    CLIP_VISION_PATH = os.path.join(_base_dir, "clip_vision_encoder.onnx")
+    CLIP_VISION_PATH = os.path.join(_base_dir, "clip_vision_int8.onnx")
     CLIP_TEXT_PATH = os.path.join(_base_dir, "clip_text_encoder.onnx")
 
     def t(key):
@@ -526,7 +529,7 @@ def main(page: ft.Page):
     async def do_simple_process(e):
         """Simple mode: открыть → AI → saturation → результат."""
         try:
-            files = await ft.FilePicker().pick_files(
+            files = await picker.pick_files(
                 dialog_title=t("dialog_pick_title"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
             )
@@ -585,7 +588,7 @@ def main(page: ft.Page):
 
     async def open_file(e):
         try:
-            files = await ft.FilePicker().pick_files(
+            files = await picker.pick_files(
                 dialog_title=t("dialog_pick_title"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
             )
@@ -636,7 +639,7 @@ def main(page: ft.Page):
             else:
                 default_name = f"{base}_corrected.png"
 
-            path = await ft.FilePicker().save_file(
+            path = await picker.save_file(
                 dialog_title=t("dialog_save_title"),
                 file_name=default_name,
                 allowed_extensions=["png", "jpg", "tif"],
@@ -652,7 +655,7 @@ def main(page: ft.Page):
     # ═══ СЖАТИЕ ═══
     async def compress_open_file(e):
         try:
-            files = await ft.FilePicker().pick_files(
+            files = await picker.pick_files(
                 dialog_title=t("dialog_pick_title"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
             )
@@ -717,7 +720,7 @@ def main(page: ft.Page):
             if S.get("compress_path"):
                 base = os.path.splitext(os.path.basename(S["compress_path"]))[0]
 
-            path = await ft.FilePicker().save_file(
+            path = await picker.save_file(
                 dialog_title=t("dialog_save_title"),
                 file_name=f"{base}_compressed.png",
                 allowed_extensions=["png", "jpg", "tif"],
@@ -746,7 +749,7 @@ def main(page: ft.Page):
 
     async def compress_select_folder(e):
         try:
-            folder = await ft.FilePicker().get_directory_path(
+            folder = await picker.get_directory_path(
                 dialog_title=t("batch_select_folder"))
             if not folder:
                 return
@@ -764,7 +767,7 @@ def main(page: ft.Page):
 
     async def compress_select_files(e):
         try:
-            files = await ft.FilePicker().pick_files(
+            files = await picker.pick_files(
                 dialog_title=t("batch_select_files"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
                 allow_multiple=True,
@@ -824,7 +827,7 @@ def main(page: ft.Page):
     # ═══ ПАКЕТНАЯ AI-ОБРАБОТКА ═══
     async def batch_select_folder(e):
         try:
-            folder = await ft.FilePicker().get_directory_path(
+            folder = await picker.get_directory_path(
                 dialog_title=t("batch_select_folder"))
             if not folder:
                 return
@@ -843,7 +846,7 @@ def main(page: ft.Page):
 
     async def batch_select_files(e):
         try:
-            files = await ft.FilePicker().pick_files(
+            files = await picker.pick_files(
                 dialog_title=t("batch_select_files"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
                 allow_multiple=True,
@@ -937,7 +940,7 @@ def main(page: ft.Page):
     # ═══ PBR-ОБРАБОТЧИКИ ═══
     async def pbr_do_load(e):
         try:
-            files = await ft.FilePicker().pick_files(
+            files = await picker.pick_files(
                 dialog_title=t("pbr_dialog_pick"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
             )
@@ -1005,7 +1008,7 @@ def main(page: ft.Page):
     async def pbr_do_simple_generate(e):
         """Simple mode: открыть файл → сгенерировать с текущим пресетом."""
         try:
-            files = await ft.FilePicker().pick_files(
+            files = await picker.pick_files(
                 dialog_title=t("pbr_dialog_pick"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
             )
@@ -1174,7 +1177,7 @@ def main(page: ft.Page):
 
     async def pbr_do_batch(e):
         try:
-            folder = await ft.FilePicker().get_directory_path(
+            folder = await picker.get_directory_path(
                 dialog_title=t("pbr_dialog_folder"))
             if not folder:
                 return
@@ -1402,6 +1405,36 @@ def main(page: ft.Page):
                 S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(img)}"
         rebuild_ui()
 
+    async def do_make_seamless(e):
+        source = S["corrected"] if S["corrected"] is not None else S["original"]
+        if source is None:
+            log("   ⚠ Сначала загрузи текстуру", WARN)
+            page.update()
+            return
+        try:
+            await show_progress(t("seamless_progress"))
+            await asyncio.sleep(0.1)
+
+            result = await asyncio.to_thread(
+                make_seamless, source,
+                0.6, 1.0, 0.3, "smootherstep"
+            )
+            S["corrected"] = result
+            S["last_op"] = "seamless"
+            S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
+            log(t("seamless_done"), SUCCESS)
+
+            if S["buttons"].get("save"): S["buttons"]["save"].disabled = False
+            if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = False
+
+            page.update()
+            await asyncio.sleep(0.1)
+            await hide_progress()
+        except Exception as ex:
+            await hide_progress()
+            log(f"❌ {t('err')}: {ex}", DANGER)
+            page.update()
+
     def make_btn(label, on_click, color=None, disabled=False):
         color = color or ACCENT
         return ft.FilledButton(
@@ -1486,6 +1519,7 @@ def main(page: ft.Page):
             padding=ft.Padding.symmetric(vertical=8, horizontal=6),
             ink=True,
             on_click=lambda e: set_math(),
+            width=142,
         )
 
         return ft.Column([
@@ -1600,11 +1634,11 @@ def main(page: ft.Page):
                 ft.Container(height=16),
                 ft.Row([ft.Text(f"{t('about_version')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("1.6.0-beta", color=FG, size=12,
+                        ft.Text("1.6.1-beta", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_build')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("2026-09-16", color=FG, size=12,
+                        ft.Text("2026-09-19", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_author')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
@@ -1950,7 +1984,7 @@ def main(page: ft.Page):
                         bgcolor=INPUT, border_radius=8, padding=10,
                     ),
                 ], spacing=4, scroll=ft.ScrollMode.AUTO),
-                bgcolor=PANEL, border_radius=12, padding=16, width=250,
+                bgcolor=PANEL, border_radius=12, padding=16, width=320,
             )
 
             log_panel = ft.Container(
@@ -1973,13 +2007,18 @@ def main(page: ft.Page):
                     ft.Container(height=6),
                     ft.Container(
                         content=ft.Row([
-                            ft.Container(content=preview_box, expand=True),
+                            ft.Container(
+                                content=ft.Column([
+                                    ft.Container(content=preview_box, expand=3),
+                                    ft.Container(height=8),
+                                    log_panel,
+                                ], spacing=0, expand=True),
+                                expand=True,
+                            ),
                             right_panel,
                         ], spacing=12, expand=True),
-                        expand=3,
+                        expand=True,
                     ),
-                    ft.Container(height=8),
-                    log_panel,
                 ], spacing=0, expand=True),
                 expand=True,
                 visible=True,
@@ -2059,11 +2098,24 @@ def main(page: ft.Page):
                     ft.Container(height=14),
                     ft.Divider(color=FG3, height=1),
                     ft.Container(height=10),
-                    make_btn(
-                        t("tiling_btn") if not S["tiling_mode"] else t("tiling_btn_off"),
-                        toggle_tiling,
-                        "#1565c0" if S["theme"] == "dark" else "#3d6fb8",
-                    ),
+                    ft.Row([
+                        ft.Container(
+                            content=make_btn(
+                                t("tiling_btn") if not S["tiling_mode"] else t("tiling_btn_off"),
+                                toggle_tiling,
+                                "#1565c0" if S["theme"] == "dark" else "#3d6fb8",
+                            ),
+                            expand=True,
+                        ),
+                        ft.Container(
+                            content=make_btn(
+                                t("seamless_btn"),
+                                do_make_seamless,
+                                "#00897b",
+                            ),
+                            expand=True,
+                        ),
+                    ], spacing=6),
                     ft.Container(height=14),
                     ft.Divider(color=FG3, height=1),
                     ft.Container(height=10),
@@ -2106,7 +2158,7 @@ def main(page: ft.Page):
                     ft.Container(height=8),
                     S["stats_column"],
                 ], spacing=4, scroll=ft.ScrollMode.AUTO),
-                bgcolor=PANEL, border_radius=12, padding=16, width=250,
+                bgcolor=PANEL, border_radius=12, padding=16, width=320,
             )
 
             log_panel = ft.Container(
@@ -2129,13 +2181,18 @@ def main(page: ft.Page):
                     ft.Container(height=6),
                     ft.Container(
                         content=ft.Row([
-                            ft.Container(content=preview_box, expand=True),
+                            ft.Container(
+                                content=ft.Column([
+                                    ft.Container(content=preview_box, expand=3),
+                                    ft.Container(height=8),
+                                    log_panel,
+                                ], spacing=0, expand=True),
+                                expand=True,
+                            ),
                             right_panel,
                         ], spacing=12, expand=True),
-                        expand=3,
+                        expand=True,
                     ),
-                    ft.Container(height=8),
-                    log_panel,
                 ], spacing=0, expand=True),
                 expand=True,
                 visible=True,
@@ -2584,7 +2641,7 @@ def main(page: ft.Page):
                                 weight=ft.FontWeight.BOLD,
                                 color=ACCENT, font_family=FONT),
                         ft.Container(
-                            content=ft.Text("v1.6.0-beta", size=10, color=FG2,
+                            content=ft.Text("v1.6.1-beta", size=10, color=FG2,
                                             font_family=FONT,
                                             weight=ft.FontWeight.W_600),
                             bgcolor=CARD, border_radius=6,
