@@ -3,6 +3,30 @@
 All notable changes to Albedolizer are documented in this file.
 
 
+## [1.6.1-beta] — 2026-09-19
+
+### Added
+- **Tiling** — new `🔲 Seamless` button (radial mask + scatter)
+- **CLIP tokenizer** bundled locally — works offline on first launch
+
+### Changed
+- **Viewer** — lighting reworked (Cook-Torrance BRDF + IBL)
+- **UI** — right panel widened to 320px, log panel moved under the preview
+- **Math** button stretched to full width
+- **Window** transparency removed (opacity fixed at 1.0)
+
+### Fixed
+- **Viewer** — UV seam on sphere (texture stretching + pole tearing)
+- **lut_model** — LAB→RGB conversion (clip before astype)
+- **FilePicker** — single instance across the entire app (fixes memory leaks)
+
+### Performance
+- **exe** slimmed — CUDA/TensorRT/ffmpeg binaries stripped (~268 MB → ~140 MB)
+- **CLIP vision** quantized to INT8 — faster CPU inference
+
+---
+
+
 ## [1.6.0-beta] — 2026-09-17
 
 ### ✨ Added
