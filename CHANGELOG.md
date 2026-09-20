@@ -1,6 +1,45 @@
 # Changelog
 
-All notable changes to Albedolizer are documented in this file.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+
+## [1.7.0-beta] — 2026-09-20
+
+Major UI refactor + new Realism tab.
+
+### Added
+- **Realism tab** — procedural photorealism filter (grain + high-pass + HSV variation + vignette)
+  - Three sliders: grain, detail, variation
+  - Tileable noise — no visible seams on tiled textures
+  - Zoom in preview (mouse wheel)
+- **Batch threads slider** — control parallelism (1–8 tasks), previously hardcoded to 3
+- **Compress bit depth selector** — 8-bit or 16-bit PNG output
+- **NavigationRail** on the left (5 tabs: Single, Batch, PBR, Compress, Realism)
+- **Per-tab right panels** — Single / Batch / PBR / Compress / Realism each have their own
+- **BottomSheet log** — single shared log at the bottom, collapsible (35px collapsed / 130px expanded), shows last line when collapsed
+
+### Changed
+- Header simplified: mode / theme / language / info buttons are now 4 compact icons
+- Log is now shared across all tabs (was 4 separate logs)
+- Preview area in Single / Realism / PBR now uses `InteractiveViewer` with zoom support
+- `refresh_log()` now writes to a single log column instead of 4
+
+### Removed
+- `tabs_row` + `views_stack` (replaced by NavigationRail + content holder)
+- Per-tab log panels (`log_panel`, `log_panel_batch`, `log_panel_pbr`, `log_panel_compress`)
+- Window transparency (already gone in 1.6.1)
+
+### Optimized
+- **exe slim:** ~140 MB → ~119 MB
+  - Stripped CUDA / TensorRT / ffmpeg binaries
+  - Excluded `torch`, `tensorflow`, `scipy`, `matplotlib`, `tkinter`, test packages
+  - Disabled UPX (safer for onnxruntime DLLs)
+
+### Fixed
+- Realism filter precision loss — HSV conversion now clips channels to proper bounds (H: 0–179, S/V: 0–255) before `uint8` cast
+
+
+---
 
 
 ## [1.6.1-beta] — 2026-09-19
