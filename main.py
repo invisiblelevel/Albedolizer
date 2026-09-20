@@ -23,8 +23,10 @@ from config import (
 )
 from image_processor import fallback_correct, ai_correct, lut_correct
 from clip_model import CLIPMaterialClassifier
+from realism import add_realism
 from translations import T
 from settings import load_settings, save_settings
+
 
 def _detect_system_lang():
     """Определяет язык системы через Windows API. ru → 'ru', остальное → 'en'."""
@@ -37,7 +39,8 @@ def _detect_system_lang():
         return "en"
     except Exception:
         return "en"
-        
+
+
 def main(page: ft.Page):
     # ═══ Загрузка пользовательских настроек ═══
     USER_SETTINGS = load_settings()
@@ -75,9 +78,15 @@ def main(page: ft.Page):
         "pbr_batch_label": None,
         "pbr_batch_nav_panel": None,
         "batch_files": [],
+        "batch_threads": 3,
         "compress_files": [],
         "active_tab": "single",
         "tiling_mode": False,
+        "realism_grain": 0.15,
+        "realism_highpass": 0.30,
+        "realism_variation": 0.20,
+        "realism_source": None,
+        "realism_result": None,
         "compress_original": None,
         "compress_corrected": None,
         "compress_path": None,
@@ -105,7 +114,7 @@ def main(page: ft.Page):
     ON_ACCENT = "#ffffff"
 
     cv2.setNumThreads(os.cpu_count() or 4)
-    page.title = "Albedolizer v1.6.1-beta"
+    page.title = "Albedolizer v1.7.0-beta"
 
     # ═══ FilePicker — один на всё приложение ═══
     picker = ft.FilePicker()
@@ -118,7 +127,6 @@ def main(page: ft.Page):
     page.bgcolor = BG
 
     if getattr(sys, 'frozen', False):
-        # Ищем сначала внутри exe, потом рядом с exe
         _meipass = getattr(sys, '_MEIPASS', None)
         _exe_dir = os.path.dirname(sys.executable)
         _icon_dir = _meipass if (_meipass and os.path.exists(os.path.join(_meipass, "icon.ico"))) else _exe_dir
@@ -129,7 +137,6 @@ def main(page: ft.Page):
         page.window.icon = _icon_path
 
     if getattr(sys, 'frozen', False):
-        # Ищем сначала внутри exe (_MEIPASS), потом рядом с exe
         _meipass = getattr(sys, '_MEIPASS', None)
         _exe_dir = os.path.dirname(sys.executable)
         _base_dir = _meipass if (_meipass and os.path.exists(os.path.join(_meipass, "manual.html"))) else _exe_dir
@@ -187,10 +194,7 @@ def main(page: ft.Page):
         return fallback_correct(pil, profile_key)
 
     # ═══ UI ЭЛЕМЕНТЫ ═══
-    S["log_column"] = ft.ListView(spacing=3, auto_scroll=True, expand=True, padding=4)
-    S["log_column_batch"] = ft.ListView(spacing=3, auto_scroll=True, expand=True, padding=4)
-    S["log_column_pbr"] = ft.ListView(spacing=3, auto_scroll=True, expand=True, padding=4)
-    S["log_column_compress"] = ft.ListView(spacing=3, auto_scroll=True, expand=True, padding=4)
+    S["log_column_bottom"] = ft.ListView(spacing=3, auto_scroll=True, expand=True, padding=4)
 
     S["stats_column"] = ft.Column([], spacing=4)
     S["preview_image"] = ft.Image(src="", visible=False, fit=ft.BoxFit.CONTAIN)
@@ -206,7 +210,6 @@ def main(page: ft.Page):
     S["compress_progress_bar"] = ft.ProgressBar(value=0, visible=True, color=COMPRESS_COLOR,
                                                   bgcolor=INPUT, height=4, bar_height=4)
     S["compress_progress_text"] = ft.Text("", color=FG2, size=12, font_family=FONT)
-    # CLIP классификатор (ленивая загрузка — при первом использовании)
     S["clip"] = CLIPMaterialClassifier()
     S["buttons"] = {}
 
@@ -217,14 +220,26 @@ def main(page: ft.Page):
         refresh_log()
 
     def refresh_log():
-        for lc in (S["log_column"], S["log_column_batch"],
-                   S["log_column_pbr"], S["log_column_compress"]):
-            lc.controls.clear()
-            for txt, col in S["log_lines"]:
-                lc.controls.append(
-                    ft.Text(txt, color=col, size=13, font_family="Consolas",
-                            selectable=True, expand=True)
-                )
+        lc = S["log_column_bottom"]
+        lc.controls.clear()
+        for txt, col in S["log_lines"]:
+            lc.controls.append(
+                ft.Text(txt, color=col, size=13, font_family="Consolas",
+                        selectable=True, expand=True)
+            )
+        prev = S.get("log_collapsed_preview")
+        if prev is not None:
+            if S["log_lines"]:
+                last_txt, last_col = S["log_lines"][-1]
+                prev.value = last_txt
+                prev.color = last_col
+            else:
+                prev.value = ""
+
+    def clear_log(e=None):
+        S["log_lines"].clear()
+        refresh_log()
+        page.update()
 
     def clear_stats():
         S["stats_lines"].clear()
@@ -447,7 +462,8 @@ def main(page: ft.Page):
             await hide_progress()
             log(f"❌ {t('err')}: {ex}", DANGER)
             page.update()
-
+            
+            
     async def do_reset(e):
         if S["original"] is None:
             return
@@ -458,18 +474,18 @@ def main(page: ft.Page):
         if S["buttons"].get("save"): S["buttons"]["save"].disabled = True
         if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = True
         page.update()
+
     async def do_auto_detect_material(e):
         """CLIP-определение материала текстуры."""
         if S["original"] is None:
             log("   ⚠ Сначала загрузи текстуру", WARN)
             page.update()
             return
-        
+
         try:
             await show_progress(t("auto_detect_progress"))
             await asyncio.sleep(0.05)
-            
-            # Ленивая загрузка CLIP
+
             if not S["clip"].is_loaded():
                 log(t("auto_detect_loading"), FG2)
                 page.update()
@@ -480,29 +496,24 @@ def main(page: ft.Page):
                     log(t("auto_detect_no_clip"), WARN)
                     await hide_progress()
                     return
-            
-            # Классификация
+
             profile, conf, top5 = await asyncio.to_thread(
                 S["clip"].classify, S["original"]
             )
-            
+
             if profile is None:
                 log(t("auto_detect_fail"), WARN)
                 await hide_progress()
                 return
-            
-            # Устанавливаем профиль
+
             old_profile = S["profile"]
             S["profile"] = profile
-            
-            # Определяем категорию
-            from config import PROFILE_CATEGORIES
+
             for cat_key, cat in PROFILE_CATEGORIES.items():
                 if profile in cat["items"]:
                     S["profile_category"] = cat_key
                     break
-            
-            # Лог
+
             log("", FG2)
             log("━━━━━━━━━━━━━━━━━━━━━━", FG3)
             log(t("auto_detect_result"), FG)
@@ -510,15 +521,14 @@ def main(page: ft.Page):
             log(t("auto_detect_top5"), FG2)
             for i, (key, c) in enumerate(top5[:5], 1):
                 log(f"      {i}. {profile_label(key)}: {c*100:.2f}%", FG2)
-            
+
             if old_profile != profile:
                 log(f"{t('auto_detect_changed')} {profile_label(old_profile)} → {profile_label(profile)}", FG2)
             else:
                 log(t("auto_detect_same"), FG2)
-            
-            # Пересохраняем настройки
+
             persist_settings()
-            
+
             await hide_progress()
             rebuild_ui()
         except Exception as ex:
@@ -566,7 +576,6 @@ def main(page: ft.Page):
                     smart_correct_fallback, img, S["profile"]
                 )
 
-            # Saturation boost (1.15)
             result = await asyncio.to_thread(boost_saturation, result, 1.15)
 
             S["corrected"] = result
@@ -618,7 +627,6 @@ def main(page: ft.Page):
                     page.update()
 
                     rebuild_ui()
-                    
 
                     await asyncio.sleep(0.15)
                     await hide_progress()
@@ -735,7 +743,16 @@ def main(page: ft.Page):
             page.update()
             await asyncio.sleep(0.05)
 
-            await asyncio.to_thread(S["compress_corrected"].save, str(path))
+            def _save():
+                bd = S.get("pbr_bit_depth", 8)
+                if bd == 16:
+                    arr = np.array(S["compress_corrected"].convert("RGB"))
+                    arr16 = (arr.astype(np.uint16) * 257)
+                    bgr = cv2.cvtColor(arr16, cv2.COLOR_RGB2BGR)
+                    cv2.imwrite(str(path), bgr)
+                else:
+                    S["compress_corrected"].save(str(path))
+            await asyncio.to_thread(_save)
             log(f"{t('log_saved')} {os.path.basename(str(path))}", SUCCESS)
 
             S["compress_progress_bar"].visible = False
@@ -806,7 +823,15 @@ def main(page: ft.Page):
                 img = Image.open(fp).convert("RGB")
                 result = img.convert("LAB").convert("RGB")
                 base = os.path.splitext(os.path.basename(fp))[0]
-                result.save(str(os.path.join(out_dir, f"{base}.png")))
+                out_path = os.path.join(out_dir, f"{base}.png")
+                bd = S.get("pbr_bit_depth", 8)
+                if bd == 16:
+                    arr = np.array(result)
+                    arr16 = (arr.astype(np.uint16) * 257)
+                    bgr = cv2.cvtColor(arr16, cv2.COLOR_RGB2BGR)
+                    cv2.imwrite(str(out_path), bgr)
+                else:
+                    result.save(str(out_path))
                 img.close()
                 count += 1
                 log(f"  [{i}/{total}] ✓ {os.path.basename(fp)}", SUCCESS)
@@ -823,7 +848,8 @@ def main(page: ft.Page):
         update_compress_progress(total, total, f"{t('batch_done')}: {count} / {total}")
         S["compress_files"] = []
         page.update()
-
+        
+        
     # ═══ ПАКЕТНАЯ AI-ОБРАБОТКА ═══
     async def batch_select_folder(e):
         try:
@@ -884,7 +910,7 @@ def main(page: ft.Page):
 
         count = 0
         done = 0
-        sem = asyncio.Semaphore(3)
+        sem = asyncio.Semaphore(max(1, min(8, S.get("batch_threads", 3))))
 
         async def process_one(fp):
             nonlocal count, done
@@ -1030,7 +1056,6 @@ def main(page: ft.Page):
             await show_pbr_progress(t("pbr_progress_gen"))
             await asyncio.sleep(0.1)
 
-            # Если слайдеры уже есть — используем их, иначе пресет
             if S["pbr_sliders"]:
                 sl = S["pbr_sliders"]
                 result = generate_all_pbr(
@@ -1109,7 +1134,7 @@ def main(page: ft.Page):
             await hide_pbr_progress()
             log(f"❌ PBR save: {ex}", DANGER)
             page.update()
-            
+
     async def pbr_open_viewer(e):
         """Открывает viewer.py (или viewer.exe) отдельным процессом."""
         if S["pbr_result"] is None:
@@ -1120,7 +1145,6 @@ def main(page: ft.Page):
             await show_pbr_progress(t("pbr_viewer_progress"))
             await asyncio.sleep(0.05)
 
-            # Сохраняем карты во временную папку
             tmpdir = tempfile.mkdtemp(prefix="albedo_viewer_")
             paths = {}
             keys = ("albedo", "height", "normal", "ao", "roughness", "metallic", "orm")
@@ -1139,13 +1163,11 @@ def main(page: ft.Page):
                 S["pbr_progress_text"].value = f"{t('pbr_viewer_progress')} {done}/{total}"
                 page.update()
 
-            # Если albedo нет в result — берём из pbr_source
             if "albedo" not in paths and S["pbr_source"] is not None:
                 p = os.path.join(tmpdir, "albedo.png")
                 await asyncio.to_thread(S["pbr_source"].save, p)
                 paths["albedo"] = p
 
-            # Определяем путь к viewer
             if getattr(sys, 'frozen', False):
                 viewer_path = os.path.join(os.path.dirname(sys.executable), "viewer.exe")
                 if not os.path.exists(viewer_path):
@@ -1375,6 +1397,40 @@ def main(page: ft.Page):
 
             if S["buttons"].get("save"): S["buttons"]["save"].disabled = False
             if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = False
+
+            page.update()
+            await asyncio.sleep(0.1)
+            await hide_progress()
+        except Exception as ex:
+            await hide_progress()
+            log(f"❌ {t('err')}: {ex}", DANGER)
+            page.update()
+            
+    async def do_apply_realism(e):
+        source = S["corrected"] if S["corrected"] is not None else S["original"]
+        if source is None:
+            log("   ⚠ Сначала загрузи текстуру", WARN)
+            page.update()
+            return
+        try:
+            await show_progress(t("realism_progress"))
+            await asyncio.sleep(0.1)
+
+            result = await asyncio.to_thread(
+                add_realism, source,
+                S["realism_grain"],
+                S["realism_highpass"],
+                S["realism_variation"],
+            )
+            S["corrected"] = result
+            S["last_op"] = "realism"
+            S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
+            log(t("realism_done"), SUCCESS)
+
+            if S["buttons"].get("save"):
+                S["buttons"]["save"].disabled = False
+            if S["buttons"].get("reset"):
+                S["buttons"]["reset"].disabled = False
 
             page.update()
             await asyncio.sleep(0.1)
@@ -1634,11 +1690,11 @@ def main(page: ft.Page):
                 ft.Container(height=16),
                 ft.Row([ft.Text(f"{t('about_version')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("1.6.1-beta", color=FG, size=12,
+                        ft.Text("1.7.0-beta", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_build')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("2026-09-19", color=FG, size=12,
+                        ft.Text("2026-09-20", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_author')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
@@ -1869,7 +1925,6 @@ def main(page: ft.Page):
 
     def toggle_mode(e):
         S["ui_mode"] = "advanced" if S["ui_mode"] == "simple" else "simple"
-        # Если уходим в Simple — переключаемся на Single если были на Batch/Compress
         if S["ui_mode"] == "simple" and S["active_tab"] in ("batch", "compress"):
             S["active_tab"] = "single"
         persist_settings()
@@ -1922,13 +1977,107 @@ def main(page: ft.Page):
             }
         })
 
+    def build_right_panel_batch():
+        """Правая панель для вкладки Batch."""
+        return ft.Container(
+            content=ft.Column([
+                ft.Text(t("batch_right_title"), size=10, weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=8),
+                ft.Text(t("correction_mode_title"), size=10,
+                        weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=6),
+                make_correction_switch(),
+                ft.Container(height=14),
+                ft.Divider(color=FG3, height=1),
+                ft.Container(height=10),
+                ft.Text(t("soap_fix_title"), size=10,
+                        weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=6),
+                ft.Text(t("soap_fix_label"), color=FG2, size=11, font_family=FONT),
+                ft.Slider(
+                    min=0.0, max=3.0, divisions=15,
+                    value=S["soap_fix_strength"],
+                    label="{value}",
+                    active_color=ACCENT, inactive_color=INPUT,
+                    on_change=lambda e: S.update({"soap_fix_strength": e.control.value}),
+                ),
+                ft.Container(height=14),
+                ft.Divider(color=FG3, height=1),
+                ft.Container(height=10),
+                ft.Text(t("batch_threads_title"), size=10,
+                        weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=6),
+                ft.Text(t("batch_threads_label"), color=FG2, size=11, font_family=FONT),
+                ft.Slider(
+                    min=1, max=8, divisions=7,
+                    value=S.get("batch_threads", 3),
+                    label="{value}",
+                    active_color=ACCENT, inactive_color=INPUT,
+                    on_change=lambda e: S.update(
+                        {"batch_threads": int(e.control.value)}
+                    ),
+                ),
+                ft.Container(height=14),
+                ft.Divider(color=FG3, height=1),
+                ft.Container(height=10),
+                ft.Text(t("batch_right_info"), size=10,
+                        weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=8),
+                ft.Text(t("batch_right_hint"), color=FG2, size=11,
+                        font_family=FONT, selectable=True),
+            ], spacing=4, scroll=ft.ScrollMode.AUTO),
+            bgcolor=PANEL, border_radius=12, padding=16, width=320,
+        )
+
+    def build_right_panel_compress():
+        """Правая панель для вкладки Compress."""
+        return ft.Container(
+            content=ft.Column([
+                ft.Text(t("compress_right_title"), size=10,
+                        weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=8),
+
+                ft.Text(t("pbr_bit_depth"), color=FG2, size=12, font_family=FONT),
+                ft.Container(height=4),
+                ft.RadioGroup(
+                    content=ft.Row([
+                        ft.Radio(value="8", label="8-bit",
+                                 fill_color=COMPRESS_COLOR),
+                        ft.Radio(value="16", label="16-bit",
+                                 fill_color=COMPRESS_COLOR),
+                    ]),
+                    value=str(S["pbr_bit_depth"]),
+                    on_change=lambda e: S.update(
+                        {"pbr_bit_depth": int(e.control.value)}
+                    ),
+                ),
+
+                ft.Container(height=14),
+                ft.Divider(color=FG3, height=1),
+                ft.Container(height=10),
+
+                ft.Text(t("compress_right_info"), size=10,
+                        weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=8),
+                ft.Text(t("compress_right_hint"), color=FG2, size=11,
+                        font_family=FONT, selectable=True),
+            ], spacing=4, scroll=ft.ScrollMode.AUTO),
+            bgcolor=PANEL, border_radius=12, padding=16, width=320,
+        )
+
     def build_screen():
         is_simple = S["ui_mode"] == "simple"
         buttons = S["buttons"]
 
         # ═══ SINGLE VIEW ═══
         if is_simple:
-            # Simple: одна кнопка + превью + пресеты
             buttons["load"] = make_btn("🚀 " + t("fix"), do_simple_process, SUCCESS)
             buttons["save"] = make_btn(t("save"), open_save, SAVE_COLOR,
                                         disabled=(S["corrected"] is None))
@@ -1987,16 +2136,7 @@ def main(page: ft.Page):
                 bgcolor=PANEL, border_radius=12, padding=16, width=320,
             )
 
-            log_panel = ft.Container(
-                content=ft.Column([
-                    ft.Text(t("log_title"), size=10, weight=ft.FontWeight.BOLD,
-                            color=FG3, font_family=FONT),
-                    ft.Container(height=4),
-                    S["log_column"],
-                ], spacing=4, expand=True),
-                bgcolor=CARD, border_radius=12, padding=12,
-                expand=1,
-            )
+            log_panel = ft.Container(height=0)
 
             single_view = ft.Container(
                 content=ft.Column([
@@ -2024,7 +2164,6 @@ def main(page: ft.Page):
                 visible=True,
             )
         else:
-            # Advanced — всё как было
             buttons["load"] = make_btn(t("load"), open_file, ACCENT)
             buttons["check"] = make_btn(t("check"), do_check, ACCENT,
                                          disabled=(S["original"] is None))
@@ -2161,16 +2300,7 @@ def main(page: ft.Page):
                 bgcolor=PANEL, border_radius=12, padding=16, width=320,
             )
 
-            log_panel = ft.Container(
-                content=ft.Column([
-                    ft.Text(t("log_title"), size=10, weight=ft.FontWeight.BOLD,
-                            color=FG3, font_family=FONT),
-                    ft.Container(height=4),
-                    S["log_column"],
-                ], spacing=4, expand=True),
-                bgcolor=CARD, border_radius=12, padding=12,
-                expand=1,
-            )
+            log_panel = ft.Container(height=0)
 
             single_view = ft.Container(
                 content=ft.Column([
@@ -2198,38 +2328,12 @@ def main(page: ft.Page):
                 visible=True,
             )
 
-        log_panel_pbr = ft.Container(
-            content=ft.Column([
-                ft.Text(t("log_title"), size=10, weight=ft.FontWeight.BOLD,
-                        color=FG3, font_family=FONT),
-                ft.Container(height=4),
-                S["log_column_pbr"],
-            ], spacing=4, expand=True),
-            bgcolor=CARD, border_radius=12, padding=12,
-            height=140,
-        )
+        # ═══ ЛОГ-ПАНЕЛИ ДЛЯ ОСТАЛЬНЫХ ВКЛАДОК ═══
+        log_panel_pbr = ft.Container(height=0)
 
-        log_panel_batch = ft.Container(
-            content=ft.Column([
-                ft.Text(t("log_title"), size=10, weight=ft.FontWeight.BOLD,
-                        color=FG3, font_family=FONT),
-                ft.Container(height=4),
-                S["log_column_batch"],
-            ], spacing=4, expand=True),
-            bgcolor=CARD, border_radius=12, padding=12,
-            expand=1,
-        )
-
-        log_panel_compress = ft.Container(
-            content=ft.Column([
-                ft.Text(t("log_title"), size=10, weight=ft.FontWeight.BOLD,
-                        color=FG3, font_family=FONT),
-                ft.Container(height=4),
-                S["log_column_compress"],
-            ], spacing=4, expand=True),
-            bgcolor=CARD, border_radius=12, padding=12,
-            expand=1,
-        )
+        log_panel_batch = ft.Container(height=0)
+        
+        log_panel_compress = ft.Container(height=0)
 
         # ═══ ВКЛАДКА PBR ═══
         pbr_preview = ft.Image(src="", visible=False, fit=ft.BoxFit.CONTAIN)
@@ -2379,7 +2483,6 @@ def main(page: ft.Page):
             on_change=lambda e: S.update({"pbr_bit_depth": int(e.control.value)}),
         )
 
-        # ═══ PBR PANEL — Simple vs Advanced ═══
         if is_simple:
             pbr_params_panel = ft.Container(
                 content=ft.Column([
@@ -2470,10 +2573,10 @@ def main(page: ft.Page):
                 ft.Container(height=8),
                 log_panel_pbr,
             ], spacing=0, expand=True),
-            expand=True, visible=False,
+            expand=True, visible=True,
         )
 
-        # ═══ ВКЛАДКА СЖАТИЕ (только Advanced) ═══
+        # ═══ ВКЛАДКА СЖАТИЕ ═══
         S["compress_preview"] = ft.Image(src="", visible=False, fit=ft.BoxFit.CONTAIN)
         S["compress_preview_hint"] = ft.Text(t("preview_hint"),
                                               color=FG3, size=14, font_family=FONT)
@@ -2541,20 +2644,26 @@ def main(page: ft.Page):
         )
 
         compress_view = ft.Container(
-            content=ft.Column([
-                S["compress_progress_bar"],
-                S["compress_progress_text"],
-                ft.Container(height=6),
-                compress_single_card,
-                ft.Container(height=8),
-                compress_batch_card,
-                ft.Container(height=8),
-                log_panel_compress,
-            ], spacing=0, expand=True),
-            expand=True, visible=False,
+            content=ft.Row([
+                ft.Container(
+                    content=ft.Column([
+                        S["compress_progress_bar"],
+                        S["compress_progress_text"],
+                        ft.Container(height=6),
+                        compress_single_card,
+                        ft.Container(height=8),
+                        compress_batch_card,
+                        ft.Container(height=8),
+                        log_panel_compress,
+                    ], spacing=0, expand=True),
+                    expand=True,
+                ),
+                build_right_panel_compress(),
+            ], spacing=12, expand=True),
+            expand=True, visible=True,
         )
 
-        # ═══ ВКЛАДКА ПАКЕТНАЯ (только Advanced) ═══
+        # ═══ ВКЛАДКА ПАКЕТНАЯ ═══
         batch_sel_row = ft.Row([
             make_btn(t("batch_select_folder"), batch_select_folder, ACCENT),
             make_btn(t("batch_select_files"), batch_select_files, ACCENT),
@@ -2574,62 +2683,250 @@ def main(page: ft.Page):
         )
 
         batch_view = ft.Container(
-            content=ft.Column([
-                batch_sel_row,
-                ft.Container(height=8),
-                batch_info_card,
-                ft.Container(height=8),
-                batch_run_btn,
-                ft.Container(height=8),
-                S["batch_progress_bar"],
-                S["batch_progress_text"],
-                ft.Container(height=8),
-                log_panel_batch,
-            ], spacing=0, expand=True),
-            expand=True, visible=False,
+            content=ft.Row([
+                ft.Container(
+                    content=ft.Column([
+                        batch_sel_row,
+                        ft.Container(height=8),
+                        batch_info_card,
+                        ft.Container(height=8),
+                        batch_run_btn,
+                        ft.Container(height=8),
+                        S["batch_progress_bar"],
+                        S["batch_progress_text"],
+                        ft.Container(height=8),
+                        log_panel_batch,
+                    ], spacing=0, expand=True),
+                    expand=True,
+                ),
+                build_right_panel_batch(),
+            ], spacing=12, expand=True),
+            expand=True, visible=True,
+        )
+        
+        # ═══ ВКЛАДКА REALISM ═══
+        realism_preview = ft.Image(src="", visible=False, fit=ft.BoxFit.CONTAIN)
+        realism_hint = ft.Text(t("realism_preview_hint"),
+                               color=FG3, size=14, font_family=FONT)
+
+        realism_preview_content = ft.Stack([
+            ft.Container(content=realism_hint,
+                         alignment=ft.Alignment.CENTER, expand=True),
+            ft.Container(content=realism_preview,
+                         alignment=ft.Alignment.CENTER, expand=True),
+        ], expand=True)
+
+        realism_preview_box = ft.Container(
+            content=ft.InteractiveViewer(
+                content=realism_preview_content,
+                min_scale=0.5,
+                max_scale=8.0,
+                expand=True,
+            ),
+            bgcolor=CARD, border_radius=12, padding=10, expand=True,
         )
 
-        tab_btns_local = {}
+        def realism_load(e):
+            async def _do():
+                try:
+                    files = await picker.pick_files(
+                        dialog_title=t("dialog_pick_title"),
+                        allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+                    )
+                    if not files or not files[0].path:
+                        return
+                    fp = files[0].path
+                    img = Image.open(fp).convert("RGB")
+                    S["realism_source"] = img
+                    S["realism_result"] = None
+                    realism_preview.src = f"data:image/png;base64,{pil_to_b64(img)}"
+                    realism_preview.visible = True
+                    realism_hint.visible = False
+                    log(f"{t('log_loaded')} {os.path.basename(fp)}", SUCCESS)
+                    page.update()
+                except Exception as ex:
+                    log(f"❌ {t('err')}: {ex}", DANGER)
+                    page.update()
+            page.run_task(_do)
+
+        async def realism_apply(e):
+            if S["realism_source"] is None:
+                log("   ⚠ Сначала загрузи текстуру", WARN)
+                page.update()
+                return
+            try:
+                await show_progress(t("realism_progress"))
+                await asyncio.sleep(0.1)
+
+                result = await asyncio.to_thread(
+                    add_realism, S["realism_source"],
+                    S["realism_grain"],
+                    S["realism_highpass"],
+                    S["realism_variation"],
+                )
+                S["realism_result"] = result
+                realism_preview.src = f"data:image/png;base64,{pil_to_b64(result)}"
+                realism_preview.visible = True
+                realism_hint.visible = False
+                log(t("realism_done"), SUCCESS)
+                page.update()
+                await asyncio.sleep(0.1)
+                await hide_progress()
+            except Exception as ex:
+                await hide_progress()
+                log(f"❌ {t('err')}: {ex}", DANGER)
+                page.update()
+
+        async def realism_save(e):
+            if S["realism_result"] is None:
+                return
+            try:
+                path = await picker.save_file(
+                    dialog_title=t("dialog_save_title"),
+                    file_name="realism.png",
+                    allowed_extensions=["png", "jpg", "tif"],
+                )
+                if path:
+                    S["realism_result"].save(str(path))
+                    log(f"{t('log_saved')} {os.path.basename(str(path))}", SUCCESS)
+                    page.update()
+            except Exception as ex:
+                log(f"❌ {t('err')}: {ex}", DANGER)
+                page.update()
+
+        realism_toolbar = ft.Row([
+            make_btn(t("load"), realism_load, ACCENT),
+            ft.Container(expand=True),
+            make_btn(t("save"), realism_save, SAVE_COLOR,
+                     disabled=(S["realism_result"] is None)),
+        ], spacing=6)
+
+        realism_right_panel = ft.Container(
+            content=ft.Column([
+                ft.Text(t("realism_params"), size=10,
+                        weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=8),
+
+                ft.Text(t("realism_grain"), color=FG2, size=11, font_family=FONT),
+                ft.Slider(min=0.0, max=1.0, divisions=20,
+                          value=S["realism_grain"], label="{value}",
+                          active_color=ACCENT, inactive_color=INPUT,
+                          on_change=lambda e: S.update({"realism_grain": e.control.value})),
+
+                ft.Text(t("realism_highpass"), color=FG2, size=11, font_family=FONT),
+                ft.Slider(min=0.0, max=1.0, divisions=20,
+                          value=S["realism_highpass"], label="{value}",
+                          active_color=ACCENT, inactive_color=INPUT,
+                          on_change=lambda e: S.update({"realism_highpass": e.control.value})),
+
+                ft.Text(t("realism_variation"), color=FG2, size=11, font_family=FONT),
+                ft.Slider(min=0.0, max=1.0, divisions=20,
+                          value=S["realism_variation"], label="{value}",
+                          active_color=ACCENT, inactive_color=INPUT,
+                          on_change=lambda e: S.update({"realism_variation": e.control.value})),
+
+                ft.Container(height=14),
+                make_btn(t("realism_apply"), realism_apply, SUCCESS),
+            ], spacing=6, scroll=ft.ScrollMode.AUTO),
+            bgcolor=PANEL, border_radius=12, padding=16, width=320,
+        )
+
+        realism_log_panel = ft.Container(height=0)
+
+        realism_view = ft.Container(
+            content=ft.Row([
+                ft.Container(
+                    content=ft.Column([
+                        realism_toolbar,
+                        ft.Container(height=8),
+                        ft.Container(content=realism_preview_box, expand=True),
+                        ft.Container(height=8),
+                        realism_log_panel,
+                    ], spacing=0, expand=True),
+                    expand=True,
+                ),
+                realism_right_panel,
+            ], spacing=12, expand=True),
+            expand=True, visible=True,
+        )
+
+        # ═══ NavigationRail ═══
+        def _rail_label(key):
+            """Убирает emoji из начала строки, оставляет только текст."""
+            s = t(key)
+            parts = s.split(" ", 1)
+            return parts[1] if len(parts) > 1 else s
+
+        RAIL_TABS = [
+            ("single", "🖼", _rail_label("tab_single")),
+            ("batch", "🗂", _rail_label("tab_batch")),
+            ("pbr", "🎨", _rail_label("tab_pbr")),
+            ("compress", "🗜", _rail_label("tab_compress")),
+            ("realism", "🎞", _rail_label("tab_realism")),
+        ]
+
+        active_keys = [k for k, _, _ in RAIL_TABS
+                       if not (is_simple and k not in ("single", "pbr"))]
+
+        rail_destinations = []
+        for key, icon, label in RAIL_TABS:
+            if key not in active_keys:
+                continue
+            rail_destinations.append(
+                ft.NavigationRailDestination(
+                    icon=ft.Text(icon, size=22),
+                    selected_icon=ft.Text(icon, size=22),
+                    label=label,
+                )
+            )
+
+        content_holder = ft.Container(expand=True)
+
+        views_map = {
+            "single": single_view,
+            "batch": batch_view,
+            "pbr": pbr_view,
+            "compress": compress_view,
+            "realism": realism_view,
+        }
+
+        if S["active_tab"] not in active_keys:
+            S["active_tab"] = "single"
 
         def set_tab(name):
+            if name not in active_keys:
+                name = "single"
             S["active_tab"] = name
-            for k, c in tab_btns_local.items():
-                c.bgcolor = ACCENT if k == name else CARD
-                c.content.color = ON_ACCENT if k == name else FG
-            single_view.visible = name == "single"
-            pbr_view.visible = name == "pbr"
-            if not is_simple:
-                compress_view.visible = name == "compress"
-                batch_view.visible = name == "batch"
+            content_holder.content = views_map[name]
+            idx = active_keys.index(name)
+            if nav_rail.selected_index != idx:
+                nav_rail.selected_index = idx
             page.update()
 
-        def make_tab(key, label):
-            c = ft.Container(
-                content=ft.Text(label, color=ON_ACCENT, size=14, font_family=FONT,
-                                weight=ft.FontWeight.W_600),
-                bgcolor=ACCENT if key == "single" else CARD,
-                border_radius=10,
-                padding=ft.Padding.symmetric(vertical=12, horizontal=24),
-                ink=True, on_click=lambda e, k=key: set_tab(k),
-            )
-            tab_btns_local[key] = c
-            return c
+        def on_rail_change(e):
+            idx = e.control.selected_index
+            if 0 <= idx < len(active_keys):
+                name = active_keys[idx]
+                S["active_tab"] = name
+                content_holder.content = views_map[name]
+                page.update()
 
-        if is_simple:
-            tabs_row = ft.Row([
-                make_tab("single", t("tab_single")),
-                make_tab("pbr", t("tab_pbr")),
-            ], spacing=8)
-        else:
-            tabs_row = ft.Row([
-                make_tab("single", t("tab_single")),
-                make_tab("batch", t("tab_batch")),
-                make_tab("pbr", t("tab_pbr")),
-                make_tab("compress", t("tab_compress")),
-            ], spacing=8)
+        nav_rail = ft.NavigationRail(
+            selected_index=active_keys.index(S["active_tab"]),
+            label_type=ft.NavigationRailLabelType.ALL,
+            min_width=110,
+            min_extended_width=140,
+            group_alignment=-0.9,
+            destinations=rail_destinations,
+            on_change=on_rail_change,
+            bgcolor=PANEL,
+            indicator_color=ACCENT,
+        )
 
-        set_tab(S["active_tab"])
+        content_holder.content = views_map[S["active_tab"]]
 
+        # ═══ ХЕДЕР ═══
         theme_icon = "☀" if S["theme"] == "dark" else "🌙"
         mode_label = t("mode_btn_advanced") if is_simple else t("mode_btn_simple")
 
@@ -2641,7 +2938,7 @@ def main(page: ft.Page):
                                 weight=ft.FontWeight.BOLD,
                                 color=ACCENT, font_family=FONT),
                         ft.Container(
-                            content=ft.Text("v1.6.1-beta", size=10, color=FG2,
+                            content=ft.Text("v1.7.0-beta", size=10, color=FG2,
                                             font_family=FONT,
                                             weight=ft.FontWeight.W_600),
                             bgcolor=CARD, border_radius=6,
@@ -2688,25 +2985,88 @@ def main(page: ft.Page):
             bgcolor=PANEL,
         )
 
-        if is_simple:
-            views_stack = ft.Stack([single_view, pbr_view], expand=True)
-        else:
-            views_stack = ft.Stack([single_view, pbr_view, compress_view, batch_view],
-                                    expand=True)
+        body = ft.Row([
+            nav_rail,
+            ft.Container(
+                content=content_holder,
+                padding=ft.Padding.symmetric(horizontal=16, vertical=12),
+                expand=True,
+            ),
+        ], spacing=0, expand=True)
 
-        body = ft.Container(
+        # ═══ BottomSheet-лог ═══
+        collapsed_preview = ft.Text(
+            "", color=FG2, size=11, font_family="Consolas",
+            selectable=False, expand=True, max_lines=1,
+            overflow=ft.TextOverflow.ELLIPSIS,
+        )
+        S["log_collapsed_preview"] = collapsed_preview
+
+        log_toggle_icon = ft.Text("▲", color=FG2, size=12, font_family=FONT)
+
+        log_body = ft.Container(
+            content=S["log_column_bottom"],
+            height=130,
+            visible=False,
+            bgcolor=CARD,
+            padding=ft.Padding.symmetric(horizontal=12, vertical=8),
+        )
+
+        def toggle_log(e=None):
+            S["log_expanded"] = not S.get("log_expanded", False)
+            if S["log_expanded"]:
+                log_body.visible = True
+                log_toggle_icon.value = "▼"
+                collapsed_preview.visible = False
+            else:
+                log_body.visible = False
+                log_toggle_icon.value = "▲"
+                collapsed_preview.visible = True
+            page.update()
+
+        def clear_log_bottom(e=None):
+            S["log_lines"].clear()
+            refresh_log()
+            page.update()
+
+        log_header = ft.Container(
+            content=ft.Row([
+                ft.Text("📋", size=14, font_family=FONT),
+                ft.Text("ЛОГ", size=11, color=FG3,
+                        font_family=FONT, weight=ft.FontWeight.W_600),
+                ft.Container(width=8),
+                collapsed_preview,
+                log_toggle_icon,
+                ft.Container(width=6),
+                ft.Container(
+                    content=ft.Text("🗑", size=13, font_family=FONT),
+                    border_radius=6,
+                    padding=ft.Padding.symmetric(vertical=4, horizontal=8),
+                    ink=True,
+                    on_click=clear_log_bottom,
+                    tooltip="Clear log",
+                ),
+            ], vertical_alignment=ft.CrossAxisAlignment.CENTER, spacing=4),
+            bgcolor=PANEL,
+            padding=ft.Padding.symmetric(horizontal=12, vertical=6),
+            on_click=toggle_log,
+            ink=True,
+        )
+
+        log_bottom_sheet = ft.Container(
             content=ft.Column([
-                ft.Container(height=12),
-                tabs_row,
-                ft.Container(height=12),
-                ft.Container(content=views_stack, expand=True),
-            ], spacing=0, expand=True),
-            padding=ft.Padding.symmetric(horizontal=24),
-            expand=True,
+                log_header,
+                log_body,
+            ], spacing=0, tight=True),
+            bgcolor=PANEL,
         )
 
         page.add(
-            ft.Column([header, body], spacing=0, expand=True)
+            ft.Column([
+                header,
+                ft.Container(content=body, expand=True),
+                log_bottom_sheet,
+            ], spacing=0, expand=True)
         )
 
     def rebuild_ui():

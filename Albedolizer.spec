@@ -6,19 +6,36 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=['onnxruntime', 'lut_model', 'clip_model', 'transformers', 'tokenizers'],
+    hiddenimports=[
+        'onnxruntime',
+        'lut_model',
+        'clip_model',
+        'tokenizers',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['torch', 'torchvision', 'torchaudio'],
+    excludes=[
+        # ML-фреймворки (не нужны, у нас onnxruntime)
+        'torch', 'torchvision', 'torchaudio',
+        'tensorflow', 'keras',
+        'sklearn', 'scipy', 'pandas', 'matplotlib',
+        # Jupyter / IPython
+        'IPython', 'jupyter', 'notebook',
+        # GUI-тулкиты
+        'tkinter', 'PyQt5', 'PyQt6', 'PySide2', 'PySide6', 'wx',
+        # Тесты и доки
+        'test', 'unittest', 'pydoc', 'doctest',
+    ],
     noarchive=False,
     optimize=0,
 )
+
 # === Режем CUDA/TensorRT/ffmpeg ===
 _exclude_bins = [
     "onnxruntime_providers_cuda",
     "onnxruntime_providers_tensorrt",
-    "onnxruntime_providers_shared",   # если есть — не нужен для CPU
+    "onnxruntime_providers_shared",
     "nvinfer",
     "nvonnxparser",
     "cublas",
@@ -28,6 +45,7 @@ _exclude_bins = [
 ]
 a.binaries = [x for x in a.binaries if not any(p in x[0].lower() for p in _exclude_bins)]
 a.datas    = [x for x in a.datas    if not any(p in x[0].lower() for p in _exclude_bins)]
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -40,7 +58,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
