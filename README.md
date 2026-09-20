@@ -2,7 +2,7 @@
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.6.1--beta-orange)
+![Version](https://img.shields.io/badge/version-1.7.0--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -17,19 +17,24 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 
 ---
 
-## 🆕 What's new in v1.6.1-beta
+## 🆕 What's new in v1.7.0-beta
 
-- **Slimmer exe** — CUDA/TensorRT/ffmpeg binaries stripped (~268 MB → ~140 MB)
-- **CLIP vision quantized** — INT8, faster CPU inference
-- **CLIP tokenizer bundled** — no longer downloads from HuggingFace on first launch
-- **Viewer — UV seam fix** (texture stretching + pole tearing)
-- **Viewer — lighting tuning** (Cook-Torrance BRDF + IBL)
-- **Tiling** — new `🔲 Seamless` button (radial mask + scatter)
-- **FilePicker** — single instance across the app (fixes memory leaks)
-- **UI** — wider right panel (320px), log moved under preview
-- **Math button** stretched to full width
-- **Window transparency removed**
-- **lut_model** — fixed LAB→RGB conversion
+### Major UI refactor
+- **NavigationRail** on the left instead of tab buttons — 5 tabs: Single, Batch, PBR, Compress, Realism
+- **Own right panel** for each tab (previously a universal pile)
+- **BottomSheet log** at the bottom — single, collapsible, shows the last line
+
+### New Realism tab
+- **Procedural photorealism filter** — grain + high-pass + HSV variation + vignette
+- Three sliders: grain, detail, variation
+- Zoom in preview (mouse wheel)
+
+### Improvements
+- **Batch:** threads slider (1–8 parallel tasks)
+- **Compress:** PNG bit depth selector (8/16-bit)
+
+### Optimization
+- **Slim exe:** ~140 MB → ~119 MB (CUDA/TensorRT/ffmpeg stripped)
 
 ---
 
@@ -58,6 +63,13 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - **Edge** — edge map (Sobel via OpenCV)
 - **16-bit PNG output** — Height and Normal maps in full precision
 
+### 🎞 Realism Filter
+- **Procedural photorealism** — adds camera-like imperfection to albedo textures
+- **Grain** — fine and coarse noise layers
+- **Detail** — adaptive high-pass overlay for micro-detail
+- **Variation** — large-scale color/brightness patches + subtle vignette
+- **Tileable noise** — noise pattern can be tiled without visible seams
+
 ### 👁 Built-in 3D Viewer
 - Real-time PBR preview via OpenGL (`viewer.exe`)
 - Rotate with LMB, zoom with mouse wheel
@@ -76,6 +88,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 ### 🗂 Batch Processing
 - Process folders or file lists
 - Two modes: AI correction or compression
+- **Threads slider** — control parallelism (1–8)
 - Progress bar with ETA
 
 ### 🌓 Themes & Modes
@@ -93,7 +106,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 
 ### Installer (recommended)
 
-1. Download `Albedolizer_Setup_v1.6.1-beta.exe` from the [latest release](../../releases/latest)
+1. Download `Albedolizer_Setup_v1.7.0-beta.exe` from the [latest release](../../releases/latest)
 2. Run the installer — it places everything in `Program Files\Albedolizer`
 3. Launch from Start Menu or Desktop shortcut
 
@@ -127,18 +140,27 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 7. **👁 3D Preview** — opens the OpenGL viewer
 8. **💾 Save all** — creates a `<name>_pbr/` folder
 
+### Realism filter
+1. **🎞 Realism** tab
+2. **📂 Open** — load a texture
+3. Adjust three sliders: **grain**, **detail**, **variation**
+4. **🎞 Apply** — see the result in the preview
+5. **💾 Save** the result
+
 ### Batch processing
 1. **Batch** tab
 2. **📁 Select folder** or **📄 Select files**
-3. Pick a mode: AI correction or compression
-4. **▶ Run processing**
-5. Output goes to `_corrected` or `_compressed` folder next to sources
+3. Choose correction method (Autolevels / LUTwithBGrid / Math) on the right
+4. Set **threads** count (1–8)
+5. **▶ Run processing**
+6. Output goes to `_corrected` folder next to sources
 
 ### Compression
 1. **🗜 Compress** tab
 2. **📂 Open** for single file, or **📁 Select folder** for batch
-3. **🗜 Compress** or **▶ Compress folder**
-4. Output to `_compressed` folder next to sources
+3. Choose **8-bit** or **16-bit** PNG on the right
+4. **🗜 Compress** or **▶ Compress folder**
+5. Output to `_compressed` folder next to sources
 
 ### Manual
 Click **ℹ Info** in the header → **📖 Manual** tab.
@@ -150,7 +172,7 @@ Click **ℹ Info** in the header → **📖 Manual** tab.
 - **[Flet](https://flet.dev/)** — cross-platform UI in Python
 - **[NumPy](https://numpy.org/)** — math and array operations
 - **[Pillow](https://python-pillow.org/)** — image processing
-- **[OpenCV](https://opencv.org/)** — Sobel filters for Edge Map
+- **[OpenCV](https://opencv.org/)** — Sobel filters, HSV manipulation
 - **[Moderngl](https://moderngl.readthedocs.io/)** + **[GLFW](https://www.glfw.org/)** — 3D viewer
 - **[ONNX Runtime](https://onnxruntime.ai/)** — inference for CLIP and LUTwithBGrid
 - **[Transformers](https://huggingface.co/docs/transformers/)** + **[Tokenizers](https://huggingface.co/docs/tokenizers/)** — CLIP tokenizer
@@ -175,7 +197,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.6.1-beta  
+**Version:** 1.7.0-beta  
 **Date:** 2026
 
 ---
@@ -195,19 +217,24 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ---
 
-## 🆕 Что нового в v1.6.1-beta
+## 🆕 Что нового в v1.7.0-beta
 
-- **exe похудел** — вырезаны CUDA/TensorRT/ffmpeg бинари (~268 МБ → ~140 МБ)
-- **CLIP vision квантизован** — INT8, инференс быстрее
-- **CLIP tokenizer забандлен** — больше не тянет с HuggingFace при первом запуске
-- **Вьюер — фикс UV-шва** (растяжение текстуры + разрыв на полюсах)
-- **Вьюер — тюнинг освещения** (Cook-Torrance BRDF + IBL)
-- **Тайлинг** — новая кнопка `🔲 Seamless` (radial mask + scatter)
-- **FilePicker** — один инстанс на всё приложение (фикс утечек)
-- **UI** — правая панель шире (320px), лог сдвинут под превью
-- **Math-кнопка** растянута на всю ширину
-- **Прозрачность окна убрана**
-- **lut_model** — фикс конвертации LAB→RGB
+### Крупный рефакторинг UI
+- **NavigationRail** слева вместо кнопок-табов — 5 вкладок: Single, Batch, PBR, Compress, Realism
+- **Своя правая панель** у каждой вкладки (раньше была одна универсальная свалка)
+- **BottomSheet-лог** снизу — один общий, сворачивается кликом, показывает последнюю строку
+
+### Новая вкладка Realism
+- **Процедурный фильтр фотореализма** — grain + high-pass + HSV-вариация + виньетка
+- Три слайдера: зерно, детализация, вариация
+- Zoom в превью (колесо мыши)
+
+### Улучшения
+- **Batch:** слайдер потоков (1–8 параллельных задач)
+- **Compress:** выбор битности PNG (8/16-bit)
+
+### Оптимизация
+- **exe slim:** ~140 МБ → ~119 МБ (вырезаны CUDA/TensorRT/ffmpeg)
 
 ---
 
@@ -236,6 +263,13 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **Edge** — карта граней (Sobel через OpenCV)
 - **16-битный PNG** — Height и Normal в полной точности
 
+### 🎞 Фильтр реализма
+- **Процедурный фотореализм** — добавляет текстуре «неидеальность» как на фото
+- **Grain** — мелкое и крупное зерно
+- **Detail** — адаптивный high-pass для микро-деталей
+- **Variation** — крупные пятна цвета/яркости + лёгкая виньетка
+- **Тайлящийся шум** — паттерн не создаёт видимых швов при тайлинге
+
 ### 👁 Встроенный 3D-вьюер
 - Просмотр PBR в реальном времени через OpenGL (`viewer.exe`)
 - Вращение ЛКМ, зум колесом
@@ -254,6 +288,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 ### 🗂 Пакетная обработка
 - Обработка папок или списка файлов
 - Два режима: AI-коррекция или сжатие
+- **Слайдер потоков** — управление параллелизмом (1–8)
 - Прогресс-бар с ETA
 
 ### 🌓 Темы и режимы
@@ -271,7 +306,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ### Инсталлер (рекомендуется)
 
-1. Скачай `Albedolizer_Setup_v1.6.1-beta.exe` из [последнего релиза](../../releases/latest)
+1. Скачай `Albedolizer_Setup_v1.7.0-beta.exe` из [последнего релиза](../../releases/latest)
 2. Запусти установщик — всё встанет в `Program Files\Albedolizer`
 3. Запускай из меню Пуск или ярлыка на рабочем столе
 
@@ -305,18 +340,27 @@ Albedolizer — инструмент для 3D-художников, геймд�
 7. **👁 3D Preview** — открывает OpenGL-вьюер
 8. **💾 Сохранить все** — создастся папка `<имя>_pbr/`
 
+### Фильтр реализма
+1. Вкладка **🎞 Realism**
+2. **📂 Открыть** — загрузи текстуру
+3. Крути три слайдера: **зерно**, **детализация**, **вариация**
+4. **🎞 Применить** — результат в превью
+5. **💾 Сохранить** результат
+
 ### Пакетная обработка
 1. Вкладка **Пакетная**
 2. **📁 Выбрать папку** или **📄 Выбрать файлы**
-3. Выбери режим: AI-коррекция или сжатие
-4. **▶ Запустить обработку**
-5. Результат в папке `_corrected` или `_compressed` рядом с исходниками
+3. Выбери метод коррекции справа (Autolevels / LUTwithBGrid / Math)
+4. Задай **потоки** (1–8)
+5. **▶ Запустить обработку**
+6. Результат в папке `_corrected` рядом с исходниками
 
 ### Сжатие
 1. Вкладка **🗜 Сжатие**
 2. **📂 Открыть** для одного файла или **📁 Выбрать папку** для пакета
-3. **🗜 Сжать** или **▶ Сжать папку**
-4. Результат в папке `_compressed` рядом с исходниками
+3. Выбери **8-bit** или **16-bit** PNG справа
+4. **🗜 Сжать** или **▶ Сжать папку**
+5. Результат в папке `_compressed` рядом с исходниками
 
 ### Мануал
 Нажми **ℹ Инфо** в хедере → вкладка **📖 Мануал**.
@@ -328,7 +372,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **[Flet](https://flet.dev/)** — кроссплатформенный UI на Python
 - **[NumPy](https://numpy.org/)** — математика и работа с массивами
 - **[Pillow](https://python-pillow.org/)** — работа с изображениями
-- **[OpenCV](https://opencv.org/)** — Sobel-фильтры для Edge Map
+- **[OpenCV](https://opencv.org/)** — Sobel-фильтры, HSV-манипуляции
 - **[Moderngl](https://moderngl.readthedocs.io/)** + **[GLFW](https://www.glfw.org/)** — 3D-вьюер
 - **[ONNX Runtime](https://onnxruntime.ai/)** — инференс CLIP и LUTwithBGrid
 - **[Transformers](https://huggingface.co/docs/transformers/)** + **[Tokenizers](https://huggingface.co/docs/tokenizers/)** — CLIP-токенайзер
@@ -349,5 +393,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.6.1-beta  
+**Версия:** 1.7.0-beta  
 **Дата:** 2026
