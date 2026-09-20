@@ -18,7 +18,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 ---
 
 ## Screenshots
-![Main UI](screenshots/main.jpg)
+![Main UI](screenshots/main_int.jpg)
 
 ## 🆕 What's new in v1.7.0-beta
 
