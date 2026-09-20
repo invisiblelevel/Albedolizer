@@ -56,7 +56,7 @@ def main(page: ft.Page):
         "ai_model": USER_SETTINGS.get("ai_model", DEFAULT_AI_MODEL),
         "soap_fix_strength": 1.0,
         "saturation_boost": 1.15,
-        "pbr_bit_depth": 8,
+        "pbr_bit_depth": 16,
         "last_op": None,
         "lang": _detect_system_lang(),
         "theme": "dark",
@@ -165,6 +165,16 @@ def main(page: ft.Page):
         p.save(buf, format="PNG")
         return base64.b64encode(buf.getvalue()).decode()
 
+    def save_16bit_or_8bit(pil_img, path, bit_depth=16):
+        """Сохраняет PIL в PNG с выбранной битностью. bit_depth: 8 или 16."""
+        if bit_depth == 16:
+            arr = np.array(pil_img.convert("RGB"))
+            arr16 = (arr.astype(np.uint16) * 257)
+            bgr = cv2.cvtColor(arr16, cv2.COLOR_RGB2BGR)
+            cv2.imwrite(str(path), bgr)
+        else:
+            pil_img.save(str(path))
+
     def get_luminance(pil):
         arr = np.array(pil.convert("RGB")).astype(np.float32)
         return 0.2126 * arr[:, :, 0] + 0.7152 * arr[:, :, 1] + 0.0722 * arr[:, :, 2]
@@ -210,6 +220,9 @@ def main(page: ft.Page):
     S["compress_progress_bar"] = ft.ProgressBar(value=0, visible=True, color=COMPRESS_COLOR,
                                                   bgcolor=INPUT, height=4, bar_height=4)
     S["compress_progress_text"] = ft.Text("", color=FG2, size=12, font_family=FONT)
+    S["realism_progress_bar"] = ft.ProgressBar(value=None, visible=False, color=ACCENT,
+                                                bgcolor=INPUT, height=4, bar_height=4)
+    S["realism_progress_text"] = ft.Text("", color=FG2, size=12, font_family=FONT, visible=False)
     S["clip"] = CLIPMaterialClassifier()
     S["buttons"] = {}
 
@@ -280,6 +293,20 @@ def main(page: ft.Page):
     async def hide_pbr_progress():
         S["pbr_progress_bar"].visible = False
         S["pbr_progress_text"].visible = False
+        page.update()
+        await asyncio.sleep(0.02)
+
+    async def show_realism_progress(text="Обработка..."):
+        S["realism_progress_text"].value = text
+        S["realism_progress_text"].visible = True
+        S["realism_progress_bar"].visible = True
+        page.update()
+        await asyncio.sleep(0.05)
+        page.update()
+
+    async def hide_realism_progress():
+        S["realism_progress_bar"].visible = False
+        S["realism_progress_text"].visible = False
         page.update()
         await asyncio.sleep(0.02)
 
@@ -653,7 +680,9 @@ def main(page: ft.Page):
                 allowed_extensions=["png", "jpg", "tif"],
             )
             if path and S["corrected"] is not None:
-                S["corrected"].save(str(path))
+                await asyncio.to_thread(
+                    save_16bit_or_8bit, S["corrected"], str(path), 16
+                )
                 log(f"{t('log_saved')} {os.path.basename(str(path))}", SUCCESS)
                 page.update()
         except Exception as ex:
@@ -743,16 +772,10 @@ def main(page: ft.Page):
             page.update()
             await asyncio.sleep(0.05)
 
-            def _save():
-                bd = S.get("pbr_bit_depth", 8)
-                if bd == 16:
-                    arr = np.array(S["compress_corrected"].convert("RGB"))
-                    arr16 = (arr.astype(np.uint16) * 257)
-                    bgr = cv2.cvtColor(arr16, cv2.COLOR_RGB2BGR)
-                    cv2.imwrite(str(path), bgr)
-                else:
-                    S["compress_corrected"].save(str(path))
-            await asyncio.to_thread(_save)
+            await asyncio.to_thread(
+                save_16bit_or_8bit, S["compress_corrected"], str(path),
+                S.get("pbr_bit_depth", 16)
+            )
             log(f"{t('log_saved')} {os.path.basename(str(path))}", SUCCESS)
 
             S["compress_progress_bar"].visible = False
@@ -824,14 +847,8 @@ def main(page: ft.Page):
                 result = img.convert("LAB").convert("RGB")
                 base = os.path.splitext(os.path.basename(fp))[0]
                 out_path = os.path.join(out_dir, f"{base}.png")
-                bd = S.get("pbr_bit_depth", 8)
-                if bd == 16:
-                    arr = np.array(result)
-                    arr16 = (arr.astype(np.uint16) * 257)
-                    bgr = cv2.cvtColor(arr16, cv2.COLOR_RGB2BGR)
-                    cv2.imwrite(str(out_path), bgr)
-                else:
-                    result.save(str(out_path))
+                bd = S.get("pbr_bit_depth", 16)
+                await asyncio.to_thread(save_16bit_or_8bit, result, out_path, bd)
                 img.close()
                 count += 1
                 log(f"  [{i}/{total}] ✓ {os.path.basename(fp)}", SUCCESS)
@@ -941,7 +958,9 @@ def main(page: ft.Page):
                         result = await asyncio.to_thread(
                             remove_soap_adaptive, result, S["soap_fix_strength"]
                         )
-                    result.save(str(out_path))
+                    await asyncio.to_thread(
+                        save_16bit_or_8bit, result, out_path, 16
+                    )
                     img.close()
                     ok = True
                 except Exception as ex:
@@ -1118,7 +1137,7 @@ def main(page: ft.Page):
 
             total = len(S["pbr_result"])
             done = 0
-            bit_depth = S.get("pbr_bit_depth", 8)
+            bit_depth = S.get("pbr_bit_depth", 16)
             for key, img in S["pbr_result"].items():
                 save_pbr_map(img, str(os.path.join(out_dir, f"{base_name}_{key}.png")), bit_depth)
                 done += 1
@@ -1244,7 +1263,7 @@ def main(page: ft.Page):
                     sub = os.path.join(out_root, base)
                     os.makedirs(sub, exist_ok=True)
                     img.save(str(os.path.join(sub, f"{base}_albedo.png")))
-                    bit_depth = S.get("pbr_bit_depth", 8)
+                    bit_depth = S.get("pbr_bit_depth", 16)
                     for k, m in result.items():
                         save_pbr_map(m, str(os.path.join(sub, f"{base}_{k}.png")), bit_depth)
                     count += 1
@@ -2755,8 +2774,8 @@ def main(page: ft.Page):
                 page.update()
                 return
             try:
-                await show_progress(t("realism_progress"))
-                await asyncio.sleep(0.1)
+                await show_realism_progress(t("realism_progress"))
+                await asyncio.sleep(0.05)
 
                 result = await asyncio.to_thread(
                     add_realism, S["realism_source"],
@@ -2765,20 +2784,24 @@ def main(page: ft.Page):
                     S["realism_variation"],
                 )
                 S["realism_result"] = result
+                if S.get("realism_save_btn") is not None:
+                    S["realism_save_btn"].disabled = False
                 realism_preview.src = f"data:image/png;base64,{pil_to_b64(result)}"
                 realism_preview.visible = True
                 realism_hint.visible = False
                 log(t("realism_done"), SUCCESS)
                 page.update()
-                await asyncio.sleep(0.1)
-                await hide_progress()
+                await asyncio.sleep(0.05)
+                await hide_realism_progress()
             except Exception as ex:
-                await hide_progress()
+                await hide_realism_progress()
                 log(f"❌ {t('err')}: {ex}", DANGER)
                 page.update()
 
         async def realism_save(e):
             if S["realism_result"] is None:
+                log("   ⚠ Нечего сохранять — сначала примени фильтр", WARN)
+                page.update()
                 return
             try:
                 path = await picker.save_file(
@@ -2786,19 +2809,23 @@ def main(page: ft.Page):
                     file_name="realism.png",
                     allowed_extensions=["png", "jpg", "tif"],
                 )
-                if path:
-                    S["realism_result"].save(str(path))
-                    log(f"{t('log_saved')} {os.path.basename(str(path))}", SUCCESS)
-                    page.update()
+                if not path:
+                    return
+                await asyncio.to_thread(
+                    save_16bit_or_8bit, S["realism_result"], str(path), 16
+                )
+                log(f"{t('log_saved')} {os.path.basename(str(path))}", SUCCESS)
+                page.update()
             except Exception as ex:
                 log(f"❌ {t('err')}: {ex}", DANGER)
                 page.update()
 
+        realism_save_btn = make_btn(t("save"), realism_save, SAVE_COLOR)
+        S["realism_save_btn"] = realism_save_btn
         realism_toolbar = ft.Row([
             make_btn(t("load"), realism_load, ACCENT),
             ft.Container(expand=True),
-            make_btn(t("save"), realism_save, SAVE_COLOR,
-                     disabled=(S["realism_result"] is None)),
+            realism_save_btn,
         ], spacing=6)
 
         realism_right_panel = ft.Container(
@@ -2839,7 +2866,10 @@ def main(page: ft.Page):
                 ft.Container(
                     content=ft.Column([
                         realism_toolbar,
-                        ft.Container(height=8),
+                        ft.Container(height=6),
+                        S["realism_progress_bar"],
+                        S["realism_progress_text"],
+                        ft.Container(height=6),
                         ft.Container(content=realism_preview_box, expand=True),
                         ft.Container(height=8),
                         realism_log_panel,
