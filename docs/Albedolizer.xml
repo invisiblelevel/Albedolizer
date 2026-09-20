@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XML_DIZ_INFO>
+  <MASTER_PAD_VERSION_INFO>
+    <MASTER_PAD_VERSION>4.0</MASTER_PAD_VERSION>
+    <MASTER_PAD_EDITOR>Vasilkoff PAD Make 1.0</MASTER_PAD_EDITOR>
+    <MASTER_PAD_EDITOR_URL>https://vasilkoff.com/pad-make</MASTER_PAD_EDITOR_URL>
+    <MASTER_PAD_INFO>Portable Application Description (PAD) is a structured XML format that describes software applications for easy submission to directories.</MASTER_PAD_INFO>
+    <CERTIFIED>N</CERTIFIED>
+    <CERTIFICATE_ID></CERTIFICATE_ID>
+    <CERTIFICATE_LICENSE></CERTIFICATE_LICENSE>
+  </MASTER_PAD_VERSION_INFO>
+
+  <Company_Info>
+    <Company_Name>INV.LVL</Company_Name>
+    <Company_WebSite_URL>https://invisiblelevel.github.io/Albedolizer/</Company_WebSite_URL>
+    <Contact_Info>
+      <Contact_Email>lazycatdvrz@gmail.com</Contact_Email>
+    </Contact_Info>
+  </Company_Info>
+
+  <Program_Info>
+    <Program_Name>Albedolizer</Program_Name>
+    <Program_Version>1.7.0-beta</Program_Version>
+    <Program_Release_Month>09</Program_Release_Month>
+    <Program_Release_Day>21</Program_Release_Day>
+    <Program_Release_Year>2026</Program_Release_Year>
+    <Program_Type>Freeware</Program_Type>
+    <Program_Category_Class>Graphic Apps::Converters &amp; Optimizers</Program_Category_Class>
+    <Program_OS_Support>Other</Program_OS_Support>
+  </Program_Info>
+
+  <Web_Info>
+    <Application_URLs>
+      <Application_Info_URL>https://invisiblelevel.github.io/Albedolizer/</Application_Info_URL>
+      <Application_Screenshot_URL>https://invisiblelevel.github.io/Albedolizer/screenshots/main_int.jpg</Application_Screenshot_URL>
+      <Application_Icon_URL>https://i.postimg.cc/6phZ8Yq8/icon1.png</Application_Icon_URL>
+    </Application_URLs>
+    <Download_URLs>
+      <Primary_Download_URL>https://github.com/invisiblelevel/Albedolizer/releases/download/v1.7.0-beta/Albedolizer_Setup_v1.7.0-beta.exe</Primary_Download_URL>
+    </Download_URLs>
+  </Web_Info>
+
+  <Program_Descriptions>
+    <English>
+      <Char_Desc_450>Free tool for 3D artists, game designers, and anyone working with PBR textures. Checks Albedo maps, fixes color with AI, and generates a full set of PBR maps — all in one place.</Char_Desc_450>
+    </English>
+  </Program_Descriptions>
+</XML_DIZ_INFO>
