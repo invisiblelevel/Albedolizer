@@ -8,10 +8,13 @@ import sys
 import time
 import argparse
 import math
+import ctypes
 import numpy as np
 import moderngl
 import glfw
 from PIL import Image
+
+from imgui_bundle import imgui
 
 
 # ═══════════════════════════════════════════════════════════
@@ -57,6 +60,8 @@ uniform sampler2D u_env_blur;
 
 uniform vec3 u_cam_pos;
 uniform float u_exposure;
+uniform float u_tile_x;
+uniform float u_tile_y;
 
 out vec4 frag_color;
 
@@ -123,7 +128,7 @@ const vec3 LIGHT_DIR = normalize(vec3(-0.5, 0.8, 0.6));
 const vec3 LIGHT_COLOR = vec3(1.0, 0.95, 0.9);
 
 void main() {
-    vec2 uv = vec2(v_uv.x * 4.0, v_uv.y * 2.0);
+    vec2 uv = vec2(v_uv.x * u_tile_x, v_uv.y * u_tile_y);
     vec3 albedo = texture(u_albedo, uv).rgb;
     vec3 N = normalize(v_normal);
     vec3 V = normalize(u_cam_pos - v_world_pos);
@@ -282,16 +287,82 @@ def look_at(eye, target, up):
 #  ГЛАВНОЕ
 # ═══════════════════════════════════════════════════════════
 
+def _win_addr(w):
+    """GLFW-окно → int-адрес (нужен для бэкендов imgui-bundle)."""
+    return ctypes.cast(w, ctypes.c_void_p).value
+
+
+def imgui_glfw_backend(win):
+    """
+    Минимальный биндинг ImGui → GLFW + OpenGL3 через imgui-bundle.
+    Мышиные callback'и НЕ трогает — их комбинирует вызывающий код.
+    Возвращает объект с методами new_frame() и render().
+    """
+    # ═══ СНАЧАЛА GLFW platform backend ═══
+    imgui.backends.glfw_init_for_opengl(_win_addr(win), False)
+
+    # Только клавиатура, char, framebuffer — мышью управляет main()
+    def _cb_key(window, key, scancode, action, mods):
+        imgui.backends.glfw_keyboard_callback(_win_addr(window), key, scancode, action, mods)
+    def _cb_char(window, codepoint):
+        imgui.backends.glfw_char_callback(_win_addr(window), codepoint)
+    def _cb_fb(window, w, h):
+        imgui.backends.glfw_framebuffer_size_callback(_win_addr(window), w, h)
+
+    glfw.set_key_callback(win, _cb_key)
+    glfw.set_char_callback(win, _cb_char)
+    glfw.set_framebuffer_size_callback(win, _cb_fb)
+
+    # ═══ ПОТОМ OpenGL3 renderer backend ═══
+    imgui.backends.opengl3_init("#version 330")
+
+    class _Backend:
+        def new_frame(self):
+            imgui.backends.opengl3_new_frame()
+            imgui.backends.glfw_new_frame()
+            imgui.new_frame()
+
+        def render(self):
+            imgui.render()
+            imgui.backends.opengl3_render_draw_data(
+                imgui.get_draw_data()
+            )
+
+    return _Backend()
+
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--albedo", default="")
     parser.add_argument("--roughness", default="")
     parser.add_argument("--metallic", default="")
+    parser.add_argument("--tile-x", type=int, default=4)
+    parser.add_argument("--tile-y", type=int, default=3)
+    parser.add_argument("--lang", default="ru")
     args = parser.parse_args()
+
+    # ═══ Локализация UI вьюера ═══
+    VIEWER_STRINGS = {
+        "ru": {
+            "window_title": "Tiling",
+            "current": "Текущий",
+            "horizontal": "По горизонтали (X):",
+            "vertical": "По вертикали (Y):",
+            "reset": "Сброс 4x3",
+        },
+        "en": {
+            "window_title": "Tiling",
+            "current": "Current",
+            "horizontal": "Horizontal (X):",
+            "vertical": "Vertical (Y):",
+            "reset": "Reset 4x3",
+        },
+    }
+    L = VIEWER_STRINGS.get(args.lang, VIEWER_STRINGS["ru"])
 
     # ═══ Базовая папка (рядом с exe или скриптом) ═══
     if getattr(sys, 'frozen', False):
-        # Ищем сначала внутри exe (_MEIPASS), потом рядом с exe
         _meipass = getattr(sys, '_MEIPASS', None)
         _exe_dir = os.path.dirname(sys.executable)
         _base_dir = _meipass if (_meipass and os.path.exists(os.path.join(_meipass, "env.png"))) else _exe_dir
@@ -317,26 +388,43 @@ def main():
     glfw.focus_window(win)
     ctx = moderngl.create_context()
 
+    # ═══ ImGui init ═══
+    imgui.create_context()
+    io = imgui.get_io()
+
+    # ─── Шрифт с кириллицей ───
+    font_path = r"C:\Windows\Fonts\segoeui.ttf"
+    if not os.path.exists(font_path):
+        font_path = r"C:\Windows\Fonts\arial.ttf"
+
+    if os.path.exists(font_path):
+        io.fonts.add_font_from_file_ttf(font_path, 18.0)
+    else:
+        io.fonts.add_font_default()
+
+    io.display_size = glfw.get_window_size(win)
+    io.delta_time = 1.0 / 60.0
+    impl = imgui_glfw_backend(win)
+
     prog = ctx.program(vertex_shader=VERTEX_SHADER, fragment_shader=FRAGMENT_SHADER)
 
+    # ═══ Текстуры ═══
     tex_albedo = load_texture(ctx, args.albedo, default_color=(200, 180, 150))
     tex_rough = load_texture(ctx, args.roughness, default_color=(128, 128, 128))
     tex_metal = load_texture(ctx, args.metallic, default_color=(0, 0, 0))
 
-    # ═══ Environment map — HDRI-панорама (env.png) ═══
     env_path = os.path.join(_base_dir, "env.png")
     tex_env = load_texture(ctx, env_path, default_color=(128, 128, 128))
     tex_env.repeat_x = True
     tex_env.repeat_y = False
 
-    # ═══ Размытая версия HDRI (для диэлектриков) ═══
     env_blur_path = os.path.join(_base_dir, "env_blur.png")
     if os.path.exists(env_blur_path):
         tex_env_blur = load_texture(ctx, env_blur_path, default_color=(128, 128, 128))
         tex_env_blur.repeat_x = True
         tex_env_blur.repeat_y = False
     else:
-        tex_env_blur = tex_env  # fallback — та же текстура
+        tex_env_blur = tex_env
 
     tex_albedo.use(0)
     tex_rough.use(1)
@@ -351,17 +439,34 @@ def main():
     prog["u_env_blur"] = 4
     prog["u_exposure"] = 1.0
 
+    # ═══ Геометрия — VAO ═══
     verts, idx = create_sphere(radius=0.3)
     vbo = ctx.buffer(verts.tobytes())
     ibo = ctx.buffer(idx.tobytes())
     vao = ctx.vertex_array(prog, [(vbo, '3f 3f 2f', 'in_position', 'in_normal', 'in_uv')], ibo)
 
+    # ═══ Состояние камеры ═══
     yaw = 0.0
     pitch = 0.0
     dist = 1.0
     last_x = 0.0
     last_y = 0.0
     dragging = False
+
+    # ═══ Tiling state ═══
+    TILE_STEPS = [1, 2, 3, 4, 6, 8, 12, 16]
+
+    def _idx_for(val):
+        if val in TILE_STEPS:
+            return TILE_STEPS.index(val)
+        i = 0
+        for j, v in enumerate(TILE_STEPS):
+            if v <= val:
+                i = j
+        return i
+
+    tile_idx_x = _idx_for(args.tile_x)
+    tile_idx_y = _idx_for(args.tile_y)
 
     def mouse_button(window, button, action, mods):
         nonlocal dragging, last_x, last_y
@@ -388,18 +493,99 @@ def main():
         dist *= (1.0 - yoff * 0.08)
         dist = max(0.8, min(15.0, dist))
 
-    glfw.set_mouse_button_callback(win, mouse_button)
-    glfw.set_cursor_pos_callback(win, cursor_pos)
-    glfw.set_scroll_callback(win, scroll_cb)
+    # ═══ Совмещённые callback'и ═══
+    def mouse_button_combined(window, button, action, mods):
+        try:
+            imgui.backends.glfw_mouse_button_callback(_win_addr(window), button, action, mods)
+        except Exception:
+            pass
+        if imgui.get_io().want_capture_mouse:
+            return
+        mouse_button(window, button, action, mods)
+
+    def cursor_pos_combined(window, x, y):
+        try:
+            imgui.backends.glfw_cursor_pos_callback(_win_addr(window), x, y)
+        except Exception:
+            pass
+        if imgui.get_io().want_capture_mouse:
+            return
+        cursor_pos(window, x, y)
+
+    def scroll_combined(window, xoff, yoff):
+        try:
+            imgui.backends.glfw_scroll_callback(_win_addr(window), xoff, yoff)
+        except Exception:
+            pass
+        if imgui.get_io().want_capture_mouse:
+            return
+        scroll_cb(window, xoff, yoff)
+
+    glfw.set_mouse_button_callback(win, mouse_button_combined)
+    glfw.set_cursor_pos_callback(win, cursor_pos_combined)
+    glfw.set_scroll_callback(win, scroll_combined)
 
     ctx.enable(moderngl.DEPTH_TEST)
 
-    # ═══ Ограничение 60 FPS ═══
+    # ═══ ImGui стиль ═══
+    imgui.style_colors_dark()
+    style = imgui.get_style()
+    style.window_rounding = 8.0
+    style.frame_rounding = 6.0
+    style.window_padding = imgui.ImVec2(12, 12)
+    style.frame_padding = imgui.ImVec2(8, 6)
+
+    # ═══ Панель tiling ═══
+    def draw_tiling_panel():
+        nonlocal tile_idx_x, tile_idx_y
+
+        imgui.set_next_window_pos(imgui.ImVec2(12, 12), imgui.Cond_.always)
+        imgui.set_next_window_size(imgui.ImVec2(260, 0), imgui.Cond_.always)
+        imgui.begin(L["window_title"], None,
+                    imgui.WindowFlags_.no_resize |
+                    imgui.WindowFlags_.no_move |
+                    imgui.WindowFlags_.always_auto_resize)
+
+        imgui.text(f"{L['current']}: {TILE_STEPS[tile_idx_x]} x {TILE_STEPS[tile_idx_y]}")
+        imgui.separator()
+
+        imgui.text(L["horizontal"])
+        for i, val in enumerate(TILE_STEPS):
+            active = (i == tile_idx_x)
+            if active:
+                imgui.push_style_color(imgui.Col_.button, imgui.ImVec4(0.36, 0.55, 0.85, 1.0))
+            if imgui.button(f"{val}##x{i}", imgui.ImVec2(34, 28)):
+                tile_idx_x = i
+            if active:
+                imgui.pop_style_color()
+            if i < len(TILE_STEPS) - 1:
+                imgui.same_line()
+
+        imgui.spacing()
+        imgui.text(L["vertical"])
+        for i, val in enumerate(TILE_STEPS):
+            active = (i == tile_idx_y)
+            if active:
+                imgui.push_style_color(imgui.Col_.button, imgui.ImVec4(0.36, 0.55, 0.85, 1.0))
+            if imgui.button(f"{val}##y{i}", imgui.ImVec2(34, 28)):
+                tile_idx_y = i
+            if active:
+                imgui.pop_style_color()
+            if i < len(TILE_STEPS) - 1:
+                imgui.same_line()
+
+        imgui.spacing()
+        if imgui.button(L["reset"], imgui.ImVec2(-1, 28)):
+            tile_idx_x = 3
+            tile_idx_y = 2
+
+        imgui.end()
+
+    # ═══ Главный цикл ═══
     target_dt = 1.0 / 60.0
 
     while not glfw.window_should_close(win):
         frame_start = time.time()
-
         glfw.poll_events()
 
         w, h = glfw.get_framebuffer_size(win)
@@ -419,11 +605,17 @@ def main():
         prog["m_view"].write(view.T.tobytes())
         prog["m_model"].write(model.T.tobytes())
         prog["u_cam_pos"].value = eye
+        prog["u_tile_x"].value = float(TILE_STEPS[tile_idx_x])
+        prog["u_tile_y"].value = float(TILE_STEPS[tile_idx_y])
 
         vao.render(moderngl.TRIANGLES)
+
+        impl.new_frame()
+        draw_tiling_panel()
+        impl.render()
+
         glfw.swap_buffers(win)
 
-        # Ограничение FPS — чтобы ноут не грелся
         elapsed = time.time() - frame_start
         if elapsed < target_dt:
             time.sleep(target_dt - elapsed)

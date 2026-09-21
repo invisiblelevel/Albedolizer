@@ -1,6 +1,41 @@
 # Changelog
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+## [1.7.0-beta] — 2026-09-20
+
+Engine Export + viewer tiling + QoL fixes.
+
+### Added
+- **Engine Export tab** (`🎮 Engine` / `🎮 Движок`) — pack PBR maps for specific engines:
+  - **Unity HDRP** — Mask Map: R=Metallic, G=AO, B=Detail Mask, A=Smoothness
+  - **Unity URP** — MetallicSmoothness: R=Metallic, A=Smoothness, G/B=0
+  - **Unreal** — ORM: R=AO, G=Roughness, B=Metallic
+  - **Godot** — ORM: R=AO, G=Roughness, B=Metallic
+- **Detail Mask** for Unity HDRP — white (1.0) / edge map / custom (load from disk)
+- **Normal map format toggle** — OpenGL (Y+) or DirectX (Y-, green channel flipped)
+- **Channel preview** in Engine tab — R / G / B / A / RGB / RGBA
+- **3D viewer tiling panel** — in-window ImGui buttons for X/Y texture tiling
+  - Tiling steps: 1×1, 2×2, 3×3, 4×4, 6×6, 8×8, 12×12, 16×16
+  - `Reset 4x3` button
+  - Panel follows app language (RU / EN)
+- **Last opened folder memory** — all file pickers and save dialogs start from the last used folder, persists in `config.json`
+
+### Changed
+- **Wallet label** `TON` → `GRAM` (address unchanged)
+
+### Fixed
+- **Realism tab Save button** — was not working, now saves correctly
+- **Realism progress bar** — added, so 8K textures don't look frozen during processing
+- **LUTwithBGrid blur on high-res textures** — the model was running at 512px internally, causing blur on 2K+ textures. Now processes up to **6 megapixels** before downscaling. Blur gone.
+- **Viewer language** — now follows the app language (`--lang` argument from `main.py`)
+
+### Internal
+- New module `engine_export.py` — packers for Unity HDRP / URP / Unreal / Godot
+- New spec `viewer.spec` — separate PyInstaller spec for the viewer with `imgui_bundle` included
+- Viewer now depends on `imgui-bundle` for the in-window tiling controls
+
+
+---
+
 
 
 ## [1.7.0-beta] — 2026-09-20

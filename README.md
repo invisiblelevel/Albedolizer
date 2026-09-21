@@ -2,7 +2,7 @@
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.7.0--beta-orange)
+![Version](https://img.shields.io/badge/version-1.7.1--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -13,31 +13,31 @@
 
 ## 📖 What is it
 
-Albedolizer is a tool for 3D artists, game designers, and anyone working with PBR textures. It checks Albedo maps against standards, automatically corrects color via an AI model, generates a full set of PBR maps, and lets you preview the result in a built-in 3D viewer.
+Albedolizer is a tool for 3D artists, game designers, and anyone working with PBR textures. It checks Albedo maps against standards, automatically corrects color via an AI model, generates a full set of PBR maps, packs them for a target engine, and lets you preview the result in a built-in 3D viewer.
 
 ---
 
 ## Screenshots
 ![Main UI](screenshots/main_int.jpg)
 
-## 🆕 What's new in v1.7.0-beta
+## 🆕 What's new in v1.7.1-beta
 
-### Major UI refactor
-- **NavigationRail** on the left instead of tab buttons — 5 tabs: Single, Batch, PBR, Compress, Realism
-- **Own right panel** for each tab (previously a universal pile)
-- **BottomSheet log** at the bottom — single, collapsible, shows the last line
+### New Engine Export tab
+- **Unity HDRP** — Mask Map (R=Metallic, G=AO, B=Detail, A=Smoothness)
+- **Unity URP** — MetallicSmoothness (R=Metallic, A=Smoothness)
+- **Unreal / Godot** — ORM (R=AO, G=Roughness, B=Metallic)
+- **DirectX / OpenGL** normal map flip
+- **Detail Mask** — white / edge map / custom file
 
-### New Realism tab
-- **Procedural photorealism filter** — grain + high-pass + HSV variation + vignette
-- Three sliders: grain, detail, variation
-- Zoom in preview (mouse wheel)
+### 3D viewer: tiling controls
+- In-window panel with X/Y tiling buttons
+- Scale from 1×1 up to 16×16
+- Language follows the app language
 
-### Improvements
-- **Batch:** threads slider (1–8 parallel tasks)
-- **Compress:** PNG bit depth selector (8/16-bit)
-
-### Optimization
-- **Slim exe:** ~140 MB → ~119 MB (CUDA/TensorRT/ffmpeg stripped)
+### Quality of life
+- **Last opened folder is remembered** across sessions
+- **Realism tab Save** fixed, progress bar added for 8K textures
+- **LUTwithBGrid** no longer blurs high-res textures (processes up to 6MP)
 
 ---
 
@@ -66,6 +66,16 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - **Edge** — edge map (Sobel via OpenCV)
 - **16-bit PNG output** — Height and Normal maps in full precision
 
+### 🎮 Engine Export
+- **Unity HDRP** Mask Map — R=Metallic, G=AO, B=Detail Mask, A=Smoothness
+- **Unity URP** MetallicSmoothness — R=Metallic, A=Smoothness
+- **Unreal ORM** — R=AO, G=Roughness, B=Metallic
+- **Godot ORM** — R=AO, G=Roughness, B=Metallic
+- **Normal map format** — OpenGL (Y+) / DirectX (Y-) with green channel flip
+- **Detail Mask** for HDRP — white (1.0) / edge map / custom loaded from disk
+- **Channel preview** — R / G / B / A / RGB / RGBA
+- **Source:** current PBR result or a folder with `*_albedo.png`, `*_normal.png`, `*_ao.png`, etc.
+
 ### 🎞 Realism Filter
 - **Procedural photorealism** — adds camera-like imperfection to albedo textures
 - **Grain** — fine and coarse noise layers
@@ -75,10 +85,12 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 
 ### 👁 Built-in 3D Viewer
 - Real-time PBR preview via OpenGL (`viewer.exe`)
+- **Tiling panel** — click X/Y buttons in the window to change texture scale (1×1 to 16×16)
 - Rotate with LMB, zoom with mouse wheel
-- Powered by Moderngl + GLFW
+- Powered by Moderngl + GLFW + ImGui
 - HDRI environment lighting with blurred reflections
 - Correct UV mapping — no seams or stretching
+- Viewer UI language follows the app language
 
 ### 📖 Built-in Manual
 - Full HTML manual with screenshots and annotations
@@ -102,6 +114,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 ### 🌐 Interface
 - Russian / English with auto-detection
 - Interactive preview with zoom (0.5x–8x)
+- **Last opened folder is remembered** across sessions
 
 ---
 
@@ -109,7 +122,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 
 ### Installer (recommended)
 
-1. Download `Albedolizer_Setup_v1.7.0-beta.exe` from the [latest release](../../releases/latest)
+1. Download `Albedolizer_Setup_v1.7.1-beta.exe` from the [latest release](../../releases/latest)
 2. Run the installer — it places everything in `Program Files\Albedolizer`
 3. Launch from Start Menu or Desktop shortcut
 
@@ -140,8 +153,18 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 4. Adjust sliders if needed
 5. **🎨 Generate** → 7 maps
 6. Switch between maps with buttons on top
-7. **👁 3D Preview** — opens the OpenGL viewer
+7. **👁 3D Preview** — opens the OpenGL viewer with tiling controls
 8. **💾 Save all** — creates a `<name>_pbr/` folder
+
+### Engine Export
+1. **🎮 Engine** tab
+2. **⚙️ From current PBR** (uses your last generated maps) or **📂 Load from folder**
+3. Pick **engine:** Unity HDRP / URP / Unreal / Godot
+4. Pick **normal map format:** OpenGL (Y+) or DirectX (Y-)
+5. For HDRP — pick **Detail Mask:** white / edge / custom
+6. **⚙️ Pack** — see the packed map in the preview
+7. Switch channels: **R / G / B / A / RGB / RGBA**
+8. **💾 Save all** — creates `<name>_<engine>_<gl|dx>/`
 
 ### Realism filter
 1. **🎞 Realism** tab
@@ -176,7 +199,7 @@ Click **ℹ Info** in the header → **📖 Manual** tab.
 - **[NumPy](https://numpy.org/)** — math and array operations
 - **[Pillow](https://python-pillow.org/)** — image processing
 - **[OpenCV](https://opencv.org/)** — Sobel filters, HSV manipulation
-- **[Moderngl](https://moderngl.readthedocs.io/)** + **[GLFW](https://www.glfw.org/)** — 3D viewer
+- **[Moderngl](https://moderngl.readthedocs.io/)** + **[GLFW](https://www.glfw.org/)** + **[imgui-bundle](https://pypi.org/project/imgui-bundle/)** — 3D viewer with in-window controls
 - **[ONNX Runtime](https://onnxruntime.ai/)** — inference for CLIP and LUTwithBGrid
 - **[Transformers](https://huggingface.co/docs/transformers/)** + **[Tokenizers](https://huggingface.co/docs/tokenizers/)** — CLIP tokenizer
 - **Autolevels** (XCiT-tiny) — AI color correction model
@@ -200,7 +223,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.7.0-beta  
+**Version:** 1.7.1-beta  
 **Date:** 2026
 
 ---
@@ -216,28 +239,28 @@ MIT — free to use, including in commercial projects.
 
 ## 📖 Что это
 
-Albedolizer — инструмент для 3D-художников, геймдизайнеров и всех, кто работает с PBR-текстурами. Он проверяет Albedo-карты на соответствие стандартам, автоматически корректирует цвет через AI-модель, генерирует полный набор PBR-карт и позволяет посмотреть результат во встроенном 3D-вьюере.
+Albedolizer — инструмент для 3D-художников, геймдизайнеров и всех, кто работает с PBR-текстурами. Он проверяет Albedo-карты на соответствие стандартам, автоматически корректирует цвет через AI-модель, генерирует полный набор PBR-карт, упаковывает их под конкретный движок и позволяет посмотреть результат во встроенном 3D-вьюере.
 
 ---
 
-## 🆕 Что нового в v1.7.0-beta
+## 🆕 Что нового в v1.7.1-beta
 
-### Крупный рефакторинг UI
-- **NavigationRail** слева вместо кнопок-табов — 5 вкладок: Single, Batch, PBR, Compress, Realism
-- **Своя правая панель** у каждой вкладки (раньше была одна универсальная свалка)
-- **BottomSheet-лог** снизу — один общий, сворачивается кликом, показывает последнюю строку
+### Новая вкладка «Движок» (Engine Export)
+- **Unity HDRP** — Mask Map (R=Metallic, G=AO, B=Detail, A=Smoothness)
+- **Unity URP** — MetallicSmoothness (R=Metallic, A=Smoothness)
+- **Unreal / Godot** — ORM (R=AO, G=Roughness, B=Metallic)
+- **DirectX / OpenGL** — переворот Normal map
+- **Detail Mask** — белая / edge-карта / своя с диска
 
-### Новая вкладка Realism
-- **Процедурный фильтр фотореализма** — grain + high-pass + HSV-вариация + виньетка
-- Три слайдера: зерно, детализация, вариация
-- Zoom в превью (колесо мыши)
+### 3D-вьюер: управление тайлингом
+- Панель с кнопками X/Y прямо в окне вьюера
+- Масштаб от 1×1 до 16×16
+- Язык панели следует за языком приложения
 
-### Улучшения
-- **Batch:** слайдер потоков (1–8 параллельных задач)
-- **Compress:** выбор битности PNG (8/16-bit)
-
-### Оптимизация
-- **exe slim:** ~140 МБ → ~119 МБ (вырезаны CUDA/TensorRT/ffmpeg)
+### Качество жизни
+- **Запоминается последняя папка** между сессиями
+- **Realism:** кнопка Save починена, добавлен прогресс-бар для 8K
+- **LUTwithBGrid** больше не мылит текстуры высокого разрешения (обработка до 6 МП)
 
 ---
 
@@ -266,6 +289,16 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **Edge** — карта граней (Sobel через OpenCV)
 - **16-битный PNG** — Height и Normal в полной точности
 
+### 🎮 Экспорт для движков
+- **Unity HDRP** Mask Map — R=Metallic, G=AO, B=Detail Mask, A=Smoothness
+- **Unity URP** MetallicSmoothness — R=Metallic, A=Smoothness
+- **Unreal ORM** — R=AO, G=Roughness, B=Metallic
+- **Godot ORM** — R=AO, G=Roughness, B=Metallic
+- **Формат Normal** — OpenGL (Y+) / DirectX (Y-) с инверсией зелёного канала
+- **Detail Mask** для HDRP — белая (1.0) / edge-карта / своя с диска
+- **Просмотр каналов** — R / G / B / A / RGB / RGBA
+- **Источник:** текущий PBR-результат или папка с `*_albedo.png`, `*_normal.png`, `*_ao.png` и т.д.
+
 ### 🎞 Фильтр реализма
 - **Процедурный фотореализм** — добавляет текстуре «неидеальность» как на фото
 - **Grain** — мелкое и крупное зерно
@@ -275,10 +308,12 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ### 👁 Встроенный 3D-вьюер
 - Просмотр PBR в реальном времени через OpenGL (`viewer.exe`)
+- **Панель тайлинга** — кнопки X/Y прямо в окне, масштаб от 1×1 до 16×16
 - Вращение ЛКМ, зум колесом
-- На базе Moderngl + GLFW
+- На базе Moderngl + GLFW + ImGui
 - HDRI-освещение с размытыми отражениями
 - Корректный UV-маппинг — без швов и растяжения
+- Язык панели следует за языком приложения
 
 ### 📖 Встроенный мануал
 - Полный HTML-мануал со скринами и разметкой
@@ -302,6 +337,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 ### 🌐 Интерфейс
 - Русский / English с автоопределением системы
 - Интерактивное превью с зумом (0.5x–8x)
+- **Запоминается последняя открытая папка** между сессиями
 
 ---
 
@@ -309,7 +345,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ### Инсталлер (рекомендуется)
 
-1. Скачай `Albedolizer_Setup_v1.7.0-beta.exe` из [последнего релиза](../../releases/latest)
+1. Скачай `Albedolizer_Setup_v1.7.1-beta.exe` из [последнего релиза](../../releases/latest)
 2. Запусти установщик — всё встанет в `Program Files\Albedolizer`
 3. Запускай из меню Пуск или ярлыка на рабочем столе
 
@@ -340,8 +376,18 @@ Albedolizer — инструмент для 3D-художников, геймд�
 4. При необходимости подкрути параметры
 5. **🎨 Сгенерировать** → 7 карт
 6. Переключайся между картами кнопками сверху
-7. **👁 3D Preview** — открывает OpenGL-вьюер
+7. **👁 3D Preview** — открывает OpenGL-вьюер с панелью тайлинга
 8. **💾 Сохранить все** — создастся папка `<имя>_pbr/`
+
+### Экспорт для движков
+1. Вкладка **🎮 Движок**
+2. **⚙️ Из текущего PBR** (берёт последние сгенерированные карты) или **📂 Загрузить из папки**
+3. Выбери **движок:** Unity HDRP / URP / Unreal / Godot
+4. Выбери **формат Normal:** OpenGL (Y+) или DirectX (Y-)
+5. Для HDRP — выбери **Detail Mask:** белая / edge / своя
+6. **⚙️ Упаковать** — увидишь упакованную карту в превью
+7. Переключай каналы: **R / G / B / A / RGB / RGBA**
+8. **💾 Сохранить все** — создастся папка `<имя>_<движок>_<gl|dx>/`
 
 ### Фильтр реализма
 1. Вкладка **🎞 Realism**
@@ -376,7 +422,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **[NumPy](https://numpy.org/)** — математика и работа с массивами
 - **[Pillow](https://python-pillow.org/)** — работа с изображениями
 - **[OpenCV](https://opencv.org/)** — Sobel-фильтры, HSV-манипуляции
-- **[Moderngl](https://moderngl.readthedocs.io/)** + **[GLFW](https://www.glfw.org/)** — 3D-вьюер
+- **[Moderngl](https://moderngl.readthedocs.io/)** + **[GLFW](https://www.glfw.org/)** + **[imgui-bundle](https://pypi.org/project/imgui-bundle/)** — 3D-вьюер с внутриоконными контролами
 - **[ONNX Runtime](https://onnxruntime.ai/)** — инференс CLIP и LUTwithBGrid
 - **[Transformers](https://huggingface.co/docs/transformers/)** + **[Tokenizers](https://huggingface.co/docs/tokenizers/)** — CLIP-токенайзер
 - **Autolevels** (XCiT-tiny) — AI-модель цветокоррекции
@@ -396,5 +442,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.7.0-beta  
+**Версия:** 1.7.1-beta  
 **Дата:** 2026

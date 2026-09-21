@@ -6,9 +6,9 @@ config.py — все константы, словари и настройки Al
 # ═══════════════════════════════════════════════════════════
 #  МЕТА
 # ═══════════════════════════════════════════════════════════
-APP_TITLE = "Albedolizer v1.7.0-beta"
-APP_VERSION = "1.7.0-beta"
-APP_BUILD = "2026-09-20"
+PP_TITLE = "Albedolizer v1.7.1-beta"
+APP_VERSION = "1.7.1-beta"
+APP_BUILD = "2026-09-21"
 APP_AUTHOR = "INV.LVL"
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 820
@@ -59,7 +59,7 @@ DEFAULT_ACTIVE_TAB = "single"
 WALLETS = [
     {"label": "BTC", "address": "bc1q2ka70s4vtmrskandqj8l4d6n3kdxyxa7kf3wf7"},
     {"label": "USDT (TRC-20)", "address": "TUjY9p6oxKmeCQwNZwMfHqHdXuabaHpgT7"},
-    {"label": "TON", "address": "UQDWumGNNlnITx48WBzyI7Clb5wrpFRlJ3Se7xhfVKY5E2ad"},
+    {"label": "GRAM", "address": "UQDWumGNNlnITx48WBzyI7Clb5wrpFRlJ3Se7xhfVKY5E2ad"},
 ]
 
 # ═══════════════════════════════════════════════════════════

@@ -33,6 +33,7 @@ DEFAULT_SETTINGS = {
     "soap_fix_strength": 1.0,
     "saturation_boost": 1.15,
     "pbr_bit_depth": 8,
+    "last_folder": "",
     "window": {
         "width": 1280,
         "height": 820

@@ -26,6 +26,14 @@ from clip_model import CLIPMaterialClassifier
 from realism import add_realism
 from translations import T
 from settings import load_settings, save_settings
+from engine_export import (
+    pack_for_engine, save_engine_map,
+    load_pbr_folder, engine_folder_suffix,
+)
+from engine_export import (
+    pack_for_engine, save_engine_map,
+    load_pbr_folder, engine_folder_suffix,
+)
 
 
 def _detect_system_lang():
@@ -86,10 +94,23 @@ def main(page: ft.Page):
         "realism_highpass": 0.30,
         "realism_variation": 0.20,
         "realism_source": None,
+        "viewer_tile_x": 4,
+        "viewer_tile_y": 3,
         "realism_result": None,
         "compress_original": None,
         "compress_corrected": None,
         "compress_path": None,
+        "last_folder": USER_SETTINGS.get("last_folder", ""),
+        "export_source": None,
+        "export_source_label": None,
+        "export_packed": None,
+        "export_normal_out": None,
+        "export_engine": "unity_hdrp",
+        "export_normal_format": "opengl",
+        "export_detail_mode": "edge",
+        "export_custom_detail": None,
+        "export_bit_depth": 8,
+        "export_preview_channel": "rgb",
     }
 
     # ═══ Цвета темы ═══
@@ -114,7 +135,7 @@ def main(page: ft.Page):
     ON_ACCENT = "#ffffff"
 
     cv2.setNumThreads(os.cpu_count() or 4)
-    page.title = "Albedolizer v1.7.0-beta"
+    page.title = "Albedolizer v1.7.1-beta"
 
     # ═══ FilePicker — один на всё приложение ═══
     picker = ft.FilePicker()
@@ -164,6 +185,25 @@ def main(page: ft.Page):
         buf = io.BytesIO()
         p.save(buf, format="PNG")
         return base64.b64encode(buf.getvalue()).decode()
+
+    def _init_dir():
+        """Возвращает последнюю открытую папку или None."""
+        lf = S.get("last_folder") or ""
+        if lf and os.path.isdir(lf):
+            return lf
+        return None
+
+    def _remember_folder(file_path):
+        """Запоминает папку файла и сохраняет в настройки."""
+        if not file_path:
+            return
+        try:
+            folder = os.path.dirname(os.path.abspath(file_path))
+            if folder and folder != S.get("last_folder"):
+                S["last_folder"] = folder
+                persist_settings()
+        except Exception:
+            pass
 
     def save_16bit_or_8bit(pil_img, path, bit_depth=16):
         """Сохраняет PIL в PNG с выбранной битностью. bit_depth: 8 или 16."""
@@ -569,10 +609,12 @@ def main(page: ft.Page):
             files = await picker.pick_files(
                 dialog_title=t("dialog_pick_title"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+                initial_directory=_init_dir(),
             )
             if not files or not files[0].path:
                 return
             fp = files[0].path
+            _remember_folder(fp)
 
             await show_progress(t("progress_load"))
             await asyncio.sleep(0.1)
@@ -627,10 +669,12 @@ def main(page: ft.Page):
             files = await picker.pick_files(
                 dialog_title=t("dialog_pick_title"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+                initial_directory=_init_dir(),
             )
             if files and len(files) > 0:
                 fp = files[0].path
                 if fp:
+                    _remember_folder(fp)
                     await show_progress(t("progress_load"))
                     await asyncio.sleep(0.1)
 
@@ -678,11 +722,13 @@ def main(page: ft.Page):
                 dialog_title=t("dialog_save_title"),
                 file_name=default_name,
                 allowed_extensions=["png", "jpg", "tif"],
+                initial_directory=_init_dir(),
             )
             if path and S["corrected"] is not None:
                 await asyncio.to_thread(
                     save_16bit_or_8bit, S["corrected"], str(path), 16
                 )
+                _remember_folder(str(path))
                 log(f"{t('log_saved')} {os.path.basename(str(path))}", SUCCESS)
                 page.update()
         except Exception as ex:
@@ -695,10 +741,12 @@ def main(page: ft.Page):
             files = await picker.pick_files(
                 dialog_title=t("dialog_pick_title"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+                initial_directory=_init_dir(),
             )
             if files and len(files) > 0:
                 fp = files[0].path
                 if fp:
+                    _remember_folder(fp)
                     img = Image.open(fp).convert("RGB")
                     S["compress_original"] = img
                     S["compress_path"] = fp
@@ -761,6 +809,7 @@ def main(page: ft.Page):
                 dialog_title=t("dialog_save_title"),
                 file_name=f"{base}_compressed.png",
                 allowed_extensions=["png", "jpg", "tif"],
+                initial_directory=_init_dir(),
             )
             if not path:
                 return
@@ -776,6 +825,7 @@ def main(page: ft.Page):
                 save_16bit_or_8bit, S["compress_corrected"], str(path),
                 S.get("pbr_bit_depth", 16)
             )
+            _remember_folder(str(path))
             log(f"{t('log_saved')} {os.path.basename(str(path))}", SUCCESS)
 
             S["compress_progress_bar"].visible = False
@@ -811,9 +861,12 @@ def main(page: ft.Page):
                 dialog_title=t("batch_select_files"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
                 allow_multiple=True,
+                initial_directory=_init_dir(),
             )
             if not files:
                 return
+            if files and files[0].path:
+                _remember_folder(files[0].path)
             S["compress_files"] = [f.path for f in files if f.path]
             log(f"📄 {t('batch_selected')} {len(S['compress_files'])}", FG2)
             update_compress_progress(0, len(S["compress_files"]),
@@ -893,9 +946,12 @@ def main(page: ft.Page):
                 dialog_title=t("batch_select_files"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
                 allow_multiple=True,
+                initial_directory=_init_dir(),
             )
             if not files:
                 return
+            if files and files[0].path:
+                _remember_folder(files[0].path)
             S["batch_files"] = [f.path for f in files if f.path]
             log(f"📄 {t('batch_selected')} {len(S['batch_files'])}", FG2)
             S["batch_progress_bar"].value = 0
@@ -988,12 +1044,14 @@ def main(page: ft.Page):
             files = await picker.pick_files(
                 dialog_title=t("pbr_dialog_pick"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+                initial_directory=_init_dir(),
             )
             if not files:
                 return
             fp = files[0].path
             if not fp:
                 return
+            _remember_folder(fp)
             img = Image.open(fp).convert("RGB")
             S["pbr_source"] = img
             S["pbr_source_path"] = fp
@@ -1056,10 +1114,12 @@ def main(page: ft.Page):
             files = await picker.pick_files(
                 dialog_title=t("pbr_dialog_pick"),
                 allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+                initial_directory=_init_dir(),
             )
             if not files or not files[0].path:
                 return
             fp = files[0].path
+            _remember_folder(fp)
             img = Image.open(fp).convert("RGB")
             S["pbr_source"] = img
             S["pbr_source_path"] = fp
@@ -1200,6 +1260,9 @@ def main(page: ft.Page):
                 "--albedo", paths.get("albedo", ""),
                 "--roughness", paths.get("roughness", ""),
                 "--metallic", paths.get("metallic", ""),
+                "--tile-x", str(S.get("viewer_tile_x", 4)),
+                "--tile-y", str(S.get("viewer_tile_y", 3)),
+                "--lang", S.get("lang", "ru"),
             ]
 
             S["pbr_progress_text"].value = t("pbr_viewer_progress") + " " + "🚀"
@@ -1355,16 +1418,321 @@ def main(page: ft.Page):
             b.content.color = ON_ACCENT if k == S["pbr_current_map"] else FG2
         page.update()
 
-    def pbr_batch_prev(e=None):
-        keys = list(S["pbr_batch_results"].keys())
-        if not keys:
+    # ═══════════════════════════════════════════════════════════
+    #  EXPORT — упаковка под движки
+    # ═══════════════════════════════════════════════════════════
+
+    def _export_engine_label(eng):
+        return {
+            "unity_hdrp": "Unity HDRP",
+            "unity_urp": "Unity URP",
+            "unreal": "Unreal",
+            "godot": "Godot",
+        }.get(eng, eng)
+
+    def _export_normal_label(nf):
+        return "DirectX (Y-)" if nf == "directx" else "OpenGL (Y+)"
+
+    async def export_load_from_pbr(e=None):
+        if S.get("pbr_result") is None:
+            log("   ⚠ PBR-карты не сгенерированы", WARN)
+            page.update()
             return
-        S["pbr_batch_index"] = (S["pbr_batch_index"] - 1) % len(keys)
-        pbr_load_batch_texture(keys[S["pbr_batch_index"]])
-        for k, b in S["pbr_map_buttons"].items():
-            b.bgcolor = ACCENT if k == S["pbr_current_map"] else CARD
-            b.content.color = ON_ACCENT if k == S["pbr_current_map"] else FG2
+        src = {}
+        for k, v in S["pbr_result"].items():
+            if v is not None:
+                src[k] = v
+        if "albedo" not in src and S.get("pbr_source") is not None:
+            arr = np.array(S["pbr_source"].convert("RGB")).astype(np.float32) / 255.0
+            src["albedo"] = arr
+        S["export_source"] = src
+        base = "PBR"
+        if S.get("pbr_source_path"):
+            base = os.path.splitext(os.path.basename(S["pbr_source_path"]))[0]
+        S["export_source_label"] = f"PBR / {base}"
+        log(f"📦 Export: источник — текущий PBR ({len(src)} карт)", SUCCESS)
         page.update()
+        rebuild_ui()
+
+    async def export_load_from_folder(e=None):
+        folder = await picker.get_directory_path(
+            dialog_title="Выбери папку с PBR-картами",
+            initial_directory=_init_dir(),
+        )
+        if not folder:
+            return
+        if folder and folder != S.get("last_folder"):
+            S["last_folder"] = folder
+            persist_settings()
+        src = load_pbr_folder(folder)
+        if not src or "normal" not in src:
+            log(f"   ⚠ В папке нет *_normal.png: {folder}", WARN)
+            page.update()
+            return
+        S["export_source"] = src
+        S["export_source_label"] = folder
+        log(f"📦 Export: загружено {len(src)} карт из {os.path.basename(folder)}", SUCCESS)
+        page.update()
+        rebuild_ui()
+
+    async def export_load_custom_detail(e=None):
+        files = await picker.pick_files(
+            dialog_title="Выбери Detail Mask (grayscale)",
+            allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+            initial_directory=_init_dir(),
+        )
+        if not files or not files[0].path:
+            return
+        fp = files[0].path
+        _remember_folder(fp)
+        try:
+            img = Image.open(fp).convert("L")
+            arr = np.array(img).astype(np.float32) / 255.0
+            S["export_custom_detail"] = arr
+            S["export_detail_mode"] = "custom"
+            log(f"📦 Detail Mask загружена: {os.path.basename(fp)}", SUCCESS)
+        except Exception as ex:
+            log(f"❌ Detail Mask: {ex}", DANGER)
+        page.update()
+        rebuild_ui()
+
+    async def export_pack(e=None):
+        if S.get("export_source") is None:
+            log("   ⚠ Сначала выбери источник (PBR или папка)", WARN)
+            page.update()
+            return
+        try:
+            await show_pbr_progress("📦 Упаковка...")
+            await asyncio.sleep(0.05)
+            engine = S.get("export_engine", "unity_hdrp")
+            nf = S.get("export_normal_format", "opengl")
+            detail_mode = S.get("export_detail_mode", "edge")
+            detail_mask = None
+            if engine == "unity_hdrp":
+                if detail_mode == "white":
+                    detail_mask = None
+                elif detail_mode == "custom":
+                    detail_mask = S.get("export_custom_detail")
+            result = await asyncio.to_thread(
+                pack_for_engine,
+                S["export_source"], engine, nf, detail_mask
+            )
+            if not result or "packed" not in result:
+                log("   ⚠ Упаковка не удалась", WARN)
+                await hide_pbr_progress()
+                return
+            S["export_packed"] = result["packed"]
+            S["export_normal_out"] = result.get("normal")
+            log(f"📦 Упаковано: {_export_engine_label(engine)} / {_export_normal_label(nf)}", SUCCESS)
+            page.update()
+            await asyncio.sleep(0.05)
+            await hide_pbr_progress()
+            rebuild_ui()
+        except Exception as ex:
+            await hide_pbr_progress()
+            log(f"❌ Export pack: {ex}", DANGER)
+            page.update()
+
+    async def export_save(e=None):
+        if S.get("export_packed") is None:
+            log("   ⚠ Нечего сохранять — сначала упакуй", WARN)
+            page.update()
+            return
+        try:
+            src_label = S.get("export_source_label") or ""
+            if src_label.startswith("PBR / "):
+                base_name = src_label.replace("PBR / ", "")
+                folder = os.path.dirname(S.get("pbr_source_path") or os.getcwd())
+            elif os.path.isdir(src_label):
+                folder = os.path.dirname(src_label)
+                base_name = os.path.basename(src_label.rstrip("\\/")) or "pbr"
+            else:
+                folder = os.getcwd()
+                base_name = "pbr"
+            engine = S.get("export_engine", "unity_hdrp")
+            nf = S.get("export_normal_format", "opengl")
+            suffix = engine_folder_suffix(engine, nf)
+            out_dir = os.path.join(folder, f"{base_name}{suffix}")
+            os.makedirs(out_dir, exist_ok=True)
+            bd = S.get("export_bit_depth", 8)
+            packed_name = {
+                "unity_hdrp": f"{base_name}_MaskMap.png",
+                "unity_urp":  f"{base_name}_MetallicSmoothness.png",
+                "unreal":     f"{base_name}_ORM.png",
+                "godot":      f"{base_name}_ORM.png",
+            }.get(engine, f"{base_name}_packed.png")
+            normal_name = f"{base_name}_normal.png"
+            await show_pbr_progress("💾 Сохранение...")
+            await asyncio.sleep(0.05)
+            await asyncio.to_thread(
+                save_engine_map, S["export_packed"],
+                os.path.join(out_dir, packed_name), bd
+            )
+            if S.get("export_normal_out") is not None:
+                await asyncio.to_thread(
+                    save_engine_map, S["export_normal_out"],
+                    os.path.join(out_dir, normal_name), bd
+                )
+            log(f"💾 Export сохранён: {out_dir}", SUCCESS)
+            page.update()
+            await asyncio.sleep(0.1)
+            await hide_pbr_progress()
+        except Exception as ex:
+            await hide_pbr_progress()
+            log(f"❌ Export save: {ex}", DANGER)
+            page.update()
+
+    def export_set_engine(eng):
+        S["export_engine"] = eng
+        S["export_packed"] = None
+        page.update()
+        rebuild_ui()
+
+    def export_set_normal_format(nf):
+        S["export_normal_format"] = nf
+        S["export_packed"] = None
+        page.update()
+        rebuild_ui()
+
+    def export_set_detail_mode(mode):
+        S["export_detail_mode"] = mode
+        S["export_packed"] = None
+        page.update()
+        rebuild_ui()
+
+    def export_set_channel(ch):
+        S["export_preview_channel"] = ch
+        page.update()
+        rebuild_ui()
+
+    def export_build_preview_pil():
+        arr = S.get("export_packed")
+        if arr is None:
+            return None
+        ch = S.get("export_preview_channel", "rgb")
+        if arr.ndim == 2:
+            a = np.clip(arr, 0, 1)
+            return Image.fromarray((a * 255).astype(np.uint8), mode="L")
+        if ch == "r":
+            a = np.clip(arr[..., 0], 0, 1)
+            return Image.fromarray((a * 255).astype(np.uint8), mode="L")
+        if ch == "g":
+            a = np.clip(arr[..., 1], 0, 1)
+            return Image.fromarray((a * 255).astype(np.uint8), mode="L")
+        if ch == "b":
+            a = np.clip(arr[..., 2], 0, 1)
+            return Image.fromarray((a * 255).astype(np.uint8), mode="L")
+        if ch == "a":
+            if arr.shape[2] >= 4:
+                a = np.clip(arr[..., 3], 0, 1)
+                return Image.fromarray((a * 255).astype(np.uint8), mode="L")
+            return None
+        a = np.clip(arr[..., :3], 0, 1)
+        return Image.fromarray((a * 255).astype(np.uint8), mode="RGB")
+
+    def build_right_panel_export():
+        engine = S.get("export_engine", "unity_hdrp")
+
+        def make_radio_engine():
+            return ft.RadioGroup(
+                content=ft.Column([
+                    ft.Radio(value="unity_hdrp", label="Unity HDRP — Mask Map"),
+                    ft.Radio(value="unity_urp", label="Unity URP — MetallicSmoothness"),
+                    ft.Radio(value="unreal", label="Unreal — ORM"),
+                    ft.Radio(value="godot", label="Godot — ORM"),
+                ], spacing=2),
+                value=engine,
+                on_change=lambda e: export_set_engine(e.control.value),
+            )
+
+        def make_radio_normal():
+            return ft.RadioGroup(
+                content=ft.Column([
+                    ft.Radio(value="opengl", label="OpenGL (Y+)"),
+                    ft.Radio(value="directx", label="DirectX (Y-)"),
+                ], spacing=2),
+                value=S.get("export_normal_format", "opengl"),
+                on_change=lambda e: export_set_normal_format(e.control.value),
+            )
+
+        def make_radio_detail():
+            return ft.RadioGroup(
+                content=ft.Column([
+                    ft.Radio(value="white", label="White (1.0)"),
+                    ft.Radio(value="edge", label="Edge map"),
+                    ft.Radio(value="custom", label="Своя (загрузить)"),
+                ], spacing=2),
+                value=S.get("export_detail_mode", "edge"),
+                on_change=lambda e: export_set_detail_mode(e.control.value),
+            )
+
+        def make_radio_bit():
+            return ft.RadioGroup(
+                content=ft.Row([
+                    ft.Radio(value="8", label="8-bit", fill_color=SAVE_COLOR),
+                    ft.Radio(value="16", label="16-bit", fill_color=SAVE_COLOR),
+                ]),
+                value=str(S.get("export_bit_depth", 8)),
+                on_change=lambda e: S.update({"export_bit_depth": int(e.control.value)}),
+            )
+
+        detail_block = ft.Container(
+            content=ft.Column([
+                ft.Text("Detail Mask (только HDRP)", size=10,
+                        weight=ft.FontWeight.BOLD, color=FG3, font_family=FONT),
+                ft.Container(height=4),
+                make_radio_detail(),
+                ft.Container(height=4),
+                make_btn("📁 Загрузить свою", export_load_custom_detail, ACCENT),
+            ], spacing=2),
+            visible=(engine == "unity_hdrp"),
+        )
+
+        layout_text = {
+            "unity_hdrp": "R = Metallic\nG = AO\nB = Detail Mask\nA = Smoothness (1-Rough)",
+            "unity_urp":  "R = Metallic\nG = 0\nB = 0\nA = Smoothness (1-Rough)",
+            "unreal":     "R = AO\nG = Roughness\nB = Metallic\nA = 1.0",
+            "godot":      "R = AO\nG = Roughness\nB = Metallic\nA = 1.0",
+        }.get(engine, "")
+
+        return ft.Container(
+            content=ft.Column([
+                ft.Text("🎮 ДВИЖОК", size=10, weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=6),
+                make_radio_engine(),
+                ft.Container(height=14),
+                ft.Divider(color=FG3, height=1),
+                ft.Container(height=10),
+                ft.Text("📐 NORMAL MAP", size=10, weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=6),
+                make_radio_normal(),
+                ft.Container(height=14),
+                ft.Divider(color=FG3, height=1),
+                ft.Container(height=10),
+                detail_block,
+                ft.Container(height=14),
+                ft.Divider(color=FG3, height=1),
+                ft.Container(height=10),
+                ft.Text("💾 БИТНОСТЬ PNG", size=10, weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=6),
+                make_radio_bit(),
+                ft.Container(height=14),
+                ft.Divider(color=FG3, height=1),
+                ft.Container(height=10),
+                ft.Text("📋 РАСКЛАДКА КАНАЛОВ", size=10,
+                        weight=ft.FontWeight.BOLD, color=FG3, font_family=FONT),
+                ft.Container(height=6),
+                ft.Container(
+                    content=ft.Text(layout_text, color=FG2, size=11,
+                                    font_family="Consolas", selectable=True),
+                    bgcolor=INPUT, border_radius=8, padding=10,
+                ),
+            ], spacing=4, scroll=ft.ScrollMode.AUTO),
+            bgcolor=PANEL, border_radius=12, padding=16, width=320,
+        )
 
     async def do_remove_soap(e):
         source = S["corrected"] if S["corrected"] is not None else S["original"]
@@ -1709,11 +2077,11 @@ def main(page: ft.Page):
                 ft.Container(height=16),
                 ft.Row([ft.Text(f"{t('about_version')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("1.7.0-beta", color=FG, size=12,
+                        ft.Text("1.7.1-beta", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_build')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("2026-09-20", color=FG, size=12,
+                        ft.Text("2026-09-21", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_author')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
@@ -1990,6 +2358,7 @@ def main(page: ft.Page):
             "soap_fix_strength": S["soap_fix_strength"],
             "saturation_boost": S["saturation_boost"],
             "pbr_bit_depth": S["pbr_bit_depth"],
+            "last_folder": S.get("last_folder", ""),
             "window": {
                 "width": page.window.width or 1280,
                 "height": page.window.height or 820,
@@ -2751,10 +3120,12 @@ def main(page: ft.Page):
                     files = await picker.pick_files(
                         dialog_title=t("dialog_pick_title"),
                         allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+                        initial_directory=_init_dir(),
                     )
                     if not files or not files[0].path:
                         return
                     fp = files[0].path
+                    _remember_folder(fp)
                     img = Image.open(fp).convert("RGB")
                     S["realism_source"] = img
                     S["realism_result"] = None
@@ -2808,12 +3179,14 @@ def main(page: ft.Page):
                     dialog_title=t("dialog_save_title"),
                     file_name="realism.png",
                     allowed_extensions=["png", "jpg", "tif"],
+                    initial_directory=_init_dir(),
                 )
                 if not path:
                     return
                 await asyncio.to_thread(
                     save_16bit_or_8bit, S["realism_result"], str(path), 16
                 )
+                _remember_folder(str(path))
                 log(f"{t('log_saved')} {os.path.basename(str(path))}", SUCCESS)
                 page.update()
             except Exception as ex:
@@ -2881,6 +3254,97 @@ def main(page: ft.Page):
             expand=True, visible=True,
         )
 
+# ═══ ВКЛАДКА EXPORT ═══
+        export_preview = ft.Image(src="", visible=False, fit=ft.BoxFit.CONTAIN)
+        export_hint = ft.Text("📦  Выбери источник: PBR или папка",
+                              color=FG3, size=14, font_family=FONT)
+
+        export_preview_content = ft.Stack([
+            ft.Container(content=export_hint,
+                         alignment=ft.Alignment.CENTER, expand=True),
+            ft.Container(content=export_preview,
+                         alignment=ft.Alignment.CENTER, expand=True),
+        ], expand=True)
+
+        export_preview_box = ft.Container(
+            content=ft.InteractiveViewer(
+                content=export_preview_content,
+                min_scale=0.5, max_scale=8.0, expand=True,
+            ),
+            bgcolor=CARD, border_radius=12, padding=10, expand=True,
+        )
+
+        def _refresh_export_preview():
+            pil = export_build_preview_pil()
+            if pil is None:
+                export_hint.visible = True
+                export_preview.visible = False
+            else:
+                export_preview.src = f"data:image/png;base64,{pil_to_b64(pil)}"
+                export_preview.visible = True
+                export_hint.visible = False
+
+        _refresh_export_preview()
+
+        def _chan_btn(key, label):
+            active = (S.get("export_preview_channel", "rgb") == key)
+            return ft.Container(
+                content=ft.Text(label,
+                                color=ON_ACCENT if active else FG2,
+                                size=12, font_family=FONT,
+                                weight=ft.FontWeight.W_600),
+                bgcolor=ACCENT if active else CARD,
+                border_radius=8,
+                padding=ft.Padding.symmetric(vertical=6, horizontal=12),
+                ink=True,
+                on_click=lambda e, k=key: export_set_channel(k),
+            )
+
+        export_channel_row = ft.Row([
+            _chan_btn("r", "R"),
+            _chan_btn("g", "G"),
+            _chan_btn("b", "B"),
+            _chan_btn("a", "A"),
+            _chan_btn("rgb", "RGB"),
+            _chan_btn("rgba", "RGBA"),
+        ], spacing=4)
+
+        export_toolbar = ft.Row([
+            make_btn("⚙️ Из текущего PBR", export_load_from_pbr, ACCENT),
+            make_btn("📂 Загрузить из папки", export_load_from_folder, ACCENT),
+            ft.Container(expand=True),
+            make_btn("⚙️ Упаковать", export_pack, SUCCESS),
+            make_btn("💾 Сохранить все", export_save, SAVE_COLOR,
+                     disabled=(S.get("export_packed") is None)),
+        ], spacing=6)
+
+        export_source_label = ft.Text(
+            f"Источник: {S.get('export_source_label') or '—'}",
+            color=FG3, size=11, font_family="Consolas",
+        )
+
+        export_view = ft.Container(
+            content=ft.Row([
+                ft.Container(
+                    content=ft.Column([
+                        export_toolbar,
+                        ft.Container(height=4),
+                        export_source_label,
+                        ft.Container(height=4),
+                        S["pbr_progress_bar"],
+                        S["pbr_progress_text"],
+                        ft.Container(height=6),
+                        export_channel_row,
+                        ft.Container(height=6),
+                        ft.Container(content=export_preview_box, expand=True),
+                    ], spacing=0, expand=True),
+                    expand=True,
+                ),
+                build_right_panel_export(),
+            ], spacing=12, expand=True),
+            expand=True, visible=True,
+        )
+
         # ═══ NavigationRail ═══
         def _rail_label(key):
             """Убирает emoji из начала строки, оставляет только текст."""
@@ -2892,12 +3356,13 @@ def main(page: ft.Page):
             ("single", "🖼", _rail_label("tab_single")),
             ("batch", "🗂", _rail_label("tab_batch")),
             ("pbr", "🎨", _rail_label("tab_pbr")),
+            ("export", "🎮", _rail_label("tab_export")),
             ("compress", "🗜", _rail_label("tab_compress")),
             ("realism", "🎞", _rail_label("tab_realism")),
         ]
 
         active_keys = [k for k, _, _ in RAIL_TABS
-                       if not (is_simple and k not in ("single", "pbr"))]
+                       if not (is_simple and k not in ("single", "pbr", "export"))]
 
         rail_destinations = []
         for key, icon, label in RAIL_TABS:
@@ -2917,6 +3382,7 @@ def main(page: ft.Page):
             "single": single_view,
             "batch": batch_view,
             "pbr": pbr_view,
+            "export": export_view,
             "compress": compress_view,
             "realism": realism_view,
         }
@@ -2968,7 +3434,7 @@ def main(page: ft.Page):
                                 weight=ft.FontWeight.BOLD,
                                 color=ACCENT, font_family=FONT),
                         ft.Container(
-                            content=ft.Text("v1.7.0-beta", size=10, color=FG2,
+                            content=ft.Text("v1.7.1-beta", size=10, color=FG2,
                                             font_family=FONT,
                                             weight=ft.FontWeight.W_600),
                             bgcolor=CARD, border_radius=6,
