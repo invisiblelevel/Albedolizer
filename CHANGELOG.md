@@ -1,8 +1,48 @@
 # Changelog
 
-## [1.7.0-beta] — 2026-09-20
+## [1.7.2-beta] — 2026-09-22
 
-Engine Export + viewer tiling + QoL fixes.
+Viewer overhaul + 50 presets + QoL fixes.
+
+### Added
+- **3D viewer overhaul** — 4 shapes: Sphere / Cylinder / Cube / Plane, switchable on the fly via ImGui radio
+- **Substance-style lighting** — key + fill + rim lights, proper volume on all shapes, no more flat look
+- **ACES tone mapping** (Narkowicz approximation) instead of Reinhard — richer contrast, no washed-out result
+- **Exposure slider** in the viewer panel (0.5–2.0), applied before tone mapping in linear space
+- **Rim light** — separates the object silhouette from the background
+- **Viewer control panel** — Shape / Lighting / Tiling sections in one window
+- **3 new texture presets** (47 → 50):
+  - **Stucco** (🏛) — Mineral
+  - **Gemstone** (🔮) — Mineral
+  - **Cardboard** (📦) — Synthetic
+
+### Changed
+- **PBR preview** now uses `InteractiveViewer` — zoomable with the mouse wheel (was static)
+- **Log panel title** is now localized (RU: ЛОГ / EN: LOG) instead of hardcoded Russian
+- **manual.html** — full Russian translation with in-page RU / EN switcher (remembers choice via localStorage)
+- **Viewer default camera** — distance 1.5, FOV 40° (was 1.0 / 45°), fits all 4 shapes correctly
+- Viewer tiling panel now wraps to two rows (4 + 4 buttons) so all values 1–16 fit in the panel width
+
+### Fixed
+- **Viewer volume on sphere** — was flat due to weak key light and dominant IBL; now has proper shading
+- **Viewer exposure order** — was applied after gamma, now in linear space before ACES
+- **GLSL indentation bug** in `viewer.py` (`def draw_panel()` glued to comment line)
+
+### Internal
+- `viewer.py` — added `create_cylinder()`, `create_cube()`, `create_plane()` geometry generators
+- `viewer.py` — 4 VAOs held in memory, switched by `shape_idx` at render time
+- `viewer.py` — `--shape` argparse argument added (sphere / cylinder / cube / plane)
+- `config.py` — 3 new entries in `TEXTURE_PROFILES` and `PBR_PRESETS`, 2 updated categories in `PROFILE_CATEGORIES`
+- `translations.py` — new key `log_title` (RU / EN)
+- Version bumped to 1.7.2-beta across all files
+
+
+---
+
+
+## [1.7.1-beta] — 2026-09-21
+
+Engine Export polish + viewer tiling + QoL fixes.
 
 ### Added
 - **Engine Export tab** (`🎮 Engine` / `🎮 Движок`) — pack PBR maps for specific engines:
@@ -35,7 +75,6 @@ Engine Export + viewer tiling + QoL fixes.
 
 
 ---
-
 
 
 ## [1.7.0-beta] — 2026-09-20
@@ -141,9 +180,13 @@ Major UI refactor + new Realism tab.
 - **9 annotated screenshots** in the manual (Simple, Type, PBR, Viewer, Advanced, Batch, Info, Compress, Adv toggle)
 - Smart file lookup: exe first checks inside itself (`_MEIPASS`), then falls back to its own folder
 
-  ### 🛠 Improved
+### 🛠 Improved
 - `open_manual()` now uses the shared `_base_dir` with proper fallback
 - Version bumped to 1.4.0-beta across UI, About dialog, and installer
+
+
+---
+
 
 ## [1.3.3-beta] — 2026-09-15
 
@@ -159,6 +202,7 @@ Major UI refactor + new Realism tab.
 
 ---
 
+
 ## [1.3.2-beta] — 2026-09-15
 
 ### ✨ Added
@@ -172,6 +216,7 @@ Major UI refactor + new Realism tab.
 - Removed dead `mode` field from theme dicts
 
 ---
+
 
 ## [1.3.1-beta] — 2026-09-14
 
@@ -187,6 +232,7 @@ Major UI refactor + new Realism tab.
 - Minor code cleanup
 
 ---
+
 
 ## [1.3.0-beta] — 2026-09-13
 
@@ -210,6 +256,9 @@ Major UI refactor + new Realism tab.
 - Some presets may require manual slider tuning for best results
 - Batch processing on very large folders (>100 files) can be slow
 
+---
+
+
 ## [1.2.1] — 2026-09-13
 
 ### ✨ Added
@@ -221,6 +270,9 @@ Major UI refactor + new Realism tab.
 - Fallback dialog translation
 - Duplicate dialog
 - Preset label translation
+
+---
+
 
 ## [1.2.0] — 2026-09-13
 
@@ -234,6 +286,9 @@ Major UI refactor + new Realism tab.
 ### 🐛 Fixed
 - Console window popup during AI correction
 - Duplicate log panels
+
+---
+
 
 ## [1.1.0] — 2026-09-12
 

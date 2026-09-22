@@ -2,7 +2,7 @@
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.7.1--beta-orange)
+![Version](https://img.shields.io/badge/version-1.7.2--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -20,24 +20,25 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 ## Screenshots
 ![Main UI](screenshots/main_int.jpg)
 
-## 🆕 What's new in v1.7.1-beta
+## 🆕 What's new in v1.7.2-beta
 
-### New Engine Export tab
-- **Unity HDRP** — Mask Map (R=Metallic, G=AO, B=Detail, A=Smoothness)
-- **Unity URP** — MetallicSmoothness (R=Metallic, A=Smoothness)
-- **Unreal / Godot** — ORM (R=AO, G=Roughness, B=Metallic)
-- **DirectX / OpenGL** normal map flip
-- **Detail Mask** — white / edge map / custom file
+### 3D Viewer Overhaul
+- **4 shapes:** Sphere / Cylinder / Cube / Plane — switch on the fly
+- **Substance-style lighting** — key + fill + rim lights, proper volume on all shapes
+- **ACES tone mapping** instead of Reinhard — richer contrast, no more washed-out look
+- **Exposure slider** (0.5–2.0) in the viewer panel
+- **Rim light** — separates the object from the background
+- **Control panel:** Shape / Lighting / Tiling in one window
 
-### 3D viewer: tiling controls
-- In-window panel with X/Y tiling buttons
-- Scale from 1×1 up to 16×16
-- Language follows the app language
+### 50 Texture Presets (was 47)
+- **Stucco** (🏛) — Mineral
+- **Gemstone** (🔮) — Mineral
+- **Cardboard** (📦) — Synthetic
 
-### Quality of life
-- **Last opened folder is remembered** across sessions
-- **Realism tab Save** fixed, progress bar added for 8K textures
-- **LUTwithBGrid** no longer blurs high-res textures (processes up to 6MP)
+### Quality of Life
+- **PBR preview is now zoomable** with the mouse wheel (InteractiveViewer)
+- **Log panel title** now follows the app language (RU / EN)
+- **manual.html** — full Russian translation with in-page RU / EN switcher
 
 ---
 
@@ -52,7 +53,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 ### ✨ AI Auto-Correction
 - **Three methods:** Autolevels (XCiT model), LUTwithBGrid (ECCV 2024, ONNX), or Math (CLAHE + soft-clip)
 - **Switch models** in the sidebar — pick what works best for your texture
-- **🤖 Material auto-detection** — CLIP-based classifier (ViT-B/32) automatically picks the right preset from 47 options
+- **🤖 Material auto-detection** — CLIP-based classifier (ViT-B/32) automatically picks the right preset from 50 options
 - Fallback dialog if AI result doesn't pass validation
 - **Saturation boost** — fix washed-out colors after AI correction
 
@@ -85,19 +86,20 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 
 ### 👁 Built-in 3D Viewer
 - Real-time PBR preview via OpenGL (`viewer.exe`)
+- **4 shapes:** Sphere / Cylinder / Cube / Plane
+- **Substance-style lighting** — key + fill + rim, ACES tone mapping, exposure slider
 - **Tiling panel** — click X/Y buttons in the window to change texture scale (1×1 to 16×16)
 - Rotate with LMB, zoom with mouse wheel
 - Powered by Moderngl + GLFW + ImGui
 - HDRI environment lighting with blurred reflections
-- Correct UV mapping — no seams or stretching
 - Viewer UI language follows the app language
 
 ### 📖 Built-in Manual
 - Full HTML manual with screenshots and annotations
-- Russian / English — switch inside the manual
+- **Russian / English** — switch inside the manual (RU / EN buttons, remembers your choice)
 - Opens in your browser from the **Info → 📖 Manual** button
 
-### 🎯 47 Texture Presets in 7 Categories
+### 🎯 50 Texture Presets in 7 Categories
 **🔥 Metal** · **🌿 Nature** · **🪨 Mineral** · **🧪 Synthetic** · **🧵 Fabric** · **💧 Special** · **🐾 Fauna**
 
 ### 🗂 Batch Processing
@@ -122,7 +124,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 
 ### Installer (recommended)
 
-1. Download `Albedolizer_Setup_v1.7.1-beta.exe` from the [latest release](../../releases/latest)
+1. Download `Albedolizer_Setup_v1.7.2-beta.exe` from the [latest release](../../releases/latest)
 2. Run the installer — it places everything in `Program Files\Albedolizer`
 3. Launch from Start Menu or Desktop shortcut
 
@@ -153,7 +155,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 4. Adjust sliders if needed
 5. **🎨 Generate** → 7 maps
 6. Switch between maps with buttons on top
-7. **👁 3D Preview** — opens the OpenGL viewer with tiling controls
+7. **👁 3D Preview** — opens the OpenGL viewer
 8. **💾 Save all** — creates a `<name>_pbr/` folder
 
 ### Engine Export
@@ -223,7 +225,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.7.1-beta  
+**Version:** 1.7.2-beta  
 **Date:** 2026
 
 ---
@@ -243,24 +245,25 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ---
 
-## 🆕 Что нового в v1.7.1-beta
+## 🆕 Что нового в v1.7.2-beta
 
-### Новая вкладка «Движок» (Engine Export)
-- **Unity HDRP** — Mask Map (R=Metallic, G=AO, B=Detail, A=Smoothness)
-- **Unity URP** — MetallicSmoothness (R=Metallic, A=Smoothness)
-- **Unreal / Godot** — ORM (R=AO, G=Roughness, B=Metallic)
-- **DirectX / OpenGL** — переворот Normal map
-- **Detail Mask** — белая / edge-карта / своя с диска
+### Капитальный ремонт 3D-вьюера
+- **4 формы:** Sphere / Cylinder / Cube / Plane — переключение на лету
+- **Освещение как в Substance Painter** — key + fill + rim, объём видно на всех формах
+- **ACES tone mapping** вместо Reinhard — контраст богаче, нет «вымытости»
+- **Слайдер Exposure** (0.5–2.0) прямо в панели вьюера
+- **Rim light** — отрывает объект от фона
+- **Панель управления:** Shape / Lighting / Tiling в одном окне
 
-### 3D-вьюер: управление тайлингом
-- Панель с кнопками X/Y прямо в окне вьюера
-- Масштаб от 1×1 до 16×16
-- Язык панели следует за языком приложения
+### 50 пресетов текстур (было 47)
+- **Stucco** (🏛) — Штукатурка, в Mineral
+- **Gemstone** (🔮) — Самоцвет, в Mineral
+- **Cardboard** (📦) — Картон, в Synthetic
 
 ### Качество жизни
-- **Запоминается последняя папка** между сессиями
-- **Realism:** кнопка Save починена, добавлен прогресс-бар для 8K
-- **LUTwithBGrid** больше не мылит текстуры высокого разрешения (обработка до 6 МП)
+- **PBR-превью теперь зумится** колёсиком мыши (InteractiveViewer)
+- **Заголовок панели лога** следует за языком приложения (RU / EN)
+- **manual.html** — полный русский перевод с переключателем RU / EN прямо на странице
 
 ---
 
@@ -275,7 +278,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 ### ✨ AI-автокоррекция
 - **Три метода:** Autolevels (модель XCiT), LUTwithBGrid (ECCV 2024, ONNX) или Math (CLAHE + soft-clip)
 - **Переключай модели** в сайдбаре — выбирай что лучше для твоей текстуры
-- **🤖 Автоопределение материала** — CLIP-классификатор (ViT-B/32) сам подбирает пресет из 47 доступных
+- **🤖 Автоопределение материала** — CLIP-классификатор (ViT-B/32) сам подбирает пресет из 50 доступных
 - Диалог выбора если AI не прошёл валидацию
 - **Насыщенность** — фикс блеклых цветов после AI-коррекции
 
@@ -308,19 +311,20 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ### 👁 Встроенный 3D-вьюер
 - Просмотр PBR в реальном времени через OpenGL (`viewer.exe`)
+- **4 формы:** Sphere / Cylinder / Cube / Plane
+- **Освещение как в Substance** — key + fill + rim, ACES tone mapping, слайдер экспозиции
 - **Панель тайлинга** — кнопки X/Y прямо в окне, масштаб от 1×1 до 16×16
 - Вращение ЛКМ, зум колесом
 - На базе Moderngl + GLFW + ImGui
 - HDRI-освещение с размытыми отражениями
-- Корректный UV-маппинг — без швов и растяжения
 - Язык панели следует за языком приложения
 
 ### 📖 Встроенный мануал
 - Полный HTML-мануал со скринами и разметкой
-- Русский / English — переключение внутри мануала
+- **Русский / English** — переключение внутри мануала (кнопки RU / EN, выбор запоминается)
 - Открывается из **Info → 📖 Мануал**
 
-### 🎯 47 пресетов текстур в 7 категориях
+### 🎯 50 пресетов текстур в 7 категориях
 **🔥 Металл** · **🌿 Природа** · **🪨 Минерал** · **🧪 Синтетика** · **🧵 Ткани** · **💧 Спецэффекты** · **🐾 Фауна**
 
 ### 🗂 Пакетная обработка
@@ -345,7 +349,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ### Инсталлер (рекомендуется)
 
-1. Скачай `Albedolizer_Setup_v1.7.1-beta.exe` из [последнего релиза](../../releases/latest)
+1. Скачай `Albedolizer_Setup_v1.7.2-beta.exe` из [последнего релиза](../../releases/latest)
 2. Запусти установщик — всё встанет в `Program Files\Albedolizer`
 3. Запускай из меню Пуск или ярлыка на рабочем столе
 
@@ -364,55 +368,55 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ### Одиночная обработка
 1. Выбери **тип текстуры** справа (например, 🌳 Дерево)
-2. Нажми **📂 Открыть** и выбери Albedo-текстуру
-3. Нажми **🔍 Проверить** — увидишь статистику и heatmap
-4. Если FAIL → **✨ Автокоррекция** (AI + fallback)
-5. **💾 Сохранить** результат
+2. Нажми **📂 Open** и выбери Albedo-текстуру
+3. Нажми **🔍 Check** — увидишь статистику и heatmap
+4. Если FAIL → **✨ Auto-Correct** (AI + fallback)
+5. **💾 Save** результат
 
 ### PBR-генерация + 3D-превью
 1. Вкладка **🎨 PBR**
-2. **📂 Загрузить Albedo**
+2. **📂 Load Albedo**
 3. Выбери **пресет** (слайдеры настроятся автоматически)
 4. При необходимости подкрути параметры
-5. **🎨 Сгенерировать** → 7 карт
+5. **🎨 Generate** → 7 карт
 6. Переключайся между картами кнопками сверху
-7. **👁 3D Preview** — открывает OpenGL-вьюер с панелью тайлинга
-8. **💾 Сохранить все** — создастся папка `<имя>_pbr/`
+7. **👁 3D Preview** — открывает OpenGL-вьюер
+8. **💾 Save all** — создастся папка `<имя>_pbr/`
 
 ### Экспорт для движков
-1. Вкладка **🎮 Движок**
-2. **⚙️ Из текущего PBR** (берёт последние сгенерированные карты) или **📂 Загрузить из папки**
+1. Вкладка **🎮 Engine**
+2. **⚙️ From current PBR** (берёт последние сгенерированные карты) или **📂 Load from folder**
 3. Выбери **движок:** Unity HDRP / URP / Unreal / Godot
 4. Выбери **формат Normal:** OpenGL (Y+) или DirectX (Y-)
-5. Для HDRP — выбери **Detail Mask:** белая / edge / своя
-6. **⚙️ Упаковать** — увидишь упакованную карту в превью
+5. Для HDRP — выбери **Detail Mask:** white / edge / custom
+6. **⚙️ Pack** — увидишь упакованную карту в превью
 7. Переключай каналы: **R / G / B / A / RGB / RGBA**
-8. **💾 Сохранить все** — создастся папка `<имя>_<движок>_<gl|dx>/`
+8. **💾 Save all** — создастся папка `<имя>_<движок>_<gl|dx>/`
 
 ### Фильтр реализма
 1. Вкладка **🎞 Realism**
-2. **📂 Открыть** — загрузи текстуру
-3. Крути три слайдера: **зерно**, **детализация**, **вариация**
-4. **🎞 Применить** — результат в превью
-5. **💾 Сохранить** результат
+2. **📂 Open** — загрузи текстуру
+3. Крути три слайдера: **Grain**, **Detail**, **Variation**
+4. **🎞 Apply** — результат в превью
+5. **💾 Save** результат
 
 ### Пакетная обработка
-1. Вкладка **Пакетная**
-2. **📁 Выбрать папку** или **📄 Выбрать файлы**
+1. Вкладка **Batch**
+2. **📁 Select folder** или **📄 Select files**
 3. Выбери метод коррекции справа (Autolevels / LUTwithBGrid / Math)
 4. Задай **потоки** (1–8)
-5. **▶ Запустить обработку**
+5. **▶ Run processing**
 6. Результат в папке `_corrected` рядом с исходниками
 
 ### Сжатие
-1. Вкладка **🗜 Сжатие**
-2. **📂 Открыть** для одного файла или **📁 Выбрать папку** для пакета
+1. Вкладка **🗜 Compress**
+2. **📂 Open** для одного файла или **📁 Select folder** для пакета
 3. Выбери **8-bit** или **16-bit** PNG справа
-4. **🗜 Сжать** или **▶ Сжать папку**
+4. **🗜 Compress** или **▶ Compress folder**
 5. Результат в папке `_compressed` рядом с исходниками
 
 ### Мануал
-Нажми **ℹ Инфо** в хедере → вкладка **📖 Мануал**.
+Нажми **ℹ Info** в хедере → вкладка **📖 Manual**.
 
 ---
 
@@ -442,5 +446,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.7.1-beta  
+**Версия:** 1.7.2-beta  
 **Дата:** 2026
