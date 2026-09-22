@@ -463,4 +463,92 @@
   </section>
 
   <!-- ═══ 7. BATCH ═══ -->
-  <section id="batch
+  <section id="batch">
+    <h2><span class="ru">7. Пакетная обработка</span><span class="en">7. Batch Processing</span></h2>
+    <p class="ru">Обработка целой папки: AI-коррекция или сжатие. Потоки 1–8.</p>
+    <p class="en">Process a whole folder: AI correction or compression. Threads 1–8.</p>
+    <div class="shot">
+      <img src="screenshots/tab_batch.jpg" alt="Batch">
+    </div>
+    <p class="ru">Результат в папке <code>_corrected</code> рядом с исходниками.</p>
+    <p class="en">Output to <code>_corrected</code> folder next to sources.</p>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+  </section>
+
+  <!-- ═══ 8. COMPRESS ═══ -->
+  <section id="compress">
+    <h2><span class="ru">8. Сжатие</span><span class="en">8. Compression</span></h2>
+    <p class="ru">Одиночное или пакетное сжатие Albedo. Выбор 8-bit / 16-bit PNG.</p>
+    <p class="en">Single or batch Albedo compression. 8-bit / 16-bit PNG.</p>
+    <div class="shot">
+      <img src="screenshots/tab_compress.jpg" alt="Compress">
+    </div>
+    <p class="ru">Результат в папке <code>_compressed</code> рядом с исходниками.</p>
+    <p class="en">Output to <code>_compressed</code> folder next to sources.</p>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+  </section>
+
+  <!-- ═══ 9. LOG ═══ -->
+  <section id="log">
+    <h2><span class="ru">9. Лог</span><span class="en">9. Log Panel</span></h2>
+    <p class="ru">Одна общая панель снизу. В свёрнутом виде — последняя строка, в развёрнутом — вся история.</p>
+    <p class="en">Single shared log at the bottom. Collapsed — shows last line, expanded — full history.</p>
+    <div class="shot">
+      <img src="screenshots/log_bottomsheet.jpg" alt="Log">
+    </div>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+  </section>
+
+  <!-- ═══ 10. VIEWER ═══ -->
+  <section id="viewer">
+    <h2><span class="ru">10. 3D-вьюер</span><span class="en">10. 3D Viewer</span></h2>
+    <p class="ru">Real-time PBR-превью на сфере. HDRI-освещение, размытые отражения.</p>
+    <p class="en">Real-time PBR preview on a sphere. HDRI lighting, blurred reflections.</p>
+    <div class="shot">
+      <img src="screenshots/viewer_3d.jpg" alt="3D Viewer">
+    </div>
+    <ul>
+      <li><strong>ЛКМ + движение</strong> — <span class="ru inline">вращение сферы</span><span class="en inline">rotate the sphere</span></li>
+      <li><strong>Колесо мыши</strong> — <span class="ru inline">зум</span><span class="en inline">zoom</span></li>
+      <li><strong>Панель Tiling</strong> — <span class="ru inline">кнопки X/Y, масштаб текстуры от 1×1 до 16×16</span><span class="en inline">X/Y buttons, texture scale from 1×1 to 16×16</span></li>
+    </ul>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+  </section>
+
+  <!-- ═══ 11. INFO ═══ -->
+  <section id="info">
+    <h2><span class="ru">11. Info</span><span class="en">11. Info</span></h2>
+    <p class="ru">Кнопка <code>ℹ Info</code> в хедере открывает диалог: Help (краткая справка), About (версия), Support (кошельки), Manual (этот файл в браузере).</p>
+    <p class="en">The <code>ℹ Info</code> button in the header opens a dialog: Help (quick reference), About (version), Support (wallets), Manual (this file in browser).</p>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+  </section>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer>
+    <p>
+      <strong>◐ Albedolizer</strong> v1.7.1-beta · MIT License · 2026
+    </p>
+    <p>
+      <a href="https://github.com/invisiblelevel/Albedolizer" target="_blank">GitHub</a> ·
+      <a href="https://invlvl.itch.io/albedolizer" target="_blank">itch.io</a> ·
+      <a href="https://github.com/invisiblelevel/Albedolizer/releases/latest" target="_blank">Releases</a>
+    </p>
+  </footer>
+
+</div>
+
+<script>
+  function setLang(lang) {
+    document.documentElement.setAttribute('data-lang', lang);
+    document.body.setAttribute('data-lang', lang);
+    document.getElementById('btn-ru').classList.toggle('active', lang === 'ru');
+    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    localStorage.setItem('albedolizer_manual_lang', lang);
+  }
+  (function() {
+    const saved = localStorage.getItem('albedolizer_manual_lang');
+    if (saved) { setLang(saved); }
+  })();
+</script>
+</body>
+</html>
