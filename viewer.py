@@ -1,6 +1,7 @@
 """
 viewer.py — PBR 3D viewer для Albedolizer.
 Отдельное OpenGL-окно через moderngl + glfw.
+v1.7.2: цилиндр/куб/плоскость, свет как в Substance, ACES, слайдер экспозиции.
 """
 
 import os
@@ -82,7 +83,7 @@ vec3 sample_env_blur(vec3 dir) {
     return texture(u_env_blur, dir_to_uv(dir)).rgb;
 }
 
-// ═══ BRDF функции (из LearnOpenGL) ═══
+// ═══ BRDF функции ═══
 float DistributionGGX(vec3 N, vec3 H, float roughness) {
     float a = roughness * roughness;
     float a2 = a * a;
@@ -123,9 +124,51 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness) {
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-// ═══ Основной свет (для объёма) ═══
-const vec3 LIGHT_DIR = normalize(vec3(-0.5, 0.8, 0.6));
-const vec3 LIGHT_COLOR = vec3(1.0, 0.95, 0.9);
+// ═══ Три источника света — как в Substance Painter ═══
+// Key: основной, сверху-слева-спереди, тёплый
+const vec3 KEY_DIR   = normalize(vec3(-0.6, 0.8, 0.5));
+const vec3 KEY_COLOR = vec3(2.5, 2.4, 2.2);
+
+// Fill: снизу-справа, холодный, слабый — чтобы тени не в ноль
+const vec3 FILL_DIR   = normalize(vec3(0.7, -0.3, 0.4));
+const vec3 FILL_COLOR = vec3(0.35, 0.42, 0.55);
+
+// Rim: сзади-сверху, для отрыва силуэта от фона
+const vec3 RIM_DIR   = normalize(vec3(0.3, 0.6, -0.9));
+const vec3 RIM_COLOR = vec3(0.9, 0.95, 1.0);
+
+
+vec3 direct_light(vec3 N, vec3 V, vec3 L, vec3 light_color,
+                  vec3 albedo, vec3 F0, float roughness, float metallic) {
+    vec3 H = normalize(V + L);
+    float NdotL = max(dot(N, L), 0.0);
+    if (NdotL <= 0.0) return vec3(0.0);
+    float NdotV = max(dot(N, V), 0.0);
+
+    float D = DistributionGGX(N, H, roughness);
+    float G = GeometrySmith(N, V, L, roughness);
+    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    vec3 numerator = D * G * F;
+    float denominator = 4.0 * max(NdotV, 0.001) * NdotL;
+    vec3 specular = numerator / max(denominator, 0.001);
+
+    vec3 kS = F;
+    vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic);
+
+    return (kD * albedo / PI + specular) * light_color * NdotL;
+}
+
+// ═══ ACES tone mapping (Narkowicz approximation) ═══
+vec3 aces_tonemap(vec3 x) {
+    const float a = 2.51;
+    const float b = 0.03;
+    const float c = 2.43;
+    const float d = 0.59;
+    const float e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
 
 void main() {
     vec2 uv = vec2(v_uv.x * u_tile_x, v_uv.y * u_tile_y);
@@ -137,53 +180,41 @@ void main() {
     float roughness = clamp(texture(u_roughness, uv).r, 0.05, 1.0);
     float metallic = clamp(texture(u_metallic, uv).r, 0.0, 1.0);
 
-    // F0: диэлектрики = 0.04, металлы = albedo
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo, metallic);
 
-    // ═══ Прямой свет (для объёма) ═══
-    vec3 L = LIGHT_DIR;
-    vec3 H = normalize(V + L);
-    float NdotL = max(dot(N, L), 0.0);
-    float NdotV = max(dot(N, V), 0.0);
+    // ═══ Прямой свет: key + fill + rim ═══
+    vec3 Lo = vec3(0.0);
+    Lo += direct_light(N, V, KEY_DIR,  KEY_COLOR,  albedo, F0, roughness, metallic);
+    Lo += direct_light(N, V, FILL_DIR, FILL_COLOR, albedo, F0, roughness, metallic);
+    Lo += direct_light(N, V, RIM_DIR,  RIM_COLOR,  albedo, F0, roughness, metallic);
 
-    // Cook-Torrance BRDF
-    float D = DistributionGGX(N, H, roughness);
-    float G = GeometrySmith(N, V, L, roughness);
-    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
-
-    vec3 numerator = D * G * F;
-    float denominator = 4.0 * max(NdotV, 0.001) * NdotL;
-    vec3 specular_direct = numerator / max(denominator, 0.001);
-
-    // kS = F, kD = (1 - kS) * (1 - metallic)
-    vec3 kS = F;
-    vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic);
-
-    vec3 Lo_direct = (kD * albedo / PI + specular_direct) * LIGHT_COLOR * NdotL;
+    // ═══ Rim light (fresnel-подсветка силуэта) ═══
+    float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+    vec3 rim_color = vec3(0.3, 0.35, 0.4) * rim * 0.5;
 
     // ═══ IBL (ambient от env-карты) ═══
+    float NdotV = max(dot(N, V), 0.0);
     vec3 F_ibl = fresnelSchlickRoughness(NdotV, F0, roughness);
     vec3 kS_ibl = F_ibl;
     vec3 kD_ibl = (vec3(1.0) - kS_ibl) * (1.0 - metallic);
 
-    // Diffuse IBL — размытая HDRI
     vec3 irradiance = sample_env_blur(N);
 
-    // Specular IBL — чёткая HDRI для металлов, размытая для диэлектриков
     vec3 reflection_env = mix(sample_env_blur(R), sample_env(R), metallic);
 
-    // Упрощённая IBL-аппроксимация (без prefiltered cubemap)
     vec3 diffuse_ibl = irradiance * albedo * kD_ibl;
-    // Спекуляр IBL — жёстко только для металлов
     vec3 specular_ibl = reflection_env * F_ibl * (metallic * 8.0 + (1.0 - metallic) * 0.05) * (1.0 - roughness * 0.5);
 
-    vec3 color = Lo_direct + diffuse_ibl * 0.8 + specular_ibl;
+    // IBL слабее прямого света — иначе нет объёма
+    vec3 ambient = diffuse_ibl * 0.4 + specular_ibl * 0.7;
 
-    // ═══ Tone map (Reinhard) + gamma ═══
-    color = color / (color + vec3(1.0));
-    color = pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
+    vec3 color = Lo + ambient + rim_color;
+
+    // ═══ Экспозиция → ACES → gamma ═══
     color *= u_exposure;
+    color = aces_tonemap(color);
+    color = pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
 
     frag_color = vec4(color, 1.0);
 }
@@ -194,8 +225,8 @@ void main() {
 #  ГЕОМЕТРИЯ
 # ═══════════════════════════════════════════════════════════
 
-def create_sphere(radius=1.0, segments=64, rings=64):
-    cols = segments + 1  # +1 дублирующий столбец для корректного UV-шва
+def create_sphere(radius=0.5, segments=64, rings=64):
+    cols = segments + 1
     verts = []
     for ring in range(rings + 1):
         phi = math.pi * ring / rings
@@ -205,7 +236,7 @@ def create_sphere(radius=1.0, segments=64, rings=64):
             y = radius * math.cos(phi)
             z = radius * math.sin(phi) * math.sin(theta)
             nx, ny, nz = x / radius, y / radius, z / radius
-            u = seg / segments      # 0.0 ... 1.0 (дубль столбца = u=1.0)
+            u = seg / segments
             v = 1.0 - ring / rings
             verts.append((x, y, z, nx, ny, nz, u, v))
 
@@ -219,6 +250,125 @@ def create_sphere(radius=1.0, segments=64, rings=64):
             idx.extend([a, b, a_next])
             idx.extend([a_next, b, b_next])
     return np.array(verts, dtype='f4'), np.array(idx, dtype='i4')
+
+
+def create_cylinder(radius=0.5, height=1.0, segments=64):
+    """Цилиндр по Y с крышками. Бок — UV по окружности, крышки — отдельные диски."""
+    verts = []
+    idx = []
+    half_h = height * 0.5
+
+    # ─── Боковая поверхность ───
+    side_start = 0
+    for seg in range(segments + 1):
+        theta = 2.0 * math.pi * seg / segments
+        x = radius * math.cos(theta)
+        z = radius * math.sin(theta)
+        nx, nz = math.cos(theta), math.sin(theta)
+        u = seg / segments
+        # низ
+        verts.append((x, -half_h, z, nx, 0.0, nz, u, 0.0))
+        # верх
+        verts.append((x,  half_h, z, nx, 0.0, nz, u, 1.0))
+
+    for seg in range(segments):
+        a = side_start + seg * 2
+        b = a + 1
+        c = a + 2
+        d = a + 3
+        idx.extend([a, c, b])
+        idx.extend([b, c, d])
+
+    # ─── Верхняя крышка ───
+    top_center = len(verts)
+    verts.append((0.0, half_h, 0.0, 0.0, 1.0, 0.0, 0.5, 0.5))
+    top_ring_start = len(verts)
+    for seg in range(segments + 1):
+        theta = 2.0 * math.pi * seg / segments
+        x = radius * math.cos(theta)
+        z = radius * math.sin(theta)
+        u = 0.5 + 0.5 * math.cos(theta)
+        v = 0.5 + 0.5 * math.sin(theta)
+        verts.append((x, half_h, z, 0.0, 1.0, 0.0, u, v))
+    for seg in range(segments):
+        a = top_ring_start + seg
+        b = a + 1
+        idx.extend([top_center, b, a])
+
+    # ─── Нижняя крышка ───
+    bot_center = len(verts)
+    verts.append((0.0, -half_h, 0.0, 0.0, -1.0, 0.0, 0.5, 0.5))
+    bot_ring_start = len(verts)
+    for seg in range(segments + 1):
+        theta = 2.0 * math.pi * seg / segments
+        x = radius * math.cos(theta)
+        z = radius * math.sin(theta)
+        u = 0.5 + 0.5 * math.cos(theta)
+        v = 0.5 + 0.5 * math.sin(theta)
+        verts.append((x, -half_h, z, 0.0, -1.0, 0.0, u, v))
+    for seg in range(segments):
+        a = bot_ring_start + seg
+        b = a + 1
+        idx.extend([bot_center, a, b])
+
+    return np.array(verts, dtype='f4'), np.array(idx, dtype='i4')
+
+
+def create_cube(size=1.0):
+    """Куб size×size×size. UV 0..1 на каждую грань."""
+    h = size * 0.5
+
+    # 6 граней, каждая — 4 вершины, нормаль наружу
+    # (позиция, нормаль) для каждой вершины
+    faces = [
+        # +X
+        (( h, -h, -h), (1, 0, 0)), (( h,  h, -h), (1, 0, 0)),
+        (( h,  h,  h), (1, 0, 0)), (( h, -h,  h), (1, 0, 0)),
+        # -X
+        ((-h, -h,  h), (-1, 0, 0)), ((-h,  h,  h), (-1, 0, 0)),
+        ((-h,  h, -h), (-1, 0, 0)), ((-h, -h, -h), (-1, 0, 0)),
+        # +Y
+        ((-h,  h, -h), (0, 1, 0)), ((-h,  h,  h), (0, 1, 0)),
+        (( h,  h,  h), (0, 1, 0)), (( h,  h, -h), (0, 1, 0)),
+        # -Y
+        ((-h, -h,  h), (0, -1, 0)), ((-h, -h, -h), (0, -1, 0)),
+        (( h, -h, -h), (0, -1, 0)), (( h, -h,  h), (0, -1, 0)),
+        # +Z
+        ((-h, -h,  h), (0, 0, 1)), (( h, -h,  h), (0, 0, 1)),
+        (( h,  h,  h), (0, 0, 1)), ((-h,  h,  h), (0, 0, 1)),
+        # -Z
+        (( h, -h, -h), (0, 0, -1)), ((-h, -h, -h), (0, 0, -1)),
+        ((-h,  h, -h), (0, 0, -1)), (( h,  h, -h), (0, 0, -1)),
+    ]
+
+    # UV для каждой грани: (0,0), (1,0), (1,1), (0,1)
+    uvs = [(0, 0), (1, 0), (1, 1), (0, 1)]
+
+    verts = []
+    idx = []
+    for fi, base in enumerate(range(0, len(faces), 4)):
+        for vi in range(4):
+            pos, nrm = faces[base + vi]
+            u, v = uvs[vi]
+            verts.append((pos[0], pos[1], pos[2], nrm[0], nrm[1], nrm[2], u, v))
+        o = fi * 4
+        idx.extend([o, o + 1, o + 2])
+        idx.extend([o, o + 2, o + 3])
+
+    return np.array(verts, dtype='f4'), np.array(idx, dtype='i4')
+
+
+def create_plane(size=1.0):
+    """Плоскость size×size в XY, нормаль +Z. Стена."""
+    h = size * 0.5
+    verts = np.array([
+        (-h, -h, 0, 0, 0, 1, 0, 0),
+        ( h, -h, 0, 0, 0, 1, 1, 0),
+        ( h,  h, 0, 0, 0, 1, 1, 1),
+        (-h,  h, 0, 0, 0, 1, 0, 1),
+    ], dtype='f4')
+    idx = np.array([0, 1, 2, 0, 2, 3], dtype='i4')
+    return verts, idx
 
 
 # ═══════════════════════════════════════════════════════════
@@ -272,7 +422,6 @@ def look_at(eye, target, up):
     s = s / np.linalg.norm(s)
     u = np.cross(s, f)
 
-    # Row-major (для .T при передаче)
     m = np.eye(4, dtype='f4')
     m[0, :3] = s
     m[1, :3] = u
@@ -284,36 +433,21 @@ def look_at(eye, target, up):
 
 
 # ═══════════════════════════════════════════════════════════
-#  ГЛАВНОЕ
+#  IMGUI BACKEND
 # ═══════════════════════════════════════════════════════════
 
 def _win_addr(w):
-    """GLFW-окно → int-адрес (нужен для бэкендов imgui-bundle)."""
     return ctypes.cast(w, ctypes.c_void_p).value
 
 
 def imgui_glfw_backend(win):
-    """
-    Минимальный биндинг ImGui → GLFW + OpenGL3 через imgui-bundle.
-    Мышиные callback'и НЕ трогает — их комбинирует вызывающий код.
-    Возвращает объект с методами new_frame() и render().
-    """
-    # ═══ СНАЧАЛА GLFW platform backend ═══
     imgui.backends.glfw_init_for_opengl(_win_addr(win), False)
 
-    # Только клавиатура, char, framebuffer — мышью управляет main()
     def _cb_key(window, key, scancode, action, mods):
         imgui.backends.glfw_key_callback(_win_addr(window), key, scancode, action, mods)
-    def _cb_char(window, codepoint):
-        imgui.backends.glfw_char_callback(_win_addr(window), codepoint)
-    def _cb_fb(window, w, h):
-        imgui.backends.glfw_framebuffer_size_callback(_win_addr(window), w, h)
 
     glfw.set_key_callback(win, _cb_key)
-    # glfw.set_char_callback(win, _cb_char)
-    # glfw.set_framebuffer_size_callback(win, _cb_fb)
 
-    # ═══ ПОТОМ OpenGL3 renderer backend ═══
     imgui.backends.opengl3_init("#version 330")
 
     class _Backend:
@@ -324,13 +458,14 @@ def imgui_glfw_backend(win):
 
         def render(self):
             imgui.render()
-            imgui.backends.opengl3_render_draw_data(
-                imgui.get_draw_data()
-            )
+            imgui.backends.opengl3_render_draw_data(imgui.get_draw_data())
 
     return _Backend()
 
 
+# ═══════════════════════════════════════════════════════════
+#  ГЛАВНОЕ
+# ═══════════════════════════════════════════════════════════
 
 def main():
     parser = argparse.ArgumentParser()
@@ -339,20 +474,37 @@ def main():
     parser.add_argument("--metallic", default="")
     parser.add_argument("--tile-x", type=int, default=4)
     parser.add_argument("--tile-y", type=int, default=3)
+    parser.add_argument("--shape", default="sphere", choices=["sphere", "cylinder", "cube", "plane"])
     parser.add_argument("--lang", default="ru")
     args = parser.parse_args()
 
     # ═══ Локализация UI вьюера ═══
     VIEWER_STRINGS = {
         "ru": {
-            "window_title": "Tiling",
+            "window_title": "Viewer",
+            "shape": "Форма",
+            "sphere": "Сфера",
+            "cylinder": "Цилиндр",
+            "cube": "Куб",
+            "plane": "Плоскость",
+            "lighting": "Освещение",
+            "exposure": "Экспозиция",
+            "tiling": "Тайлинг",
             "current": "Текущий",
             "horizontal": "По горизонтали (X):",
             "vertical": "По вертикали (Y):",
             "reset": "Сброс 4x3",
         },
         "en": {
-            "window_title": "Tiling",
+            "window_title": "Viewer",
+            "shape": "Shape",
+            "sphere": "Sphere",
+            "cylinder": "Cylinder",
+            "cube": "Cube",
+            "plane": "Plane",
+            "lighting": "Lighting",
+            "exposure": "Exposure",
+            "tiling": "Tiling",
             "current": "Current",
             "horizontal": "Horizontal (X):",
             "vertical": "Vertical (Y):",
@@ -361,7 +513,7 @@ def main():
     }
     L = VIEWER_STRINGS.get(args.lang, VIEWER_STRINGS["ru"])
 
-    # ═══ Базовая папка (рядом с exe или скриптом) ═══
+    # ═══ Базовая папка ═══
     if getattr(sys, 'frozen', False):
         _meipass = getattr(sys, '_MEIPASS', None)
         _exe_dir = os.path.dirname(sys.executable)
@@ -392,7 +544,6 @@ def main():
     imgui.create_context()
     io = imgui.get_io()
 
-    # ─── Шрифт с кириллицей ───
     font_path = r"C:\Windows\Fonts\segoeui.ttf"
     if not os.path.exists(font_path):
         font_path = r"C:\Windows\Fonts\arial.ttf"
@@ -437,18 +588,35 @@ def main():
     prog["u_metallic"] = 2
     prog["u_env"] = 3
     prog["u_env_blur"] = 4
-    prog["u_exposure"] = 1.0
 
-    # ═══ Геометрия — VAO ═══
-    verts, idx = create_sphere(radius=0.3)
-    vbo = ctx.buffer(verts.tobytes())
-    ibo = ctx.buffer(idx.tobytes())
-    vao = ctx.vertex_array(prog, [(vbo, '3f 3f 2f', 'in_position', 'in_normal', 'in_uv')], ibo)
+    # ═══ Геометрия — 4 VAO ═══
+    def make_vao(verts, idx):
+        vbo = ctx.buffer(verts.tobytes())
+        ibo = ctx.buffer(idx.tobytes())
+        return ctx.vertex_array(prog, [(vbo, '3f 3f 2f', 'in_position', 'in_normal', 'in_uv')], ibo)
+
+    v_sphere, i_sphere = create_sphere(radius=0.5)
+    v_cyl, i_cyl = create_cylinder(radius=0.5, height=1.0)
+    v_cube, i_cube = create_cube(size=1.0)
+    v_plane, i_plane = create_plane(size=1.0)
+
+    vao_sphere = make_vao(v_sphere, i_sphere)
+    vao_cylinder = make_vao(v_cyl, i_cyl)
+    vao_cube = make_vao(v_cube, i_cube)
+    vao_plane = make_vao(v_plane, i_plane)
+
+    SHAPES = ["sphere", "cylinder", "cube", "plane"]
+    SHAPE_LABELS = {
+        "ru": {"sphere": L["sphere"], "cylinder": L["cylinder"], "cube": L["cube"], "plane": L["plane"]},
+        "en": {"sphere": L["sphere"], "cylinder": L["cylinder"], "cube": L["cube"], "plane": L["plane"]},
+    }[args.lang if args.lang in ("ru", "en") else "ru"]
+
+    shape_idx = SHAPES.index(args.shape) if args.shape in SHAPES else 0
 
     # ═══ Состояние камеры ═══
     yaw = 0.0
     pitch = 0.0
-    dist = 1.0
+    dist = 1.5
     last_x = 0.0
     last_y = 0.0
     dragging = False
@@ -467,6 +635,9 @@ def main():
 
     tile_idx_x = _idx_for(args.tile_x)
     tile_idx_y = _idx_for(args.tile_y)
+
+    # ═══ Exposure ═══
+    exposure = 1.0
 
     def mouse_button(window, button, action, mods):
         nonlocal dragging, last_x, last_y
@@ -493,7 +664,6 @@ def main():
         dist *= (1.0 - yoff * 0.08)
         dist = max(0.8, min(15.0, dist))
 
-    # ═══ Совмещённые callback'и ═══
     def mouse_button_combined(window, button, action, mods):
         try:
             imgui.backends.glfw_mouse_button_callback(_win_addr(window), button, action, mods)
@@ -535,30 +705,50 @@ def main():
     style.window_padding = imgui.ImVec2(12, 12)
     style.frame_padding = imgui.ImVec2(8, 6)
 
-    # ═══ Панель tiling ═══
-    def draw_tiling_panel():
-        nonlocal tile_idx_x, tile_idx_y
+    # ═══ Панель управления ═══
+    def draw_panel():
+        nonlocal shape_idx, tile_idx_x, tile_idx_y, exposure
 
         imgui.set_next_window_pos(imgui.ImVec2(12, 12), imgui.Cond_.always)
-        imgui.set_next_window_size(imgui.ImVec2(260, 0), imgui.Cond_.always)
+        imgui.set_next_window_size(imgui.ImVec2(270, 0), imgui.Cond_.always)
         imgui.begin(L["window_title"], None,
                     imgui.WindowFlags_.no_resize |
                     imgui.WindowFlags_.no_move |
                     imgui.WindowFlags_.always_auto_resize)
 
-        imgui.text(f"{L['current']}: {TILE_STEPS[tile_idx_x]} x {TILE_STEPS[tile_idx_y]}")
+        # ─── Форма ───
+        imgui.text(L["shape"])
         imgui.separator()
+        for i, key in enumerate(SHAPES):
+            if imgui.radio_button(SHAPE_LABELS[key], shape_idx == i):
+                shape_idx = i
+        imgui.spacing()
+
+        # ─── Освещение ───
+        imgui.text(L["lighting"])
+        imgui.separator()
+        imgui.text(L["exposure"])
+        changed, exposure = imgui.slider_float("##exposure", exposure, 0.5, 2.0, "%.2f")
+        imgui.spacing()
+
+        # ─── Тайлинг ───
+        imgui.text(L["tiling"])
+        imgui.separator()
+        imgui.text(f"{L['current']}: {TILE_STEPS[tile_idx_x]} x {TILE_STEPS[tile_idx_y]}")
 
         imgui.text(L["horizontal"])
         for i, val in enumerate(TILE_STEPS):
             active = (i == tile_idx_x)
             if active:
                 imgui.push_style_color(imgui.Col_.button, imgui.ImVec4(0.36, 0.55, 0.85, 1.0))
-            if imgui.button(f"{val}##x{i}", imgui.ImVec2(34, 28)):
+            if imgui.button(f"{val}##x{i}", imgui.ImVec2(58, 30)):
                 tile_idx_x = i
             if active:
                 imgui.pop_style_color()
-            if i < len(TILE_STEPS) - 1:
+            # перенос на новый ряд после каждых 4 кнопок
+            if (i + 1) % 4 == 0:
+                pass
+            elif i < len(TILE_STEPS) - 1:
                 imgui.same_line()
 
         imgui.spacing()
@@ -567,11 +757,13 @@ def main():
             active = (i == tile_idx_y)
             if active:
                 imgui.push_style_color(imgui.Col_.button, imgui.ImVec4(0.36, 0.55, 0.85, 1.0))
-            if imgui.button(f"{val}##y{i}", imgui.ImVec2(34, 28)):
+            if imgui.button(f"{val}##y{i}", imgui.ImVec2(58, 30)):
                 tile_idx_y = i
             if active:
                 imgui.pop_style_color()
-            if i < len(TILE_STEPS) - 1:
+            if (i + 1) % 4 == 0:
+                pass
+            elif i < len(TILE_STEPS) - 1:
                 imgui.same_line()
 
         imgui.spacing()
@@ -590,7 +782,6 @@ def main():
 
         w, h = glfw.get_framebuffer_size(win)
 
-        # Защита от нулевого размера окна (свёрнуто, не отрисовалось, etc.)
         if w <= 0 or h <= 0:
             glfw.swap_buffers(win)
             elapsed = time.time() - frame_start
@@ -606,7 +797,7 @@ def main():
             dist * math.sin(pitch),
             dist * math.cos(pitch) * math.cos(yaw),
         )
-        proj = perspective(math.radians(45.0), w / h, 0.1, 100.0)
+        proj = perspective(math.radians(40.0), w / h, 0.1, 100.0)
         view = look_at(eye, (0, 0, 0), (0, 1, 0))
         model = np.eye(4, dtype='f4')
 
@@ -616,11 +807,14 @@ def main():
         prog["u_cam_pos"].value = eye
         prog["u_tile_x"].value = float(TILE_STEPS[tile_idx_x])
         prog["u_tile_y"].value = float(TILE_STEPS[tile_idx_y])
+        prog["u_exposure"].value = float(exposure)
 
+        # ─── Выбор VAO ───
+        vao = [vao_sphere, vao_cylinder, vao_cube, vao_plane][shape_idx]
         vao.render(moderngl.TRIANGLES)
 
         impl.new_frame()
-        draw_tiling_panel()
+        draw_panel()
         impl.render()
 
         glfw.swap_buffers(win)

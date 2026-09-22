@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Albedolizer v1.7.1-beta — Manual</title>
+<title>Albedolizer v1.7.2-beta — Мануал</title>
 <style>
   :root {
     --bg: #1a1d23;
@@ -32,6 +32,38 @@
     max-width: 980px;
     margin: 0 auto;
     padding: 40px 24px 80px;
+  }
+
+  /* Lang switcher */
+  .lang-switch {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 1000;
+    background: var(--panel);
+    border: 1px solid var(--card);
+    border-radius: 10px;
+    padding: 4px;
+    display: flex;
+    gap: 2px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  }
+  .lang-switch button {
+    background: transparent;
+    color: var(--fg2);
+    border: none;
+    border-radius: 7px;
+    padding: 7px 14px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .lang-switch button:hover { color: var(--fg); }
+  .lang-switch button.active {
+    background: var(--accent);
+    color: #fff;
   }
 
   /* Header */
@@ -225,38 +257,334 @@
     header h1 { font-size: 24px; }
     nav.toc ol { columns: 1; }
     section h2 { font-size: 19px; }
+    .lang-switch { top: 8px; right: 8px; }
   }
 </style>
 </head>
 <body>
-<div class="container">
 
-<header id="top">
-  <h1>◐ Albedolizer <span class="ver">v1.7.1-beta</span></h1>
+<div class="lang-switch">
+  <button id="btn-ru" onclick="setLang('ru')">RU</button>
+  <button id="btn-en" onclick="setLang('en')">EN</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--                        РУССКИЙ                        -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="container" id="content-ru">
+
+<header id="top-ru">
+  <h1>◐ Albedolizer <span class="ver">v1.7.2-beta</span></h1>
+  <p class="sub">PBR Albedo Checker &amp; Optimizer — Руководство пользователя</p>
+</header>
+
+<nav class="toc">
+  <h2>Содержание</h2>
+  <ol>
+    <li><a href="#intro-ru">Введение</a></li>
+    <li><a href="#header-ru">Хедер и навигация</a></li>
+    <li><a href="#single-ru">Вкладка Single</a></li>
+    <li><a href="#single_panel-ru">Правая панель Single</a></li>
+    <li><a href="#pbr-ru">Вкладка PBR</a></li>
+    <li><a href="#engine-ru">Engine Export</a></li>
+    <li><a href="#realism-ru">Фильтр Realism</a></li>
+    <li><a href="#batch-ru">Пакетная обработка</a></li>
+    <li><a href="#compress-ru">Сжатие</a></li>
+    <li><a href="#log-ru">Панель лога</a></li>
+    <li><a href="#viewer-ru">3D-вьюер</a></li>
+    <li><a href="#info-ru">Диалог Info</a></li>
+    <li><a href="#license-ru">Лицензия и благодарности</a></li>
+  </ol>
+</nav>
+
+<section id="intro-ru">
+  <h2>1. Введение</h2>
+  <p><strong>Albedolizer</strong> — standalone-инструмент для Windows для 3D-художников, геймдизайнеров и всех, кто работает с PBR-текстурами. Проверяет Albedo-карты на соответствие стандартам, автоматически корректирует цвет через AI, генерирует полный набор PBR-карт, упаковывает их под целевой движок и позволяет посмотреть результат во встроенном 3D-вьюере.</p>
+
+  <h3>Два режима UI</h3>
+  <ul>
+    <li><strong>Simple</strong> — воркфлоу в один клик (Open → AI correct → Save). Продвинутые инструменты скрыты.</li>
+    <li><strong>Advanced</strong> — полный контроль. Открывает статистику, методы коррекции, удаление мыла, насыщенность, тайлинг, seamless и прочее.</li>
+  </ul>
+  <p>Переключение режимов — кнопкой <code>⚙ Simple</code> / <code>⚙ Advanced</code> в хедере.</p>
+</section>
+
+<section id="header-ru">
+  <h2>2. Хедер и навигация</h2>
+  <p>Хедер содержит название приложения, текущую версию, переключатель режима UI, темы, языка и кнопку Info.</p>
+  <figure>
+    <img src="screenshots/header.jpg" alt="Хедер Albedolizer">
+    <figcaption>Рис. 1 — Хедер с кнопками режима, темы, языка и Info.</figcaption>
+  </figure>
+  <p><strong>NavigationRail</strong> слева даёт доступ ко всем вкладкам:</p>
+  <ul>
+    <li><strong>Single</strong> — проверка и коррекция одной текстуры</li>
+    <li><strong>Batch</strong> — обработка целой папки</li>
+    <li><strong>PBR</strong> — генерация PBR-карт</li>
+    <li><strong>Engine</strong> — упаковка карт под Unity / Unreal / Godot</li>
+    <li><strong>Compress</strong> — уменьшение размера файла</li>
+    <li><strong>Realism</strong> — процедурный фильтр фотореализма</li>
+  </ul>
+</section>
+
+<section id="single-ru">
+  <h2>3. Вкладка Single</h2>
+
+  <h3>Simple mode</h3>
+  <p>В Simple-режиме одна кнопка делает всё: <code>🚀 Auto-correct</code>. Открывает файл, запускает AI-коррекцию цвета, поднимает насыщенность и показывает результат.</p>
+  <figure>
+    <img src="screenshots/tab_single_simple.jpg" alt="Вкладка Single в Simple-режиме">
+    <figcaption>Рис. 2 — Вкладка Single в Simple-режиме.</figcaption>
+  </figure>
+
+  <h3>Advanced mode</h3>
+  <p>В Advanced-режиме доступен полный контроль:</p>
+  <ol>
+    <li>Выбери <strong>Texture type</strong> справа (или нажми <code>🤖 Auto-detect material</code>)</li>
+    <li><code>📂 Open</code> — загрузить Albedo-текстуру</li>
+    <li><code>🔍 Check</code> — посмотреть статистику и heatmap</li>
+    <li>Если FAIL → <code>✨ Auto-Correct</code></li>
+    <li><code>💾 Save</code> результат</li>
+  </ol>
+  <figure>
+    <img src="screenshots/tab_single_advanced.jpg" alt="Вкладка Single в Advanced-режиме">
+    <figcaption>Рис. 3 — Вкладка Single в Advanced-режиме.</figcaption>
+  </figure>
+  <div class="note">💡 Используй <code>↺ Reset</code>, чтобы в любой момент сравнить скорректированное изображение с оригиналом.</div>
+</section>
+
+<section id="single_panel-ru">
+  <h2>4. Правая панель Single</h2>
+  <p>Правая панель вкладки Single содержит всё для настройки коррекции:</p>
+  <ul>
+    <li><strong>Auto-detect material</strong> — CLIP-классификатор подбирает лучший пресет из 47 вариантов</li>
+    <li><strong>Texture type</strong> — категории (🔥 Metal, 🌿 Nature, 🪨 Mineral, 🧪 Synthetic, 🧵 Fabric, 💧 Special, 🐾 Fauna) и пресеты внутри каждой</li>
+    <li><strong>Correction method</strong> — Autolevels / LUTwithBGrid / Math</li>
+    <li><strong>Tiling 3×3</strong> — поиск швов на тайлящихся текстурах</li>
+    <li><strong>Seamless</strong> — сделать текстуру бесшовной через радиальную маску + scatter</li>
+    <li><strong>Remove soap</strong> — адаптивный unsharp mask для размытых участков</li>
+    <li><strong>Saturation</strong> — исправить блёклые цвета после AI-коррекции</li>
+    <li><strong>Statistics</strong> — min / max / avg / медиана / перцентили</li>
+  </ul>
+  <figure style="max-width: 420px; margin-left: auto; margin-right: auto;">
+    <img src="screenshots/right_panel_single.jpg" alt="Правая панель Single">
+    <figcaption>Рис. 4 — Правая панель Single.</figcaption>
+  </figure>
+</section>
+
+<section id="pbr-ru">
+  <h2>5. Вкладка PBR</h2>
+  <p>Генерация полного набора PBR-карт из одной Albedo-текстуры.</p>
+  <ol>
+    <li><code>📂 Load Albedo</code> — выбрать текстуру</li>
+    <li>Выбрать пресет справа (слайдеры подстроятся автоматически)</li>
+    <li>Подкрутить слайдеры при необходимости (Normal strength, Smoothing, Threshold, High-pass, Height blur, AO radius, AO intensity, Rough base, Rough variation)</li>
+    <li><code>🎨 Generate</code> → 7 карт</li>
+    <li>Переключаться между картами кнопками сверху: <strong>Albedo / Height / Normal / AO / Rough / Metal / Edge / ORM</strong></li>
+    <li><code>👁 3D Preview</code> — открыть OpenGL-вьюер</li>
+    <li><code>💾 Save all</code> — создаст папку <code>&lt;имя&gt;_pbr/</code> рядом с исходником</li>
+  </ol>
+  <figure>
+    <img src="screenshots/tab_pbr.jpg" alt="Вкладка PBR">
+    <figcaption>Рис. 5 — Вкладка PBR со всеми 7 картами и слайдерами параметров.</figcaption>
+  </figure>
+  <div class="note">💡 Height и Normal сохраняются в 16-битный PNG при выборе соответствующей опции — полная точность для про-пайплайнов.</div>
+</section>
+
+<section id="engine-ru">
+  <h2>6. Engine Export</h2>
+  <p>Упаковка PBR-карт под конкретный движок в один клик.</p>
+
+  <h3>Источник</h3>
+  <ul>
+    <li><code>⚙️ From current PBR</code> — использовать карты, только что сгенерированные во вкладке PBR</li>
+    <li><code>📂 Load from folder</code> — выбрать папку с готовыми <code>*_albedo.png</code>, <code>*_normal.png</code>, <code>*_ao.png</code> и т.д.</li>
+  </ul>
+
+  <h3>Поддерживаемые движки</h3>
+  <table>
+    <tr><th>Движок</th><th>Раскладка</th></tr>
+    <tr><td><strong>Unity HDRP</strong></td><td>R = Metallic, G = AO, B = Detail Mask, A = Smoothness (1 − Roughness)</td></tr>
+    <tr><td><strong>Unity URP</strong></td><td>R = Metallic, G = 0, B = 0, A = Smoothness (1 − Roughness)</td></tr>
+    <tr><td><strong>Unreal</strong></td><td>R = AO, G = Roughness, B = Metallic</td></tr>
+    <tr><td><strong>Godot</strong></td><td>R = AO, G = Roughness, B = Metallic</td></tr>
+  </table>
+
+  <h3>Дополнительные опции</h3>
+  <ul>
+    <li><strong>Normal map format</strong> — OpenGL (Y+) или DirectX (Y−) с инверсией зелёного канала</li>
+    <li><strong>Detail Mask</strong> (только HDRP) — white (1.0) / edge map / своя, загруженная с диска</li>
+    <li><strong>PNG bit depth</strong> — 8-bit или 16-bit</li>
+    <li><strong>Channel preview</strong> — R / G / B / A / RGB / RGBA</li>
+  </ul>
+
+  <figure>
+    <img src="screenshots/tab_engine_export.jpg" alt="Вкладка Engine Export">
+    <figcaption>Рис. 6 — Вкладка Engine Export с превью упакованной карты и контролем каналов.</figcaption>
+  </figure>
+
+  <p>Нажми <code>⚙️ Pack</code>, чтобы сгенерировать упакованную карту, затем <code>💾 Save all</code> — запишет <code>&lt;имя&gt;_&lt;движок&gt;_&lt;gl|dx&gt;/</code> рядом с исходником.</p>
+</section>
+
+<section id="realism-ru">
+  <h2>7. Фильтр Realism</h2>
+  <p>Добавляет процедурный эффект фотореализма на Albedo-текстуры — зерно, микродетали, цветовые вариации и лёгкую виньетку.</p>
+  <ol>
+    <li><code>📂 Open</code> — загрузить текстуру</li>
+    <li>Настроить три слайдера:
+      <ul>
+        <li><strong>Grain</strong> — слои мелкого и крупного шума</li>
+        <li><strong>Detail</strong> — адаптивный high-pass overlay для микродеталей</li>
+        <li><strong>Variation</strong> — крупномасштабные цветовые/яркостные пятна + виньетка</li>
+      </ul>
+    </li>
+    <li><code>🎞 Apply</code> — увидеть результат в превью</li>
+    <li><code>💾 Save</code> результат</li>
+  </ol>
+  <figure>
+    <img src="screenshots/tab_realism.jpg" alt="Вкладка Realism">
+    <figcaption>Рис. 7 — Фильтр Realism с тремя слайдерами.</figcaption>
+  </figure>
+  <div class="note">💡 Для 8K-текстур фильтр может занять несколько секунд — прогресс-бар покажет статус.</div>
+</section>
+
+<section id="batch-ru">
+  <h2>8. Пакетная обработка</h2>
+  <p>Обработать целую папку текстур сразу — AI-коррекцией или сжатием.</p>
+  <ol>
+    <li><code>📁 Select folder</code> или <code>📄 Select files</code></li>
+    <li>Выбрать метод коррекции (Autolevels / LUTwithBGrid / Math) справа</li>
+    <li>Выставить число потоков (1–8 параллельных задач)</li>
+    <li>Опционально подкрутить силу <strong>Remove soap</strong></li>
+    <li><code>▶ Run processing</code></li>
+  </ol>
+  <figure>
+    <img src="screenshots/tab_batch.jpg" alt="Вкладка Batch">
+    <figcaption>Рис. 8 — Пакетная обработка с настройкой потоков.</figcaption>
+  </figure>
+  <p>Результаты сохраняются в папку <code>_corrected</code> рядом с исходниками.</p>
+</section>
+
+<section id="compress-ru">
+  <h2>9. Сжатие</h2>
+  <p>Уменьшение размера файла Albedo-текстур без потери визуального качества.</p>
+  <ul>
+    <li><strong>Одиночное сжатие</strong> — <code>📂 Open</code> файл, нажать <code>🗜 Compress</code>, затем <code>💾 Save</code></li>
+    <li><strong>Пакетное сжатие</strong> — <code>📁 Select folder</code> или <code>📄 Select files</code>, затем <code>▶ Compress folder</code></li>
+  </ul>
+  <p>Выбрать <strong>8-bit</strong> или <strong>16-bit</strong> PNG на правой панели.</p>
+  <figure>
+    <img src="screenshots/tab_compress.jpg" alt="Вкладка Compress">
+    <figcaption>Рис. 9 — Вкладка Compress с выбором битности.</figcaption>
+  </figure>
+  <p>Результаты идут в папку <code>_compressed</code> рядом с исходниками.</p>
+</section>
+
+<section id="log-ru">
+  <h2>10. Панель лога</h2>
+  <p>Внизу окна — единая общая панель лога. В свёрнутом виде показывает только последнюю строку. Клик по хедеру разворачивает полную историю.</p>
+  <figure style="max-width: 100%; margin-left: auto; margin-right: auto;">
+    <img src="screenshots/log_bottomsheet.jpg" alt="Панель лога — свёрнутая и развёрнутая"
+         style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
+    <figcaption>Рис. 10 — Панель лога: свёрнутая (снизу) и развёрнутая (сверху).</figcaption>
+  </figure>
+  <ul>
+    <li>Клик по хедеру лога — свернуть / развернуть</li>
+    <li>Клик по <code>🗑</code> — очистить лог</li>
+  </ul>
+</section>
+
+<section id="viewer-ru">
+  <h2>11. 3D-вьюер</h2>
+  <p>Просмотр PBR-результата на объекте в реальном времени, с HDRI-освещением и размытыми отражениями.</p>
+
+  <h3>Управление</h3>
+  <ul>
+    <li><strong>Левая кнопка мыши</strong> — вращать объект</li>
+    <li><strong>Колесо мыши</strong> — приближение / отдаление</li>
+    <li><strong>Shape</strong> — Sphere / Cylinder / Cube / Plane — переключение формы объекта</li>
+    <li><strong>Exposure</strong> — слайдер яркости (0.5 – 2.0)</li>
+    <li><strong>Tiling</strong> — кнопки X / Y меняют масштаб текстуры от 1×1 до 16×16</li>
+    <li><strong>Reset 4x3</strong> — вернуть тайлинг по умолчанию</li>
+  </ul>
+
+  <figure>
+    <img src="screenshots/viewer_3d.jpg" alt="3D-вьюер с контролем тайлинга">
+    <figcaption>Рис. 11 — Встроенный 3D-вьюер с панелью управления в левом верхнем углу.</figcaption>
+  </figure>
+
+  <div class="note">💡 Вьюер открывается отдельным окном (<code>viewer.exe</code>) при нажатии <code>👁 3D Preview</code> во вкладке PBR.</div>
+</section>
+
+<section id="info-ru">
+  <h2>12. Диалог Info</h2>
+  <p>Нажми <code>ℹ Info</code> в хедере, чтобы открыть диалог информации. Внутри:</p>
+  <ul>
+    <li><strong>Help</strong> — краткая справка обычным текстом</li>
+    <li><strong>About</strong> — версия, дата сборки, автор</li>
+    <li><strong>Support</strong> — донат-кошельки (BTC, USDT, GRAM)</li>
+    <li><strong>Manual</strong> — этот HTML-файл, открывается в браузере</li>
+  </ul>
+</section>
+
+<section id="license-ru">
+  <h2>13. Лицензия и благодарности</h2>
+
+  <h3>Лицензия</h3>
+  <p>Albedolizer распространяется под <strong>MIT License</strong> — свободно для использования, в том числе в коммерческих проектах.</p>
+
+  <h3>Благодарности</h3>
+  <ul>
+    <li><strong>LUTwithBGrid</strong> (ECCV 2024) — Wontae Kim, Nam Ik Cho — Apache 2.0</li>
+    <li><strong>OpenAI CLIP</strong> (ViT-B/32) — для авто-определения материала</li>
+    <li><strong>Flet</strong> — кросс-платформенный UI-фреймворк</li>
+    <li><strong>Moderngl + GLFW + imgui-bundle</strong> — стек 3D-вьюера</li>
+  </ul>
+
+  <h3>Исходный код</h3>
+  <p><a href="https://github.com/invisiblelevel/Albedolizer" style="color: var(--accent);">github.com/invisiblelevel/Albedolizer</a></p>
+
+  <p style="margin-top: 32px;">Сделано <strong>INV.LVL</strong> · 2026</p>
+</section>
+
+<footer>
+  Albedolizer v1.7.2-beta · MIT · INV.LVL · 2026
+  <br><br>
+  <a href="#top-ru" class="back">↑ Наверх</a>
+</footer>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--                       ENGLISH                         -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="container" id="content-en" style="display:none;">
+
+<header id="top-en">
+  <h1>◐ Albedolizer <span class="ver">v1.7.2-beta</span></h1>
   <p class="sub">PBR Albedo Checker &amp; Optimizer — User Manual</p>
 </header>
 
 <nav class="toc">
   <h2>Contents</h2>
   <ol>
-    <li><a href="#intro">Introduction</a></li>
-    <li><a href="#header">Header &amp; Navigation</a></li>
-    <li><a href="#single">Single tab</a></li>
-    <li><a href="#single_panel">Single right panel</a></li>
-    <li><a href="#pbr">PBR tab</a></li>
-    <li><a href="#engine">Engine Export</a></li>
-    <li><a href="#realism">Realism filter</a></li>
-    <li><a href="#batch">Batch processing</a></li>
-    <li><a href="#compress">Compression</a></li>
-    <li><a href="#log">Log panel</a></li>
-    <li><a href="#viewer">3D Viewer</a></li>
-    <li><a href="#info">Info dialog</a></li>
-    <li><a href="#license">License &amp; credits</a></li>
+    <li><a href="#intro-en">Introduction</a></li>
+    <li><a href="#header-en">Header &amp; Navigation</a></li>
+    <li><a href="#single-en">Single tab</a></li>
+    <li><a href="#single_panel-en">Single right panel</a></li>
+    <li><a href="#pbr-en">PBR tab</a></li>
+    <li><a href="#engine-en">Engine Export</a></li>
+    <li><a href="#realism-en">Realism filter</a></li>
+    <li><a href="#batch-en">Batch processing</a></li>
+    <li><a href="#compress-en">Compression</a></li>
+    <li><a href="#log-en">Log panel</a></li>
+    <li><a href="#viewer-en">3D Viewer</a></li>
+    <li><a href="#info-en">Info dialog</a></li>
+    <li><a href="#license-en">License &amp; credits</a></li>
   </ol>
 </nav>
 
-<!-- ═══════════════════════════════════════════ -->
-<section id="intro">
+<section id="intro-en">
   <h2>1. Introduction</h2>
   <p><strong>Albedolizer</strong> is a standalone Windows tool for 3D artists, game designers, and anyone working with PBR textures. It checks Albedo maps against standards, automatically corrects color via AI, generates a full set of PBR maps, packs them for your target engine, and lets you preview the result in a built-in 3D viewer.</p>
 
@@ -268,8 +596,7 @@
   <p>Switch modes via the <code>⚙ Simple</code> / <code>⚙ Advanced</code> button in the header.</p>
 </section>
 
-<!-- ═══════════════════════════════════════════ -->
-<section id="header">
+<section id="header-en">
   <h2>2. Header &amp; Navigation</h2>
   <p>The header contains the app title, current version, UI mode toggle, theme switcher, language switcher, and the Info button.</p>
   <figure>
@@ -287,8 +614,7 @@
   </ul>
 </section>
 
-<!-- ═══════════════════════════════════════════ -->
-<section id="single">
+<section id="single-en">
   <h2>3. Single tab</h2>
 
   <h3>Simple mode</h3>
@@ -301,7 +627,7 @@
   <h3>Advanced mode</h3>
   <p>In Advanced mode you get full control:</p>
   <ol>
-    <li>Pick a <strong>texture type</strong> on the right (or click 🤖 Auto-detect material)</li>
+    <li>Pick a <strong>Texture type</strong> on the right (or click <code>🤖 Auto-detect material</code>)</li>
     <li><code>📂 Open</code> — load an Albedo texture</li>
     <li><code>🔍 Check</code> — see stats and heatmap</li>
     <li>If FAIL → <code>✨ Auto-Correct</code></li>
@@ -314,8 +640,7 @@
   <div class="note">💡 Use <code>↺ Reset</code> to compare the corrected image with the original at any time.</div>
 </section>
 
-<!-- ═══════════════════════════════════════════ -->
-<section id="single_panel">
+<section id="single_panel-en">
   <h2>4. Single right panel</h2>
   <p>The right panel of the Single tab contains everything you need to configure the correction:</p>
   <ul>
@@ -334,13 +659,12 @@
   </figure>
 </section>
 
-<!-- ═══════════════════════════════════════════ -->
-<section id="pbr">
+<section id="pbr-en">
   <h2>5. PBR tab</h2>
   <p>Generate a full set of PBR maps from a single Albedo texture.</p>
   <ol>
     <li><code>📂 Load Albedo</code> — pick a texture</li>
-    <li>Pick a <strong>preset</strong> on the right (sliders auto-tune)</li>
+    <li>Pick a preset on the right (sliders auto-tune)</li>
     <li>Adjust sliders if needed (Normal strength, Smoothing, Threshold, High-pass, Height blur, AO radius, AO intensity, Rough base, Rough variation)</li>
     <li><code>🎨 Generate</code> → 7 maps</li>
     <li>Switch between maps with the buttons on top: <strong>Albedo / Height / Normal / AO / Rough / Metal / Edge / ORM</strong></li>
@@ -354,8 +678,7 @@
   <div class="note">💡 Height and Normal maps are saved in 16-bit PNG when selected — full precision for pro pipelines.</div>
 </section>
 
-<!-- ═══════════════════════════════════════════ -->
-<section id="engine">
+<section id="engine-en">
   <h2>6. Engine Export</h2>
   <p>Pack your PBR maps for a specific engine in one click.</p>
 
@@ -390,8 +713,7 @@
   <p>Click <code>⚙️ Pack</code> to generate the packed map, then <code>💾 Save all</code> to write <code>&lt;name&gt;_&lt;engine&gt;_&lt;gl|dx&gt;/</code> next to the source.</p>
 </section>
 
-<!-- ═══════════════════════════════════════════ -->
-<section id="realism">
+<section id="realism-en">
   <h2>7. Realism filter</h2>
   <p>Add a procedural photorealism effect to Albedo textures — grain, micro-detail, color variation, and a subtle vignette.</p>
   <ol>
@@ -413,14 +735,13 @@
   <div class="note">💡 For 8K textures the filter may take a few seconds — a progress bar shows the status.</div>
 </section>
 
-<!-- ═══════════════════════════════════════════ -->
-<section id="batch">
+<section id="batch-en">
   <h2>8. Batch processing</h2>
   <p>Process a whole folder of textures at once with AI correction or compression.</p>
   <ol>
     <li><code>📁 Select folder</code> or <code>📄 Select files</code></li>
     <li>Choose correction method (Autolevels / LUTwithBGrid / Math) on the right</li>
-    <li>Set <strong>threads</strong> count (1–8 parallel tasks)</li>
+    <li>Set threads count (1–8 parallel tasks)</li>
     <li>Optionally tune <strong>Remove soap</strong> strength</li>
     <li><code>▶ Run processing</code></li>
   </ol>
@@ -431,8 +752,7 @@
   <p>Results are saved to a <code>_corrected</code> folder next to the sources.</p>
 </section>
 
-<!-- ═══════════════════════════════════════════ -->
-<section id="compress">
+<section id="compress-en">
   <h2>9. Compression</h2>
   <p>Reduce file size of Albedo textures without losing visual quality.</p>
   <ul>
@@ -447,8 +767,7 @@
   <p>Results go to a <code>_compressed</code> folder next to the sources.</p>
 </section>
 
-<!-- ═══════════════════════════════════════════ -->
-<section id="log">
+<section id="log-en">
   <h2>10. Log panel</h2>
   <p>At the bottom of the window there is a single shared log panel. When collapsed, it shows only the last line. Click the header to expand it and see the full history.</p>
   <figure style="max-width: 100%; margin-left: auto; margin-right: auto;">
@@ -462,41 +781,40 @@
   </ul>
 </section>
 
-<!-- ═══════════════════════════════════════════ -->
-<section id="viewer">
+<section id="viewer-en">
   <h2>11. 3D Viewer</h2>
-  <p>Preview your PBR result on a sphere in real time, with HDRI lighting and blurred reflections.</p>
+  <p>Preview your PBR result on a shape in real time, with HDRI lighting and blurred reflections.</p>
 
   <h3>Controls</h3>
   <ul>
-    <li><strong>Left mouse button</strong> — rotate the sphere</li>
+    <li><strong>Left mouse button</strong> — rotate the object</li>
     <li><strong>Mouse wheel</strong> — zoom in / out</li>
-    <li><strong>Tiling panel</strong> — click X / Y buttons to change texture scale from 1×1 to 16×16</li>
+    <li><strong>Shape</strong> — Sphere / Cylinder / Cube / Plane — switch the object shape</li>
+    <li><strong>Exposure</strong> — brightness slider (0.5 – 2.0)</li>
+    <li><strong>Tiling</strong> — click X / Y buttons to change texture scale from 1×1 to 16×16</li>
     <li><strong>Reset 4x3</strong> — restore the default tiling</li>
   </ul>
 
   <figure>
-    <img src="screenshots/viewer_3d.jpg" alt="3D Viewer with tiling controls">
-    <figcaption>Fig. 11 — Built-in 3D viewer with the tiling panel in the top-left corner.</figcaption>
+    <img src="screenshots/viewer_3d.jpg" alt="3D Viewer with control panel">
+    <figcaption>Fig. 11 — Built-in 3D viewer with the control panel in the top-left corner.</figcaption>
   </figure>
 
   <div class="note">💡 The viewer opens as a separate window (<code>viewer.exe</code>) when you click <code>👁 3D Preview</code> in the PBR tab.</div>
 </section>
 
-<!-- ═══════════════════════════════════════════ -->
-<section id="info">
+<section id="info-en">
   <h2>12. Info dialog</h2>
   <p>Click <code>ℹ Info</code> in the header to open the info dialog. It contains:</p>
   <ul>
-    <li><strong>📖 Help</strong> — quick reference in plain text</li>
-    <li><strong>ℹ About</strong> — version, build date, author</li>
-    <li><strong>💛 Support</strong> — donation wallets (BTC, USDT, GRAM)</li>
-    <li><strong>📖 Manual</strong> — this HTML file, opens in your browser</li>
+    <li><strong>Help</strong> — quick reference in plain text</li>
+    <li><strong>About</strong> — version, build date, author</li>
+    <li><strong>Support</strong> — donation wallets (BTC, USDT, GRAM)</li>
+    <li><strong>Manual</strong> — this HTML file, opens in your browser</li>
   </ul>
 </section>
 
-<!-- ═══════════════════════════════════════════ -->
-<section id="license">
+<section id="license-en">
   <h2>13. License &amp; credits</h2>
 
   <h3>License</h3>
@@ -517,11 +835,51 @@
 </section>
 
 <footer>
-  Albedolizer v1.7.1-beta · MIT · INV.LVL · 2026
+  Albedolizer v1.7.2-beta · MIT · INV.LVL · 2026
   <br><br>
-  <a href="#top" class="back">↑ Back to top</a>
+  <a href="#top-en" class="back">↑ Back to top</a>
 </footer>
 
 </div>
+
+<script>
+  function setLang(lang) {
+    var ru = document.getElementById('content-ru');
+    var en = document.getElementById('content-en');
+    var btnRu = document.getElementById('btn-ru');
+    var btnEn = document.getElementById('btn-en');
+
+    if (lang === 'en') {
+      ru.style.display = 'none';
+      en.style.display = 'block';
+      btnEn.classList.add('active');
+      btnRu.classList.remove('active');
+      document.documentElement.lang = 'en';
+      document.title = 'Albedolizer v1.7.2-beta — Manual';
+    } else {
+      ru.style.display = 'block';
+      en.style.display = 'none';
+      btnRu.classList.add('active');
+      btnEn.classList.remove('active');
+      document.documentElement.lang = 'ru';
+      document.title = 'Albedolizer v1.7.2-beta — Мануал';
+    }
+    try {
+      localStorage.setItem('albedo_manual_lang', lang);
+    } catch (e) {}
+  }
+
+  (function initLang() {
+    var saved = null;
+    try { saved = localStorage.getItem('albedo_manual_lang'); } catch (e) {}
+    var lang = saved;
+    if (!lang) {
+      var nav = (navigator.language || navigator.userLanguage || 'ru').toLowerCase();
+      lang = nav.startsWith('ru') ? 'ru' : 'en';
+    }
+    setLang(lang);
+  })();
+</script>
+
 </body>
 </html>

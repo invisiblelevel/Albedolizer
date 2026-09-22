@@ -135,7 +135,7 @@ def main(page: ft.Page):
     ON_ACCENT = "#ffffff"
 
     cv2.setNumThreads(os.cpu_count() or 4)
-    page.title = "Albedolizer v1.7.1-beta"
+    page.title = "Albedolizer v1.7.2-beta"
 
     # ═══ FilePicker — один на всё приложение ═══
     picker = ft.FilePicker()
@@ -2077,11 +2077,11 @@ def main(page: ft.Page):
                 ft.Container(height=16),
                 ft.Row([ft.Text(f"{t('about_version')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("1.7.1-beta", color=FG, size=12,
+                        ft.Text("1.7.2-beta", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_build')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("2026-09-21", color=FG, size=12,
+                        ft.Text("2026-09-22", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_author')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
@@ -2763,15 +2763,20 @@ def main(page: ft.Page):
         S["pbr_batch_nav_panel"] = batch_nav_panel
 
         pbr_preview_box = ft.Container(
-            content=ft.Stack([
-                ft.Container(content=pbr_preview_hint,
-                             alignment=ft.Alignment.CENTER, expand=True),
-                ft.Container(content=pbr_preview,
-                             alignment=ft.Alignment.CENTER, expand=True),
-                ft.Container(content=batch_nav_panel,
-                             alignment=ft.Alignment.BOTTOM_RIGHT,
-                             padding=12),
-            ], expand=True),
+            content=ft.InteractiveViewer(
+                content=ft.Stack([
+                    ft.Container(content=pbr_preview_hint,
+                                 alignment=ft.Alignment.CENTER, expand=True),
+                    ft.Container(content=pbr_preview,
+                                 alignment=ft.Alignment.CENTER, expand=True),
+                    ft.Container(content=batch_nav_panel,
+                                 alignment=ft.Alignment.BOTTOM_RIGHT,
+                                 padding=12),
+                ], expand=True),
+                min_scale=0.5,
+                max_scale=8.0,
+                expand=True,
+            ),
             bgcolor=CARD, border_radius=12, padding=10, expand=True,
         )
 
@@ -3434,7 +3439,7 @@ def main(page: ft.Page):
                                 weight=ft.FontWeight.BOLD,
                                 color=ACCENT, font_family=FONT),
                         ft.Container(
-                            content=ft.Text("v1.7.1-beta", size=10, color=FG2,
+                            content=ft.Text("v1.7.2-beta", size=10, color=FG2,
                                             font_family=FONT,
                                             weight=ft.FontWeight.W_600),
                             bgcolor=CARD, border_radius=6,
@@ -3528,7 +3533,7 @@ def main(page: ft.Page):
         log_header = ft.Container(
             content=ft.Row([
                 ft.Text("📋", size=14, font_family=FONT),
-                ft.Text("ЛОГ", size=11, color=FG3,
+                ft.Text(t("log_title"), size=11, color=FG3,
                         font_family=FONT, weight=ft.FontWeight.W_600),
                 ft.Container(width=8),
                 collapsed_preview,
