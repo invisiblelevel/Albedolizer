@@ -208,6 +208,22 @@ CLASS_PROMPTS = {
         "a close-up of polished granite",
         "a gray granite albedo map",
     ],
+    "stucco": [
+        "a close-up PBR albedo texture of stucco wall",
+        "a seamless white stucco surface",
+        "a tileable plaster wall texture",
+        "a beige stucco exterior wall albedo",
+        "a close-up of rough stucco finish",
+        "a painted stucco wall texture",
+    ],
+    "gemstone": [
+        "a close-up PBR albedo texture of gemstone",
+        "a seamless crystal surface",
+        "a tileable precious stone texture",
+        "a colorful gemstone albedo map",
+        "a close-up of faceted crystal",
+        "an emerald or ruby surface texture",
+    ],
     # 🧪 SYNTHETIC
     "plastic": [
         "a close-up PBR albedo texture of plastic",
@@ -250,6 +266,14 @@ CLASS_PROMPTS = {
         "a tileable carbon fiber weave texture",
         "a glossy carbon fiber albedo map",
         "a close-up of carbon fiber pattern",
+    ],
+    "cardboard": [
+        "a close-up PBR albedo texture of cardboard",
+        "a seamless brown cardboard surface",
+        "a tileable corrugated cardboard texture",
+        "a close-up of cardboard box material",
+        "a beige cardboard albedo map",
+        "a kraft paper texture",
     ],
     # 🧵 FABRIC
     "cotton": [
