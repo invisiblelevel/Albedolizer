@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-lang="en">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Albedolizer — Manual</title>
+<title>Albedolizer v1.7.1-beta — Manual</title>
 <style>
   :root {
     --bg: #1a1d23;
@@ -19,425 +19,509 @@
     --warn: #ff9800;
   }
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
   body {
-    margin: 0; padding: 0;
-    background: var(--bg); color: var(--fg);
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    line-height: 1.6;
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
   }
-  .wrapper { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* Header */
   header {
-    display: flex; align-items: center; gap: 16px;
-    padding-bottom: 24px; border-bottom: 2px solid var(--card);
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--card);
     margin-bottom: 32px;
   }
-  header h1 { margin: 0; font-size: 32px; color: var(--accent); }
-  header .version {
-    background: var(--card); color: var(--fg2);
-    padding: 3px 10px; border-radius: 6px;
-    font-size: 13px; font-weight: 600;
+  header h1 {
+    font-size: 30px;
+    margin: 0 0 6px;
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: -0.3px;
   }
-  .lang-switch { margin-left: auto; display: flex; gap: 8px; }
-  .lang-switch button {
-    background: var(--card); color: var(--fg2);
-    border: none; padding: 10px 20px; border-radius: 8px;
-    font-size: 14px; font-weight: 600; cursor: pointer;
-    transition: all 0.15s; font-family: inherit;
-  }
-  .lang-switch button.active { background: var(--accent); color: #fff; }
-  .lang-switch button:hover { background: var(--input); }
-  .lang-switch button.active:hover { background: var(--accent); }
-
-  .toc {
-    background: var(--panel); border-radius: 12px;
-    padding: 24px; margin-bottom: 40px;
-  }
-  .toc h2 {
-    margin: 0 0 16px; font-size: 16px;
-    text-transform: uppercase; letter-spacing: 1px;
-    color: var(--fg3);
-  }
-  .toc ol {
-    margin: 0; padding-left: 20px;
-    column-count: 2; column-gap: 40px;
-  }
-  .toc li { margin-bottom: 8px; break-inside: avoid; }
-  .toc a { color: var(--accent); text-decoration: none; font-size: 15px; }
-  .toc a:hover { text-decoration: underline; }
-
-  section { margin-bottom: 60px; scroll-margin-top: 20px; }
-  section h2 {
-    font-size: 24px; color: var(--accent);
-    margin: 0 0 8px; padding-bottom: 8px;
-    border-bottom: 1px solid var(--card);
-  }
-  section h3 { font-size: 18px; margin: 24px 0 8px; color: var(--fg); }
-  section p, section li { color: var(--fg2); font-size: 15px; }
-  section strong { color: var(--fg); }
-  section code {
-    background: var(--input); color: var(--success);
-    padding: 2px 6px; border-radius: 4px;
-    font-family: 'Consolas', monospace; font-size: 13px;
-  }
-  .back-top {
-    display: inline-block; margin-top: 12px;
-    font-size: 13px; color: var(--fg3); text-decoration: none;
-  }
-  .back-top:hover { color: var(--accent); }
-
-  .shot {
-    position: relative; display: inline-block; width: 100%;
-    margin: 16px 0 24px; border-radius: 12px;
-    overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-  }
-  .shot img { width: 100%; display: block; }
-  .hl {
-    position: absolute; border: 3px solid red;
-    border-radius: 6px; pointer-events: none;
-  }
-  .hl.yellow { border-color: #ff9800; }
-  .hl.blue { border-color: #5b8dd9; }
-  .hl.green { border-color: #4caf50; }
-  .hl .num {
-    position: absolute; top: -14px; left: -14px;
-    width: 28px; height: 28px; border-radius: 50%;
-    background: red; color: #fff; font-weight: bold;
-    font-size: 15px; text-align: center; line-height: 28px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-  }
-  .hl.yellow .num { background: #ff9800; }
-  .hl.blue .num { background: #5b8dd9; }
-  .hl.green .num { background: #4caf50; }
-
-  .legend {
-    background: var(--panel); border-radius: 8px;
-    padding: 14px 18px; margin-bottom: 16px;
-    font-size: 14px; color: var(--fg2);
-  }
-  .legend strong { color: var(--fg); }
-  .legend .swatch {
-    display: inline-block; width: 14px; height: 14px;
-    border-radius: 3px; margin: 0 6px 0 12px;
+  header .ver {
+    display: inline-block;
+    background: var(--card);
+    color: var(--fg2);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+    margin-left: 10px;
     vertical-align: middle;
   }
-  .swatch.red { background: #e53935; }
-  .swatch.yellow { background: #ff9800; }
-  .swatch.blue { background: #5b8dd9; }
+  header .sub {
+    color: var(--fg2);
+    font-size: 14px;
+    margin: 0;
+  }
 
-  .en, .ru { display: none; }
-  html[data-lang="ru"] .ru { display: block; }
-  html[data-lang="ru"] .ru.inline { display: inline; }
-  html[data-lang="en"] .en { display: block; }
-  html[data-lang="en"] .en.inline { display: inline; }
+  /* TOC */
+  nav.toc {
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 40px;
+  }
+  nav.toc h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--fg3);
+    margin: 0 0 12px;
+    font-weight: 700;
+  }
+  nav.toc ol {
+    margin: 0;
+    padding-left: 20px;
+    columns: 2;
+    column-gap: 32px;
+  }
+  nav.toc li {
+    margin: 4px 0;
+    break-inside: avoid;
+  }
+  nav.toc a {
+    color: var(--fg2);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  nav.toc a:hover { color: var(--accent); }
 
-  @media (max-width: 700px) {
-    .toc ol { column-count: 1; }
+  /* Sections */
+  section {
+    margin-bottom: 56px;
+    scroll-margin-top: 20px;
+  }
+  section h2 {
+    font-size: 22px;
+    color: var(--fg);
+    border-left: 3px solid var(--accent);
+    padding-left: 14px;
+    margin: 0 0 20px;
+    font-weight: 600;
+  }
+  section h3 {
+    font-size: 16px;
+    color: var(--fg);
+    margin: 24px 0 10px;
+    font-weight: 600;
+  }
+  section p {
+    color: var(--fg2);
+    margin: 0 0 14px;
+  }
+  section ul, section ol {
+    color: var(--fg2);
+    padding-left: 24px;
+    margin: 0 0 16px;
+  }
+  section li {
+    margin: 6px 0;
+  }
+  section strong { color: var(--fg); font-weight: 600; }
+  section code {
+    background: var(--card);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+    color: var(--fg);
+  }
+
+  /* Figures */
+  figure {
+    margin: 20px 0 28px;
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  figure img {
+    width: 100%;
+    display: block;
+    border-radius: 8px;
+    background: var(--card);
+  }
+  figure figcaption {
+    color: var(--fg3);
+    font-size: 12px;
+    margin-top: 10px;
+    text-align: center;
+    font-style: italic;
+  }
+
+  /* Callouts */
+  .note, .warn {
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .note {
+    background: rgba(91, 141, 217, 0.12);
+    border-left: 3px solid var(--accent);
+    color: var(--fg2);
+  }
+  .warn {
+    background: rgba(255, 152, 0, 0.12);
+    border-left: 3px solid var(--warn);
+    color: var(--fg2);
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 14px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--card);
+  }
+  th {
+    color: var(--fg3);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+  }
+  td { color: var(--fg2); }
+  td strong { color: var(--fg); }
+
+  /* Back to top */
+  .back {
+    display: inline-block;
+    margin-top: 12px;
+    color: var(--fg3);
+    font-size: 12px;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .back:hover { color: var(--accent); }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--card);
+    margin-top: 60px;
+    padding-top: 24px;
+    color: var(--fg3);
+    font-size: 12px;
+    text-align: center;
+  }
+
+  /* Mobile */
+  @media (max-width: 640px) {
+    .container { padding: 24px 14px 60px; }
     header h1 { font-size: 24px; }
-    .wrapper { padding: 24px 16px 60px; }
+    nav.toc ol { columns: 1; }
+    section h2 { font-size: 19px; }
   }
 </style>
 </head>
 <body>
+<div class="container">
 
-<div class="wrapper">
-
-<header>
-  <h1>◐ Albedolizer</h1>
-  <span class="version">v1.3.3-beta</span>
-  <div class="lang-switch">
-    <button id="btn-ru" onclick="setLang('ru')">RU</button>
-    <button id="btn-en" class="active" onclick="setLang('en')">EN</button>
-  </div>
+<header id="top">
+  <h1>◐ Albedolizer <span class="ver">v1.7.1-beta</span></h1>
+  <p class="sub">PBR Albedo Checker &amp; Optimizer — User Manual</p>
 </header>
 
 <nav class="toc">
-  <h2><span class="ru">📑 Содержание</span><span class="en">📑 Table of Contents</span></h2>
+  <h2>Contents</h2>
   <ol>
-    <li><a href="#quickstart"><span class="ru inline">Быстрый старт</span><span class="en inline">Quick Start</span></a></li>
-    <li><a href="#single"><span class="ru inline">Одиночная</span><span class="en inline">Single</span></a></li>
-    <li><a href="#pbr"><span class="ru inline">PBR + Viewer</span><span class="en inline">PBR + Viewer</span></a></li>
-    <li><a href="#batch"><span class="ru inline">Пакетная</span><span class="en inline">Batch</span></a></li>
-    <li><a href="#compress"><span class="ru inline">Сжатие</span><span class="en inline">Compression</span></a></li>
-    <li><a href="#advanced"><span class="ru inline">Advanced режим</span><span class="en inline">Advanced Mode</span></a></li>
-    <li><a href="#info"><span class="ru inline">Окно Info</span><span class="en inline">Info Dialog</span></a></li>
-    <li><a href="#faq"><span class="ru inline">FAQ</span><span class="en inline">FAQ</span></a></li>
+    <li><a href="#intro">Introduction</a></li>
+    <li><a href="#header">Header &amp; Navigation</a></li>
+    <li><a href="#single">Single tab</a></li>
+    <li><a href="#single_panel">Single right panel</a></li>
+    <li><a href="#pbr">PBR tab</a></li>
+    <li><a href="#engine">Engine Export</a></li>
+    <li><a href="#realism">Realism filter</a></li>
+    <li><a href="#batch">Batch processing</a></li>
+    <li><a href="#compress">Compression</a></li>
+    <li><a href="#log">Log panel</a></li>
+    <li><a href="#viewer">3D Viewer</a></li>
+    <li><a href="#info">Info dialog</a></li>
+    <li><a href="#license">License &amp; credits</a></li>
   </ol>
 </nav>
 
-<!-- ═══ 1. БЫСТРЫЙ СТАРТ ═══ -->
-<section id="quickstart">
-  <h2><span class="ru">1. Быстрый старт</span><span class="en">1. Quick Start</span></h2>
+<!-- ═══════════════════════════════════════════ -->
+<section id="intro">
+  <h2>1. Introduction</h2>
+  <p><strong>Albedolizer</strong> is a standalone Windows tool for 3D artists, game designers, and anyone working with PBR textures. It checks Albedo maps against standards, automatically corrects color via AI, generates a full set of PBR maps, packs them for your target engine, and lets you preview the result in a built-in 3D viewer.</p>
 
-  <div class="legend">
-    <strong class="ru inline">Легенда:</strong><strong class="en inline">Legend:</strong>
-    <span class="swatch red"></span><span class="ru inline">Главное</span><span class="en inline">Main</span>
-    <span class="swatch yellow"></span><span class="ru inline">Второстепенное</span><span class="en inline">Secondary</span>
-    <span class="swatch blue"></span><span class="ru inline">Инфо</span><span class="en inline">Info</span>
-  </div>
-
-  <p class="ru"><strong>Simple режим — три шага:</strong></p>
-  <p class="en"><strong>Simple mode — three steps:</strong></p>
-  <ol>
-    <li><span class="ru inline">Выбери тип текстуры справа</span><span class="en inline">Pick texture type on the right</span></li>
-    <li><span class="ru inline">Нажми <code>✨ Auto-Correct</code></span><span class="en inline">Click <code>✨ Auto-Correct</code></span></li>
-    <li><span class="ru inline">Нажми <code>💾 Save</code></span><span class="en inline">Click <code>💾 Save</code></span></li>
-  </ol>
-
-  <div class="shot">
-    <img src="screenshots/01_simple.png" alt="Simple Mode">
-    <div class="hl red"    style="top: 1.5%; left: 1%;   width: 96%;  height: 7%;">
-      <span class="num">1</span>
-    </div>
-    <div class="hl red"    style="top: 16%; left: 1.5%;  width: 14%;  height: 4.5%;">
-      <span class="num">2</span>
-    </div>
-    <div class="hl yellow" style="top: 24%; left: 20%;  width: 58%;  height: 50%;">
-      <span class="num">3</span>
-    </div>
-    <div class="hl blue"   style="top: 22%; left: 80%;  width: 19%;  height: 45%;">
-      <span class="num">4</span>
-    </div>
-    <div class="hl blue"   style="top: 78%; left: 1%;   width: 98%;  height: 20%;">
-      <span class="num">5</span>
-    </div>
-  </div>
-
-  <ol>
-    <li><span class="ru inline"><strong>Хедер</strong> — лого, версия, кнопки: Simple/Advanced, тема, язык, инфо</span><span class="en inline"><strong>Header</strong> — logo, version, buttons: Simple/Advanced, theme, language, info</span></li>
-    <li><span class="ru inline"><strong>Auto-Correct</strong> — главная кнопка</span><span class="en inline"><strong>Auto-Correct</strong> — main button</span></li>
-    <li><span class="ru inline"><strong>Превью</strong> — текстура и heatmap</span><span class="en inline"><strong>Preview</strong> — texture and heatmap</span></li>
-    <li><span class="ru inline"><strong>Тип текстуры</strong> — категории и пресеты</span><span class="en inline"><strong>Texture type</strong> — categories and presets</span></li>
-    <li><span class="ru inline"><strong>Лог</strong> — что происходит</span><span class="en inline"><strong>Log</strong> — what's happening</span></li>
-  </ol>
-
-  <!-- Скрин 2: выбор типа -->
-  <h3><span class="ru">Как выбрать тип текстуры</span><span class="en">How to pick texture type</span></h3>
-
-  <div class="shot">
-    <img src="screenshots/02_type.png" alt="Texture type">
-    <div class="hl red"    style="top: 22%; left: 80%;  width: 19%;  height: 12%;">
-      <span class="num">1</span>
-    </div>
-    <div class="hl yellow" style="top: 37%; left: 80%;  width: 19%;  height: 20%;">
-      <span class="num">2</span>
-    </div>
-  </div>
-
-  <ol>
-    <li><span class="ru inline"><strong>Категории</strong> — 6 групп: 🔥 Металл, 🌿 Природа, 🪨 Минерал, 🧪 Синтетика, 💧 Спецэффекты, 🐾 Фауна</span><span class="en inline"><strong>Categories</strong> — 6 groups: 🔥 Metal, 🌿 Nature, 🪨 Mineral, 🧪 Synthetic, 💧 Special, 🐾 Fauna</span></li>
-    <li><span class="ru inline"><strong>Пресеты</strong> — конкретные материалы внутри категории</span><span class="en inline"><strong>Presets</strong> — specific materials inside category</span></li>
-  </ol>
-
-  <!-- Скрин 3: где тыкнуть Advanced -->
-  <h3><span class="ru">Как открыть Advanced режим</span><span class="en">How to open Advanced mode</span></h3>
-
-  <div class="shot">
-    <img src="screenshots/01_simple_adv.png" alt="Advanced toggle">
-    <div class="hl red"    style="top: 3%; left: 66%;  width: 10%;  height: 5%;">
-      <span class="num">1</span>
-    </div>
-  </div>
-
-  <ol>
-    <li><span class="ru inline"><strong>Кнопка ⚙ Advanced</strong> в хедере — тыкни, чтобы открыть все инструменты (коррекция AI/Math, soap, saturation, batch, compress)</span><span class="en inline"><strong>⚙ Advanced button</strong> in header — click to unlock all tools (AI/Math, soap, saturation, batch, compress)</span></li>
-  </ol>
-
-  <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
-</section>
-
-<!-- ═══ 2. ОДИНОЧНАЯ ═══ -->
-<section id="single">
-  <h2><span class="ru">2. Одиночная обработка (Advanced)</span><span class="en">2. Single Processing (Advanced)</span></h2>
-
-  <p class="ru">Simple делает всё одной кнопкой. Advanced даёт полный контроль.</p>
-  <p class="en">Simple does everything in one click. Advanced gives full control.</p>
-
-  <div class="shot">
-    <img src="screenshots/05_advanced.png" alt="Advanced Mode">
-    <div class="hl red"    style="top: 16%; left: 1.5%;  width: 18%;  height: 4.5%;">
-      <span class="num">1</span>
-    </div>
-    <div class="hl blue"   style="top: 22%; left: 80%;  width: 19%;  height: 50%;">
-      <span class="num">2</span>
-    </div>
-    <div class="hl yellow" style="top: 55%; left: 80%;  width: 19%;  height: 5%;">
-      <span class="num">3</span>
-    </div>
-    <div class="hl yellow" style="top: 63%; left: 80%;  width: 19%;  height: 5%;">
-      <span class="num">4</span>
-    </div>
-  </div>
-
-  <ol>
-    <li><span class="ru inline"><strong>Open / Check / Auto-Correct / Reset / Save</strong> — отдельные кнопки</span><span class="en inline"><strong>Open / Check / Auto-Correct / Reset / Save</strong> — separate buttons</span></li>
-    <li><span class="ru inline"><strong>Правая панель</strong> — все настройки</span><span class="en inline"><strong>Right panel</strong> — all settings</span></li>
-    <li><span class="ru inline"><strong>Correction mode</strong> — <code>AI</code> или <code>Math</code></span><span class="en inline"><strong>Correction mode</strong> — <code>AI</code> or <code>Math</code></span></li>
-    <li><span class="ru inline"><strong>Tiling 3×3</strong> — проверка бесшовности</span><span class="en inline"><strong>Tiling 3×3</strong> — seamless check</span></li>
-  </ol>
-
-  <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
-</section>
-
-<!-- ═══ 3. PBR + VIEWER ═══ -->
-<section id="pbr">
-  <h2><span class="ru">3. PBR + 3D Viewer</span><span class="en">3. PBR + 3D Viewer</span></h2>
-
-  <p class="ru">Во вкладке <strong>PBR</strong> — 7 карт из одного Albedo + просмотр в 3D-вьюере.</p>
-  <p class="en">In the <strong>PBR</strong> tab — 7 maps from one Albedo + 3D viewer preview.</p>
-
-  <div class="shot">
-    <img src="screenshots/03_pbr.png" alt="PBR tab">
-    <div class="hl red"    style="top: 16%; left: 1.5%;  width: 12%;  height: 4.5%;">
-      <span class="num">1</span>
-    </div>
-    <div class="hl yellow" style="top: 21%; left: 3%;   width: 94%;  height: 4.5%;">
-      <span class="num">2</span>
-    </div>
-    <div class="hl red"    style="top: 16%; left: 79%;  width: 12%;  height: 4.5%;">
-      <span class="num">3</span>
-    </div>
-    <div class="hl blue"   style="top: 16%; left: 92%;  width: 7%;   height: 4.5%;">
-      <span class="num">4</span>
-    </div>
-    <div class="hl blue"   style="top: 28%; left: 80%;  width: 19%;  height: 8%;">
-      <span class="num">5</span>
-    </div>
-  </div>
-
-  <ol>
-    <li><span class="ru inline"><strong>🎨 Generate</strong> — сгенерировать карты</span><span class="en inline"><strong>🎨 Generate</strong> — generate maps</span></li>
-    <li><span class="ru inline"><strong>Кнопки карт</strong> — Albedo / Height / Normal / AO / Rough / Metal / Edge / ORM</span><span class="en inline"><strong>Map buttons</strong> — Albedo / Height / Normal / AO / Rough / Metal / Edge / ORM</span></li>
-    <li><span class="ru inline"><strong>👁 3D Preview</strong> — открыть 3D-вьюер</span><span class="en inline"><strong>👁 3D Preview</strong> — open 3D viewer</span></li>
-    <li><span class="ru inline"><strong>💾 Save all</strong> — сохранить все 7 карт</span><span class="en inline"><strong>💾 Save all</strong> — save all 7 maps</span></li>
-    <li><span class="ru inline"><strong>PNG bit depth</strong> — 8-bit или 16-bit</span><span class="en inline"><strong>PNG bit depth</strong> — 8-bit or 16-bit</span></li>
-  </ol>
-
-  <h3><span class="ru">3D Viewer — управление</span><span class="en">3D Viewer — controls</span></h3>
-
-  <div class="shot">
-    <img src="screenshots/04_viewer.png" alt="3D Viewer">
-  </div>
-
+  <h3>Two UI modes</h3>
   <ul>
-    <li><span class="ru inline"><strong>ЛКМ + движение</strong> — вращение камеры</span><span class="en inline"><strong>LMB + drag</strong> — rotate camera</span></li>
-    <li><span class="ru inline"><strong>Колесо мыши</strong> — зум</span><span class="en inline"><strong>Mouse wheel</strong> — zoom</span></li>
-    <li><span class="ru inline"><strong>Esc</strong> — закрыть</span><span class="en inline"><strong>Esc</strong> — close</span></li>
+    <li><strong>Simple</strong> — one-click workflow (Open → AI correct → Save). Advanced tools are hidden.</li>
+    <li><strong>Advanced</strong> — full control. Unlocks statistics, correction methods, soap removal, saturation, tiling, seamless, and more.</li>
+  </ul>
+  <p>Switch modes via the <code>⚙ Simple</code> / <code>⚙ Advanced</code> button in the header.</p>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="header">
+  <h2>2. Header &amp; Navigation</h2>
+  <p>The header contains the app title, current version, UI mode toggle, theme switcher, language switcher, and the Info button.</p>
+  <figure>
+    <img src="screenshots/header.jpg" alt="Albedolizer header">
+    <figcaption>Fig. 1 — Header with mode, theme, language, and Info buttons.</figcaption>
+  </figure>
+  <p>The <strong>NavigationRail</strong> on the left gives access to all tabs:</p>
+  <ul>
+    <li><strong>Single</strong> — check &amp; correct one texture</li>
+    <li><strong>Batch</strong> — process a whole folder</li>
+    <li><strong>PBR</strong> — generate PBR maps</li>
+    <li><strong>Engine</strong> — pack maps for Unity / Unreal / Godot</li>
+    <li><strong>Compress</strong> — reduce file size</li>
+    <li><strong>Realism</strong> — apply procedural photorealism filter</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="single">
+  <h2>3. Single tab</h2>
+
+  <h3>Simple mode</h3>
+  <p>In Simple mode, one button does everything: <code>🚀 Process texture</code>. It opens a file, runs AI color correction, boosts saturation, and shows the result.</p>
+  <figure>
+    <img src="screenshots/tab_single_simple.jpg" alt="Single tab in Simple mode">
+    <figcaption>Fig. 2 — Single tab in Simple mode.</figcaption>
+  </figure>
+
+  <h3>Advanced mode</h3>
+  <p>In Advanced mode you get full control:</p>
+  <ol>
+    <li>Pick a <strong>texture type</strong> on the right (or click 🤖 Auto-detect material)</li>
+    <li><code>📂 Open</code> — load an Albedo texture</li>
+    <li><code>🔍 Check</code> — see stats and heatmap</li>
+    <li>If FAIL → <code>✨ Auto-Correct</code></li>
+    <li><code>💾 Save</code> the result</li>
+  </ol>
+  <figure>
+    <img src="screenshots/tab_single_advanced.jpg" alt="Single tab in Advanced mode">
+    <figcaption>Fig. 3 — Single tab in Advanced mode.</figcaption>
+  </figure>
+  <div class="note">💡 Use <code>↺ Reset</code> to compare the corrected image with the original at any time.</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="single_panel">
+  <h2>4. Single right panel</h2>
+  <p>The right panel of the Single tab contains everything you need to configure the correction:</p>
+  <ul>
+    <li><strong>Auto-detect material</strong> — CLIP-based classifier picks the best preset from 47 options</li>
+    <li><strong>Texture type</strong> — categories (🔥 Metal, 🌿 Nature, 🪨 Mineral, 🧪 Synthetic, 🧵 Fabric, 💧 Special, 🐾 Fauna) and presets inside each</li>
+    <li><strong>Correction method</strong> — Autolevels / LUTwithBGrid / Math</li>
+    <li><strong>Tiling 3×3</strong> — spot seams on tileable textures</li>
+    <li><strong>Seamless</strong> — make a texture tileable with radial mask + scatter</li>
+    <li><strong>Remove soap</strong> — adaptive unsharp mask for blurry patches</li>
+    <li><strong>Saturation</strong> — fix washed-out colors after AI correction</li>
+    <li><strong>Statistics</strong> — min / max / avg / median / percentiles</li>
+  </ul>
+  <figure style="max-width: 420px; margin-left: auto; margin-right: auto;">
+    <img src="screenshots/right_panel_single.jpg" alt="Single right panel">
+    <figcaption>Fig. 4 — Single right panel.</figcaption>
+  </figure>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="pbr">
+  <h2>5. PBR tab</h2>
+  <p>Generate a full set of PBR maps from a single Albedo texture.</p>
+  <ol>
+    <li><code>📂 Load Albedo</code> — pick a texture</li>
+    <li>Pick a <strong>preset</strong> on the right (sliders auto-tune)</li>
+    <li>Adjust sliders if needed (Normal strength, Smoothing, Threshold, High-pass, Height blur, AO radius, AO intensity, Rough base, Rough variation)</li>
+    <li><code>🎨 Generate</code> → 7 maps</li>
+    <li>Switch between maps with the buttons on top: <strong>Albedo / Height / Normal / AO / Rough / Metal / Edge / ORM</strong></li>
+    <li><code>👁 3D Preview</code> — open the OpenGL viewer</li>
+    <li><code>💾 Save all</code> — creates a <code>&lt;name&gt;_pbr/</code> folder next to the source</li>
+  </ol>
+  <figure>
+    <img src="screenshots/tab_pbr.jpg" alt="PBR tab">
+    <figcaption>Fig. 5 — PBR tab with all 7 maps and parameter sliders.</figcaption>
+  </figure>
+  <div class="note">💡 Height and Normal maps are saved in 16-bit PNG when selected — full precision for pro pipelines.</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="engine">
+  <h2>6. Engine Export</h2>
+  <p>Pack your PBR maps for a specific engine in one click.</p>
+
+  <h3>Source</h3>
+  <ul>
+    <li><code>⚙️ From current PBR</code> — use the maps you just generated in the PBR tab</li>
+    <li><code>📂 Load from folder</code> — pick a folder with existing <code>*_albedo.png</code>, <code>*_normal.png</code>, <code>*_ao.png</code>, etc.</li>
   </ul>
 
-  <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+  <h3>Supported engines</h3>
+  <table>
+    <tr><th>Engine</th><th>Layout</th></tr>
+    <tr><td><strong>Unity HDRP</strong></td><td>R = Metallic, G = AO, B = Detail Mask, A = Smoothness (1 − Roughness)</td></tr>
+    <tr><td><strong>Unity URP</strong></td><td>R = Metallic, G = 0, B = 0, A = Smoothness (1 − Roughness)</td></tr>
+    <tr><td><strong>Unreal</strong></td><td>R = AO, G = Roughness, B = Metallic</td></tr>
+    <tr><td><strong>Godot</strong></td><td>R = AO, G = Roughness, B = Metallic</td></tr>
+  </table>
+
+  <h3>Additional options</h3>
+  <ul>
+    <li><strong>Normal map format</strong> — OpenGL (Y+) or DirectX (Y−) with green channel flipped</li>
+    <li><strong>Detail Mask</strong> (HDRP only) — white (1.0) / edge map / custom loaded from disk</li>
+    <li><strong>PNG bit depth</strong> — 8-bit or 16-bit</li>
+    <li><strong>Channel preview</strong> — R / G / B / A / RGB / RGBA</li>
+  </ul>
+
+  <figure>
+    <img src="screenshots/tab_engine_export.jpg" alt="Engine Export tab">
+    <figcaption>Fig. 6 — Engine Export tab with packed map preview and channel controls.</figcaption>
+  </figure>
+
+  <p>Click <code>⚙️ Pack</code> to generate the packed map, then <code>💾 Save all</code> to write <code>&lt;name&gt;_&lt;engine&gt;_&lt;gl|dx&gt;/</code> next to the source.</p>
 </section>
 
-<!-- ═══ 4. ПАКЕТНАЯ ═══ -->
+<!-- ═══════════════════════════════════════════ -->
+<section id="realism">
+  <h2>7. Realism filter</h2>
+  <p>Add a procedural photorealism effect to Albedo textures — grain, micro-detail, color variation, and a subtle vignette.</p>
+  <ol>
+    <li><code>📂 Open</code> — load a texture</li>
+    <li>Tune three sliders:
+      <ul>
+        <li><strong>Grain</strong> — fine and coarse noise layers</li>
+        <li><strong>Detail</strong> — adaptive high-pass overlay for micro-detail</li>
+        <li><strong>Variation</strong> — large-scale color/brightness patches + vignette</li>
+      </ul>
+    </li>
+    <li><code>🎞 Apply</code> — see the result in the preview</li>
+    <li><code>💾 Save</code> the result</li>
+  </ol>
+  <figure>
+    <img src="screenshots/tab_realism.jpg" alt="Realism tab">
+    <figcaption>Fig. 7 — Realism filter with three sliders.</figcaption>
+  </figure>
+  <div class="note">💡 For 8K textures the filter may take a few seconds — a progress bar shows the status.</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
 <section id="batch">
-  <h2><span class="ru">4. Пакетная обработка</span><span class="en">4. Batch Processing</span></h2>
-
-  <p class="ru">Вкладка <strong>Batch</strong>. Обрабатывает целую папку одним запуском.</p>
-  <p class="en">The <strong>Batch</strong> tab. Processes a whole folder in one run.</p>
-
-  <div class="shot">
-    <img src="screenshots/06_batch.png" alt="Batch">
-    <div class="hl yellow" style="top: 17%; left: 1.5%;  width: 12%;  height: 4%;">
-      <span class="num">1</span>
-    </div>
-    <div class="hl red"    style="top: 28%; left: 1.5%;  width: 12%;  height: 4%;">
-      <span class="num">2</span>
-    </div>
-    <div class="hl blue"   style="top: 38%; left: 1%;   width: 98%;  height: 55%;">
-      <span class="num">3</span>
-    </div>
-  </div>
-
+  <h2>8. Batch processing</h2>
+  <p>Process a whole folder of textures at once with AI correction or compression.</p>
   <ol>
-    <li><span class="ru inline"><strong>Select folder / files</strong> — выбери папку или файлы</span><span class="en inline"><strong>Select folder / files</strong> — pick folder or files</span></li>
-    <li><span class="ru inline"><strong>Run processing</strong> — запуск</span><span class="en inline"><strong>Run processing</strong> — start</span></li>
-    <li><span class="ru inline"><strong>Лог</strong> — по каждому файлу время и статус. Результат в папке <code>_corrected</code></span><span class="en inline"><strong>Log</strong> — time and status per file. Output to <code>_corrected</code></span></li>
+    <li><code>📁 Select folder</code> or <code>📄 Select files</code></li>
+    <li>Choose correction method (Autolevels / LUTwithBGrid / Math) on the right</li>
+    <li>Set <strong>threads</strong> count (1–8 parallel tasks)</li>
+    <li>Optionally tune <strong>Remove soap</strong> strength</li>
+    <li><code>▶ Run processing</code></li>
   </ol>
-
-  <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+  <figure>
+    <img src="screenshots/tab_batch.jpg" alt="Batch tab">
+    <figcaption>Fig. 8 — Batch processing with thread controls.</figcaption>
+  </figure>
+  <p>Results are saved to a <code>_corrected</code> folder next to the sources.</p>
 </section>
 
-<!-- ═══ 5. СЖАТИЕ ═══ -->
+<!-- ═══════════════════════════════════════════ -->
 <section id="compress">
-  <h2><span class="ru">5. Сжатие</span><span class="en">5. Compression</span></h2>
-
-  <p class="ru">Вкладка <strong>Compress</strong>. Сжимает Albedo через LAB-преобразование.</p>
-  <p class="en">The <strong>Compress</strong> tab. Compresses Albedo via LAB roundtrip.</p>
-
-  <div class="shot">
-    <img src="screenshots/08_compress.png" alt="Compress">
-    <div class="hl blue"   style="top: 17%; left: 1%;   width: 98%;  height: 32%;">
-      <span class="num">1</span>
-    </div>
-    <div class="hl yellow" style="top: 22%; left: 3.5%; width: 20%;  height: 4%;">
-      <span class="num">2</span>
-    </div>
-    <div class="hl red"    style="top: 22%; left: 88%;  width: 11%;  height: 4%;">
-      <span class="num">3</span>
-    </div>
-    <div class="hl blue"   style="top: 57%; left: 1%;   width: 98%;  height: 10%;">
-      <span class="num">4</span>
-    </div>
-  </div>
-
-  <ol>
-    <li><span class="ru inline"><strong>Одиночное сжатие</strong> — секция сверху. Обрабатывает один файл</span><span class="en inline"><strong>Single compression</strong> — top section. Processes one file</span></li>
-    <li><span class="ru inline"><strong>Открыть / Сжать</strong> — выбери файл и сожми</span><span class="en inline"><strong>Open / Compress</strong> — pick file and compress</span></li>
-    <li><span class="ru inline"><strong>Сохранить</strong> — сохранить результат</span><span class="en inline"><strong>Save</strong> — save result</span></li>
-    <li><span class="ru inline"><strong>Пакетное сжатие</strong> — секция ниже. Целая папка. Результат в <code>_compressed</code></span><span class="en inline"><strong>Batch compression</strong> — bottom section. Whole folder. Output to <code>_compressed</code></span></li>
-  </ol>
-
-  <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+  <h2>9. Compression</h2>
+  <p>Reduce file size of Albedo textures without losing visual quality.</p>
+  <ul>
+    <li><strong>Single compression</strong> — <code>📂 Open</code> a file, click <code>🗜 Compress</code>, then <code>💾 Save</code></li>
+    <li><strong>Batch compression</strong> — <code>📁 Select folder</code> or <code>📄 Select files</code>, then <code>▶ Compress folder</code></li>
+  </ul>
+  <p>Choose <strong>8-bit</strong> or <strong>16-bit</strong> PNG on the right panel.</p>
+  <figure>
+    <img src="screenshots/tab_compress.jpg" alt="Compress tab">
+    <figcaption>Fig. 9 — Compression tab with bit depth selector.</figcaption>
+  </figure>
+  <p>Results go to a <code>_compressed</code> folder next to the sources.</p>
 </section>
 
-<!-- ═══ 6. ADVANCED ═══ -->
-<section id="advanced">
-  <h2><span class="ru">6. Advanced — что внутри</span><span class="en">6. Advanced — what's inside</span></h2>
-
-  <p class="ru">Advanced открывает все инструменты. Тоггл — кнопка <code>⚙ Advanced</code> / <code>⚙ Simple</code> в хедере.</p>
-  <p class="en">Advanced unlocks all tools. Toggle — the <code>⚙ Advanced</code> / <code>⚙ Simple</code> button in the header.</p>
-
-  <div class="shot">
-    <img src="screenshots/09_adv_toggle.png" alt="Advanced tools">
-    <div class="hl red"    style="top: 23.5%; left: 76%; width: 20%; height: 4.5%;">
-      <span class="num">1</span>
-    </div>
-    <div class="hl yellow" style="top: 30.5%; left: 76%; width: 20%; height: 4.5%;">
-      <span class="num">2</span>
-    </div>
-    <div class="hl yellow" style="top: 38%;   left: 76%; width: 20%; height: 12%;">
-      <span class="num">3</span>
-    </div>
-    <div class="hl yellow" style="top: 55.5%; left: 76%; width: 20%; height: 12%;">
-      <span class="num">4</span>
-    </div>
-    <div class="hl blue"   style="top: 71.5%; left: 76%; width: 20%; height: 4%;">
-      <span class="num">5</span>
-    </div>
-  </div>
-
-  <ol>
-    <li><span class="ru inline"><strong>Режим коррекции</strong> — <code>AI</code> (нейросеть autolevels) или <code>Math</code> (CLAHE fallback). AI качественнее, Math быстрее.</span><span class="en inline"><strong>Correction mode</strong> — <code>AI</code> (autolevels neural net) or <code>Math</code> (CLAHE fallback). AI is better, Math is faster.</span></li>
-    <li><span class="ru inline"><strong>Tiling 3×3</strong> — раскладывает текстуру в сетку 3×3 для проверки бесшовности.</span><span class="en inline"><strong>Tiling 3×3</strong> — tiles texture into 3×3 grid for seamless check.</span></li>
-    <li><span class="ru inline"><strong>Remove soap</strong> — убирает «мыльные» размытые участки после AI. Слайдер — сила детализации (0–3).</span><span class="en inline"><strong>Remove soap</strong> — removes blurry patches after AI. Slider — detail strength (0–3).</span></li>
-    <li><span class="ru inline"><strong>Boost saturation</strong> — поднимает насыщенность. Множитель 0.8–1.5 (дефолт 1.15 = +15%).</span><span class="en inline"><strong>Boost saturation</strong> — boosts saturation. Multiplier 0.8–1.5 (default 1.15 = +15%).</span></li>
-    <li><span class="ru inline"><strong>Statistics</strong> — Min/Max/Avg/Median/1%/99% яркости. Обновляется после «🔍 Check».</span><span class="en inline"><strong>Statistics</strong> — Min/Max/Avg/Median/1%/99% luminance. Updates after «🔍 Check».</span></li>
-  </ol>
-
-  <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+<!-- ═══════════════════════════════════════════ -->
+<section id="log">
+  <h2>10. Log panel</h2>
+  <p>At the bottom of the window there is a single shared log panel. When collapsed, it shows only the last line. Click the header to expand it and see the full history.</p>
+  <figure style="max-width: 100%; margin-left: auto; margin-right: auto;">
+    <img src="screenshots/log_bottomsheet.jpg" alt="Log panel — collapsed and expanded"
+         style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
+    <figcaption>Fig. 10 — Log panel: collapsed (bottom) and expanded (top).</figcaption>
+  </figure>
+  <ul>
+    <li>Click the log header to toggle collapsed / expanded</li>
+    <li>Click <code>🗑</code> to clear the log</li>
+  </ul>
 </section>
 
-<script>
-  function setLang(lang) {
-    document.documentElement.setAttribute('data-lang', lang);
-    document.body.setAttribute('data-lang', lang);
-    document.getElementById('btn-ru').classList.toggle('active', lang === 'ru');
-    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
-    localStorage.setItem('albedolizer_manual_lang', lang);
-  }
-  (function() {
-    const saved = localStorage.getItem('albedolizer_manual_lang');
-    if (saved) { setLang(saved); }
-  })();
-</script>
+<!-- ═══════════════════════════════════════════ -->
+<section id="viewer">
+  <h2>11. 3D Viewer</h2>
+  <p>Preview your PBR result on a sphere in real time, with HDRI lighting and blurred reflections.</p>
+
+  <h3>Controls</h3>
+  <ul>
+    <li><strong>Left mouse button</strong> — rotate the sphere</li>
+    <li><strong>Mouse wheel</strong> — zoom in / out</li>
+    <li><strong>Tiling panel</strong> — click X / Y buttons to change texture scale from 1×1 to 16×16</li>
+    <li><strong>Reset 4x3</strong> — restore the default tiling</li>
+  </ul>
+
+  <figure>
+    <img src="screenshots/viewer_3d.jpg" alt="3D Viewer with tiling controls">
+    <figcaption>Fig. 11 — Built-in 3D viewer with the tiling panel in the top-left corner.</figcaption>
+  </figure>
+
+  <div class="note">💡 The viewer opens as a separate window (<code>viewer.exe</code>) when you click <code>👁 3D Preview</code> in the PBR tab.</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="info">
+  <h2>12. Info dialog</h2>
+  <p>Click <code>ℹ Info</code> in the header to open the info dialog. It contains:</p>
+  <ul>
+    <li><strong>📖 Help</strong> — quick reference in plain text</li>
+    <li><strong>ℹ About</strong> — version, build date, author</li>
+    <li><strong>💛 Support</strong> — donation wallets (BTC, USDT, GRAM)</li>
+    <li><strong>📖 Manual</strong> — this HTML file, opens in your browser</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="license">
+  <h2>13. License &amp; credits</h2>
+
+  <h3>License</h3>
+  <p>Albedolizer is released under the <strong>MIT License</strong> — free to use, including in commercial projects.</p>
+
+  <h3>Credits</h3>
+  <ul>
+    <li><strong>LUTwithBGrid</strong> (ECCV 2024) — Wontae Kim, Nam Ik Cho — Apache 2.0</li>
+    <li><strong>OpenAI CLIP</strong> (ViT-B/32) — for material auto-detection</li>
+    <li><strong>Flet</strong> — cross-platform UI framework</li>
+    <li><strong>Moderngl + GLFW + imgui-bundle</strong> — 3D viewer stack</li>
+  </ul>
+
+  <h3>Source code</h3>
+  <p><a href="https://github.com/invisiblelevel/Albedolizer" style="color: var(--accent);">github.com/invisiblelevel/Albedolizer</a></p>
+
+  <p style="margin-top: 32px;">Made by <strong>INV.LVL</strong> · 2026</p>
+</section>
+
+<footer>
+  Albedolizer v1.7.1-beta · MIT · INV.LVL · 2026
+  <br><br>
+  <a href="#top" class="back">↑ Back to top</a>
+</footer>
+
+</div>
 </body>
 </html>

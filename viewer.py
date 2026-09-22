@@ -303,15 +303,15 @@ def imgui_glfw_backend(win):
 
     # Только клавиатура, char, framebuffer — мышью управляет main()
     def _cb_key(window, key, scancode, action, mods):
-        imgui.backends.glfw_keyboard_callback(_win_addr(window), key, scancode, action, mods)
+        imgui.backends.glfw_key_callback(_win_addr(window), key, scancode, action, mods)
     def _cb_char(window, codepoint):
         imgui.backends.glfw_char_callback(_win_addr(window), codepoint)
     def _cb_fb(window, w, h):
         imgui.backends.glfw_framebuffer_size_callback(_win_addr(window), w, h)
 
     glfw.set_key_callback(win, _cb_key)
-    glfw.set_char_callback(win, _cb_char)
-    glfw.set_framebuffer_size_callback(win, _cb_fb)
+    # glfw.set_char_callback(win, _cb_char)
+    # glfw.set_framebuffer_size_callback(win, _cb_fb)
 
     # ═══ ПОТОМ OpenGL3 renderer backend ═══
     imgui.backends.opengl3_init("#version 330")
@@ -589,6 +589,15 @@ def main():
         glfw.poll_events()
 
         w, h = glfw.get_framebuffer_size(win)
+
+        # Защита от нулевого размера окна (свёрнуто, не отрисовалось, etc.)
+        if w <= 0 or h <= 0:
+            glfw.swap_buffers(win)
+            elapsed = time.time() - frame_start
+            if elapsed < target_dt:
+                time.sleep(target_dt - elapsed)
+            continue
+
         ctx.viewport = (0, 0, w, h)
         ctx.clear(0.12, 0.12, 0.15, 1.0)
 
