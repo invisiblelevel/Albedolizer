@@ -121,6 +121,77 @@ def generate_roughness(albedo_pil, base=0.7, variation=0.3, blur=1.0):
         rough = _blur_float(rough, blur)
 
     return rough.astype(np.float32)
+    
+def generate_roughness_advanced(albedo_pil, base=0.7, variation=0.3,
+                                  detail=1.0, blur=1.0):
+    """
+    Multi-feature roughness: luminance + variance + edges + saturation.
+    
+    detail: 0.0 = только luminance (старый алгоритм), 
+            1.0 = полный multi-feature (новый).
+    """
+    arr = np.array(albedo_pil.convert("RGB")).astype(np.float32) / 255.0
+    h, w = arr.shape[:2]
+    k = max(5, int(min(h, w) * 0.02) | 1)
+
+    # Сигнал 1: inverted luminance
+    lum = _to_luminance(albedo_pil)
+    sig_lum = 1.0 - lum
+
+    # Если detail=0 — работаем как старый алгоритм
+    if detail <= 0.01:
+        rough = base + (sig_lum - 0.5) * variation
+        rough = np.clip(rough, 0.0, 1.0)
+        if blur > 0:
+            rough = _blur_float(rough, blur)
+        return rough.astype(np.float32)
+
+    # Сигнал 2: local variance
+    mean = cv2.blur(lum, (k, k))
+    sq_mean = cv2.blur(lum * lum, (k, k))
+    variance = np.maximum(sq_mean - mean * mean, 0)
+    sig_var = variance / (variance.max() + 1e-8)
+
+    # Сигнал 3: edge density
+    gx = cv2.Sobel(lum, cv2.CV_32F, 1, 0, ksize=3)
+    gy = cv2.Sobel(lum, cv2.CV_32F, 0, 1, ksize=3)
+    edge_mag = np.sqrt(gx * gx + gy * gy)
+    edge_density = cv2.blur(edge_mag, (k, k))
+    sig_edge = edge_density / (edge_density.max() + 1e-8)
+
+    # Сигнал 4: saturation variance
+    hsv = cv2.cvtColor(arr, cv2.COLOR_RGB2HSV)
+    sat = hsv[:, :, 1].astype(np.float32)
+    sat_mean = cv2.blur(sat, (k, k))
+    sat_sq = cv2.blur(sat * sat, (k, k))
+    sat_var = np.maximum(sat_sq - sat_mean * sat_mean, 0)
+    sig_sat = sat_var / (sat_var.max() + 1e-8)
+
+    # Веса для новых сигналов (luminance всегда 1 - detail)
+    # detail=1 → w_lum=0.40, w_var=0.30, w_edge=0.20, w_sat=0.10
+    # detail=0 → w_lum=1.0, остальные 0
+    w_lum  = 1.0 - detail * 0.60
+    w_var  = detail * 0.30
+    w_edge = detail * 0.20
+    w_sat  = detail * 0.10
+
+    combined = (w_lum  * sig_lum +
+                w_var  * sig_var +
+                w_edge * sig_edge +
+                w_sat  * sig_sat)
+
+    # Нормализация combined в [0, 1]
+    cmin, cmax = combined.min(), combined.max()
+    if cmax - cmin > 1e-8:
+        combined = (combined - cmin) / (cmax - cmin)
+
+    rough = base + (combined - 0.5) * variation
+    rough = np.clip(rough, 0.0, 1.0)
+
+    if blur > 0:
+        rough = _blur_float(rough, blur)
+
+    return rough.astype(np.float32)
 
 
 def generate_metallic(albedo_pil, mode="black"):
@@ -138,6 +209,56 @@ def generate_metallic(albedo_pil, mode="black"):
     else:
         return np.zeros((h, w), dtype=np.float32)
 
+
+def extract_metallic_by_color(albedo_pil, target_rgb, tolerance=0.15, softness=0.05,
+                                negative_rgb=None, negative_tolerance=0.10):
+    """
+    Генерирует Metallic-маску по цветовой близости к target_rgb.
+    Если negative_rgb задан — исключает пиксели близкие к negative цвету.
+    
+    target_rgb: tuple (r, g, b) 0-255 — что считать металлом
+    tolerance: 0.0-1.0 — широта positive маски
+    softness: 0.0-1.0 — размытие границ
+    negative_rgb: tuple (r, g, b) 0-255 или None — что НЕ металл
+    negative_tolerance: широта negative маски
+    
+    Возвращает float32 2D 0-1.
+    """
+    arr = np.array(albedo_pil.convert("RGB"))
+
+    # LAB для лучшего цветового расстояния (uint8, 0-255)
+    lab = cv2.cvtColor(arr, cv2.COLOR_RGB2LAB).astype(np.float32)
+
+
+    def _rgb_to_lab(rgb):
+        if isinstance(rgb, np.ndarray):
+            rgb = tuple(rgb.flatten()[:3])
+        t = np.uint8([[[int(rgb[0]), int(rgb[1]), int(rgb[2])]]])
+        return cv2.cvtColor(t, cv2.COLOR_RGB2LAB)[0, 0].astype(np.float32)
+
+    def _color_dist_mask(target_lab, tol):
+        diff = lab - target_lab
+        dist = np.sqrt(np.sum(diff * diff, axis=2))
+        dist_norm = np.clip(dist / 200.0, 0.0, 1.0)
+        tol_ = max(tol, 0.01)
+        return np.clip(1.0 - dist_norm / tol_, 0.0, 1.0)
+
+    # Positive
+    target_lab = _rgb_to_lab(target_rgb)
+    mask = _color_dist_mask(target_lab, tolerance)
+
+    # Negative (вычитаем)
+    if negative_rgb is not None:
+        neg_lab = _rgb_to_lab(negative_rgb)
+        neg_mask = _color_dist_mask(neg_lab, negative_tolerance)
+        mask = mask * (1.0 - neg_mask)
+
+    # Softness
+    if softness > 0:
+        sigma = max(1.0, softness * 30.0)
+        mask = cv2.GaussianBlur(mask, (0, 0), sigmaX=sigma)
+
+    return np.clip(mask, 0.0, 1.0).astype(np.float32)
 
 def generate_edge(height_arr, blur=1.0, strength=1.0):
     """float32 2D 0-1."""
@@ -205,6 +326,7 @@ def generate_all_pbr(albedo_pil,
                      ao_range=50.0,
                      rough_base=0.7,
                      rough_variation=0.3,
+                     rough_detail=1.0,
                      metallic_mode="black",
                      metallic_custom=None,
                      roughness_mode="procedural",
@@ -233,10 +355,16 @@ def generate_all_pbr(albedo_pil,
             roughness = roughness_custom.astype(np.float32)
         roughness = np.clip(roughness, 0.0, 1.0)
     else:
-        roughness = generate_roughness(albedo_pil, base=rough_base, variation=rough_variation)
+        roughness = generate_roughness_advanced(
+            albedo_pil,
+            base=rough_base,
+            variation=rough_variation,
+            detail=rough_detail,
+        )
 
     # Metallic: custom map из файла, если загружена
-    if metallic_mode == "custom" and metallic_custom is not None:
+    # Metallic: custom map или auto-маска
+    if metallic_mode in ("custom", "auto") and metallic_custom is not None:
         w, h = albedo_pil.size
         if metallic_custom.shape[:2] != (h, w):
             metallic = cv2.resize(

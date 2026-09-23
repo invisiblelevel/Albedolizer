@@ -6,9 +6,9 @@ config.py — все константы, словари и настройки Al
 # ═══════════════════════════════════════════════════════════
 #  МЕТА
 # ═══════════════════════════════════════════════════════════
-PP_TITLE = "Albedolizer v1.7.3-beta"
-APP_VERSION = "1.7.3-beta"
-APP_BUILD = "2026-09-23"
+PP_TITLE = "Albedolizer v1.7.4-beta"
+APP_VERSION = "1.7.4-beta"
+APP_BUILD = "2026-09-24"
 APP_AUTHOR = "INV.LVL"
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 820

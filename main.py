@@ -15,6 +15,7 @@ from pbr_generator import (
     generate_all_pbr, remove_soap_adaptive,
     boost_saturation, make_seamless,
     to_preview_pil, save_pbr_map,
+    extract_metallic_by_color,
 )
 from config import (
     WALLETS, THEME_DARK, THEME_LIGHT,
@@ -62,6 +63,10 @@ def main(page: ft.Page):
         "soap_fix_strength": USER_SETTINGS.get("soap_fix_strength", 1.0),
         "saturation_boost": USER_SETTINGS.get("saturation_boost", 1.15),
         "pbr_bit_depth": USER_SETTINGS.get("pbr_bit_depth", 16),
+        "pbr_bit_depth_per_map": USER_SETTINGS.get("pbr_bit_depth_per_map", {
+            "albedo": 8, "height": 16, "normal": 16, "ao": 8,
+            "roughness": 8, "metallic": 8, "edge": 8, "orm": 8,
+        }),
         "last_op": None,
         "show_original": False,
         "lang": USER_SETTINGS.get("lang") or _detect_system_lang(),
@@ -76,10 +81,27 @@ def main(page: ft.Page):
         "pbr_metallic": USER_SETTINGS.get("pbr_metallic", "black"),
         "pbr_metallic_custom": None,
         "pbr_metallic_custom_path": None,
+        "pbr_metal_target_rgb": None,
+        "pbr_metal_tolerance": USER_SETTINGS.get("pbr_metal_tolerance", 0.15),
+        "pbr_metal_softness": USER_SETTINGS.get("pbr_metal_softness", 0.05),
+        "pbr_metal_negative_rgb": None,
+        "pbr_metal_negative_tolerance": USER_SETTINGS.get("pbr_metal_negative_tolerance", 0.10),
         "pbr_roughness": USER_SETTINGS.get("pbr_roughness", "procedural"),
         "pbr_roughness_custom": None,
         "pbr_roughness_custom_path": None,
         "pbr_sliders": {},
+        "pbr_values": {
+            "height_blur": USER_SETTINGS.get("pbr_height_blur", 2.0),
+            "strength": USER_SETTINGS.get("pbr_strength", 1.5),
+            "smooth": USER_SETTINGS.get("pbr_smooth", 1.5),
+            "threshold": USER_SETTINGS.get("pbr_threshold", 0.05),
+            "high_pass": USER_SETTINGS.get("pbr_high_pass", 40.0),
+            "ao_radius": USER_SETTINGS.get("pbr_ao_radius", 8.0),
+            "ao_intensity": USER_SETTINGS.get("pbr_ao_intensity", 1.5),
+            "rough_base": USER_SETTINGS.get("pbr_rough_base", 0.7),
+            "rough_var": USER_SETTINGS.get("pbr_rough_var", 0.3),
+            "rough_detail": USER_SETTINGS.get("rough_detail", 1.0),
+        },
         "pbr_preview": None,
         "pbr_preview_hint": None,
         "pbr_map_buttons": {},
@@ -151,7 +173,7 @@ def main(page: ft.Page):
     ON_ACCENT = "#ffffff"
 
     cv2.setNumThreads(os.cpu_count() or 4)
-    page.title = "Albedolizer v1.7.3-beta"
+    page.title = "Albedolizer v1.7.4-beta"
 
     # ═══ FilePicker — один на всё приложение ═══
     picker = ft.FilePicker()
@@ -1563,6 +1585,193 @@ def main(page: ft.Page):
         except Exception as ex:
             log(f"❌ Roughness load: {ex}", DANGER)
             page.update()
+            
+    async def pbr_pick_color(e=None, mode="positive"):
+        """Диалог с превью Albedo — клик по пикселю для выбора цвета.
+        mode: "positive" (металл) или "negative" (фон)."""
+        if S.get("pbr_source") is None:
+            log("   ⚠ Сначала загрузи Albedo в PBR", WARN)
+            page.update()
+            return
+
+        src = S["pbr_source"]
+        max_disp = 600
+        disp = src.copy()
+        disp.thumbnail((max_disp, max_disp), Image.LANCZOS)
+        disp_w, disp_h = disp.size
+        orig_w, orig_h = src.size
+        scale = orig_w / disp_w
+
+        # Ref'ы для обновления UI
+        state = {
+            "rgb": None,
+            "marker_x": 0,
+            "marker_y": 0,
+            "img_src": f"data:image/png;base64,{pil_to_b64(disp, max_size=max_disp)}",
+        }
+
+        # Плашка с выбранным цветом
+        color_swatch = ft.Container(
+            width=32, height=32,
+            bgcolor="#000000",
+            border_radius=4,
+        )
+
+        picked_label = ft.Text("—", color=FG, size=13,
+                                font_family="Consolas",
+                                weight=ft.FontWeight.W_600)
+
+        img_control = ft.Image(
+            src=state["img_src"],
+            fit=ft.BoxFit.CONTAIN,
+            width=disp_w,
+            height=disp_h,
+        )
+
+        stack = ft.Stack([
+            img_control,
+        ], width=disp_w, height=disp_h)
+
+        def _on_image_click(e):
+            try:
+                lx = getattr(e, "local_x", None)
+                ly = getattr(e, "local_y", None)
+                # Fallback для Flet 0.80+
+                if lx is None or ly is None:
+                    pos = getattr(e, "local_position", None)
+                    if pos is not None:
+                        lx = getattr(pos, "x", None)
+                        ly = getattr(pos, "y", None)
+                if lx is None or ly is None:
+                    pass
+                    return
+                ox = int(lx * scale)
+                oy = int(ly * scale)
+                ox = max(0, min(orig_w - 1, ox))
+                oy = max(0, min(orig_h - 1, oy))
+
+                # ═══ Усреднение 5×5 ═══
+                half = 2  # 5×5 → от -2 до +2
+                x0 = max(0, ox - half)
+                x1 = min(orig_w, ox + half + 1)
+                y0 = max(0, oy - half)
+                y1 = min(orig_h, oy + half + 1)
+                patch = src.crop((x0, y0, x1, y1))
+                arr = np.array(patch).astype(np.float32)
+                mean_rgb = arr.mean(axis=(0, 1))
+                rgb = (int(round(mean_rgb[0])), int(round(mean_rgb[1])), int(round(mean_rgb[2])))
+                state["rgb"] = rgb
+
+                # Обновляем swatch и текст
+                color_swatch.bgcolor = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+                picked_label.value = f"RGB({rgb[0]}, {rgb[1]}, {rgb[2]})"
+
+                # Логируем
+                if mode == "negative":
+                    log(t("pbr_metal_negative_saved").format(r=rgb[0], g=rgb[1], b=rgb[2]), SUCCESS)
+                else:
+                    log(t("pbr_metal_pick_saved").format(r=rgb[0], g=rgb[1], b=rgb[2]), SUCCESS)
+
+                page.update()
+            except Exception as ex:
+                pass
+
+        clickable = ft.GestureDetector(
+            content=stack,
+            on_tap_down=_on_image_click,
+            mouse_cursor=ft.MouseCursor.PRECISE,
+        )
+
+        title_text = (t("pbr_metal_negative_hint") if mode == "negative"
+                       else t("pbr_metal_pick_dialog"))
+
+        def _close(e=None):
+            dlg.open = False
+            if state["rgb"] is not None:
+                if mode == "negative":
+                    S["pbr_metal_negative_rgb"] = state["rgb"]
+                else:
+                    S["pbr_metal_target_rgb"] = state["rgb"]
+                    S["pbr_metallic"] = "auto"
+                persist_settings()
+                rebuild_ui()
+            else:
+                page.update()
+
+        dlg = ft.AlertDialog(
+            modal=True,
+            title=ft.Text(title_text, color=FG, size=14),
+            content=ft.Container(
+                content=ft.Column([
+                    clickable,
+                    ft.Container(height=8),
+                    ft.Row([
+                        color_swatch,
+                        ft.Container(width=8),
+                        picked_label,
+                    ], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                width=min(disp_w, 600) + 20,
+            ),
+            actions=[
+                ft.TextButton(t("pbr_metal_pick_dialog_close"), on_click=_close),
+            ],
+            inset_padding=ft.Padding.symmetric(horizontal=40, vertical=40),
+            bgcolor=PANEL,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
+    async def pbr_generate_metallic_mask(e=None, silent=False):
+        """Генерирует Metallic маску по выбранному цвету.
+        silent=True — не вызывает pbr_do_generate (вызовет внешний код)."""
+        if S.get("pbr_source") is None:
+            if not silent:
+                log("   ⚠ Сначала загрузи Albedo", WARN)
+                page.update()
+            return
+        if S.get("pbr_metal_target_rgb") is None:
+            if not silent:
+                log(t("pbr_metal_no_pick"), WARN)
+                page.update()
+            return
+        try:
+            rgb = S["pbr_metal_target_rgb"]
+            tol = S.get("pbr_metal_tolerance", 0.15)
+            soft = S.get("pbr_metal_softness", 0.05)
+            neg_rgb = S.get("pbr_metal_negative_rgb")
+            neg_tol = S.get("pbr_metal_negative_tolerance", 0.10)
+            mask = extract_metallic_by_color(
+                S["pbr_source"], rgb,
+                tolerance=tol, softness=soft,
+                negative_rgb=neg_rgb, negative_tolerance=neg_tol,
+            )
+            S["pbr_metallic_custom"] = mask
+            S["pbr_metallic"] = "auto"
+
+            # Диагностика — сколько % маски белое
+            white_pct = float((mask > 0.5).mean() * 100)
+            mean_val = float(mask.mean())
+            log(f"🎨 Metallic маска: {white_pct:.1f}% белых, mean {mean_val:.3f}", SUCCESS)
+            if white_pct < 0.5:
+                log(f"   ⚠ Маска почти пустая — увеличь Tolerance или убери Negative", WARN)
+            elif white_pct > 60:
+                log(f"   ⚠ Маска слишком широкая — уменьши Tolerance", WARN)
+
+            page.update()
+
+            if not silent:
+                if S.get("pbr_result") is not None:
+                    log("   → Перегенерация PBR с новой маской...", FG2)
+                    await pbr_do_generate(None)
+                else:
+                    if S.get("update_pbr_preview"):
+                        S["update_pbr_preview"]()
+                rebuild_ui()
+        except Exception as ex:
+            log(f"❌ Generate metallic mask: {ex}", DANGER)
+            page.update()
 
     # ═══ PBR-ОБРАБОТЧИКИ ═══
     async def pbr_do_load(e):
@@ -1605,23 +1814,44 @@ def main(page: ft.Page):
             await show_pbr_progress(t("pbr_progress_gen"))
             await asyncio.sleep(0.15)
 
-            sl = S["pbr_sliders"]
+            # ═══ Auto-metallic: пересчитать маску если режим auto ═══
+            if (S.get("pbr_metallic") == "auto"
+                and S.get("pbr_metal_target_rgb") is not None):
+                try:
+                    rgb = S["pbr_metal_target_rgb"]
+                    tol = S.get("pbr_metal_tolerance", 0.15)
+                    soft = S.get("pbr_metal_softness", 0.05)
+                    neg_rgb = S.get("pbr_metal_negative_rgb")
+                    neg_tol = S.get("pbr_metal_negative_tolerance", 0.10)
+                    mask = extract_metallic_by_color(
+                        S["pbr_source"], rgb,
+                        tolerance=tol, softness=soft,
+                        negative_rgb=neg_rgb, negative_tolerance=neg_tol,
+                    )
+                    S["pbr_metallic_custom"] = mask
+                    white_pct = float((mask > 0.5).mean() * 100)
+                    log(f"🎨 Metallic auto: {white_pct:.1f}% белых", FG2)
+                except Exception as ex:
+                    log(f"   ⚠ Auto metallic: {ex}", WARN)
+
+            vals = S.get("pbr_values", {})
             _metallic_mode = S.get("pbr_metallic", "black")
-            _metallic_custom = S.get("pbr_metallic_custom") if _metallic_mode == "custom" else None
+            _metallic_custom = S.get("pbr_metallic_custom") if _metallic_mode in ("custom", "auto") else None
             _rough_mode = S.get("pbr_roughness", "procedural")
             _rough_custom = S.get("pbr_roughness_custom") if _rough_mode == "custom" else None
             result = generate_all_pbr(
                 S["pbr_source"],
-                height_blur=sl["height_blur"].value,
-                normal_strength=sl["strength"].value,
-                normal_smooth=sl["smooth"].value,
+                height_blur=vals.get("height_blur", 2.0),
+                normal_strength=vals.get("strength", 1.5),
+                normal_smooth=vals.get("smooth", 1.5),
                 normal_clamp=3.0,
-                normal_high_pass=sl["high_pass"].value,
-                normal_threshold=sl["threshold"].value,
-                ao_radius=int(sl["ao_radius"].value),
-                ao_intensity=sl["ao_intensity"].value,
-                rough_base=sl["rough_base"].value,
-                rough_variation=sl["rough_var"].value,
+                normal_high_pass=vals.get("high_pass", 40.0),
+                normal_threshold=vals.get("threshold", 0.05),
+                ao_radius=int(vals.get("ao_radius", 8.0)),
+                ao_intensity=vals.get("ao_intensity", 1.5),
+                rough_base=vals.get("rough_base", 0.7),
+                rough_variation=vals.get("rough_var", 0.3),
+                rough_detail=vals.get("rough_detail", 1.0),
                 metallic_mode=_metallic_mode,
                 metallic_custom=_metallic_custom,
                 roughness_mode=_rough_mode,
@@ -1671,49 +1901,51 @@ def main(page: ft.Page):
             await show_pbr_progress(t("pbr_progress_gen"))
             await asyncio.sleep(0.1)
 
+            # ═══ Auto-metallic: пересчитать маску ═══
+            if (S.get("pbr_metallic") == "auto"
+                and S.get("pbr_metal_target_rgb") is not None):
+                try:
+                    rgb = S["pbr_metal_target_rgb"]
+                    tol = S.get("pbr_metal_tolerance", 0.15)
+                    soft = S.get("pbr_metal_softness", 0.05)
+                    neg_rgb = S.get("pbr_metal_negative_rgb")
+                    neg_tol = S.get("pbr_metal_negative_tolerance", 0.10)
+                    mask = extract_metallic_by_color(
+                        img, rgb,
+                        tolerance=tol, softness=soft,
+                        negative_rgb=neg_rgb, negative_tolerance=neg_tol,
+                    )
+                    S["pbr_metallic_custom"] = mask
+                    white_pct = float((mask > 0.5).mean() * 100)
+                    log(f"🎨 Metallic auto: {white_pct:.1f}% белых", FG2)
+                except Exception as ex:
+                    log(f"   ⚠ Auto metallic: {ex}", WARN)
+
             _metallic_mode = S.get("pbr_metallic", "black")
-            _metallic_custom = S.get("pbr_metallic_custom") if _metallic_mode == "custom" else None
+            _metallic_custom = S.get("pbr_metallic_custom") if _metallic_mode in ("custom", "auto") else None
             _rough_mode = S.get("pbr_roughness", "procedural")
             _rough_custom = S.get("pbr_roughness_custom") if _rough_mode == "custom" else None
 
-            if S["pbr_sliders"]:
-                sl = S["pbr_sliders"]
-                result = generate_all_pbr(
-                    img,
-                    height_blur=sl["height_blur"].value,
-                    normal_strength=sl["strength"].value,
-                    normal_smooth=sl["smooth"].value,
-                    normal_clamp=3.0,
-                    normal_high_pass=sl["high_pass"].value,
-                    normal_threshold=sl["threshold"].value,
-                    ao_radius=int(sl["ao_radius"].value),
-                    ao_intensity=sl["ao_intensity"].value,
-                    rough_base=sl["rough_base"].value,
-                    rough_variation=sl["rough_var"].value,
-                    metallic_mode=_metallic_mode,
-                    metallic_custom=_metallic_custom,
-                    roughness_mode=_rough_mode,
-                    roughness_custom=_rough_custom,
-                )
-            else:
-                preset = PBR_PRESETS.get(S["profile"], {})
-                result = generate_all_pbr(
-                    img,
-                    height_blur=preset.get("height_blur", 2.0),
-                    normal_strength=preset.get("strength", 1.5),
-                    normal_smooth=preset.get("smooth", 1.5),
-                    normal_clamp=3.0,
-                    normal_high_pass=preset.get("high_pass", 40),
-                    normal_threshold=preset.get("threshold", 0.05),
-                    ao_radius=int(preset.get("ao_radius", 8)),
-                    ao_intensity=preset.get("ao_intensity", 1.5),
-                    rough_base=preset.get("rough_base", 0.7),
-                    rough_variation=preset.get("rough_var", 0.3),
-                    metallic_mode=_metallic_mode,
-                    metallic_custom=_metallic_custom,
-                    roughness_mode=_rough_mode,
-                    roughness_custom=_rough_custom,
-                )
+            vals = S.get("pbr_values", {})
+            preset = PBR_PRESETS.get(S["profile"], {})
+            result = generate_all_pbr(
+                img,
+                height_blur=vals.get("height_blur", preset.get("height_blur", 2.0)),
+                normal_strength=vals.get("strength", preset.get("strength", 1.5)),
+                normal_smooth=vals.get("smooth", preset.get("smooth", 1.5)),
+                normal_clamp=3.0,
+                normal_high_pass=vals.get("high_pass", preset.get("high_pass", 40)),
+                normal_threshold=vals.get("threshold", preset.get("threshold", 0.05)),
+                ao_radius=int(vals.get("ao_radius", preset.get("ao_radius", 8))),
+                ao_intensity=vals.get("ao_intensity", preset.get("ao_intensity", 1.5)),
+                rough_base=vals.get("rough_base", preset.get("rough_base", 0.7)),
+                rough_variation=vals.get("rough_var", preset.get("rough_var", 0.3)),
+                rough_detail=vals.get("rough_detail", 1.0),
+                metallic_mode=_metallic_mode,
+                metallic_custom=_metallic_custom,
+                roughness_mode=_rough_mode,
+                roughness_custom=_rough_custom,
+            )
 
             S["pbr_result"] = result
             log(t("pbr_log_gen_done"), SUCCESS)
@@ -1745,11 +1977,12 @@ def main(page: ft.Page):
             out_dir = os.path.join(folder, f"{base_name}_pbr")
             os.makedirs(out_dir, exist_ok=True)
 
+            bit_per_map = S.get("pbr_bit_depth_per_map", {})
             total = len(S["pbr_result"])
             done = 0
-            bit_depth = S.get("pbr_bit_depth", 16)
             for key, img in S["pbr_result"].items():
-                save_pbr_map(img, str(os.path.join(out_dir, f"{base_name}_{key}.png")), bit_depth)
+                bd = bit_per_map.get(key, S.get("pbr_bit_depth", 8))
+                save_pbr_map(img, str(os.path.join(out_dir, f"{base_name}_{key}.png")), bd)
                 done += 1
                 S["pbr_progress_text"].value = f"{t('pbr_progress_gen')} {done}/{total}"
                 page.update()
@@ -1856,22 +2089,25 @@ def main(page: ft.Page):
                 log(f"   ⚠ Custom Roughness map будет применена ко ВСЕМ {len(files)} текстурам", WARN)
                 log(f"      Убедись что все они одного материала!", WARN)
 
-            sl = S["pbr_sliders"]
+            # ═══ Auto-metallic для batch: маска из первого файла? Нет, из сохранённых координат ═══
+            # (batch не пересчитывает маску — только если уже сгенерирована)
+            vals = S.get("pbr_values", {})
             _metallic_mode = S.get("pbr_metallic", "black")
-            _metallic_custom = S.get("pbr_metallic_custom") if _metallic_mode == "custom" else None
+            _metallic_custom = S.get("pbr_metallic_custom") if _metallic_mode in ("custom", "auto") else None
             _rough_mode = S.get("pbr_roughness", "procedural")
             _rough_custom = S.get("pbr_roughness_custom") if _rough_mode == "custom" else None
             params = {
-                "height_blur": sl["height_blur"].value,
-                "normal_strength": sl["strength"].value,
-                "normal_smooth": sl["smooth"].value,
+                "height_blur": vals.get("height_blur", 2.0),
+                "normal_strength": vals.get("strength", 1.5),
+                "normal_smooth": vals.get("smooth", 1.5),
                 "normal_clamp": 3.0,
-                "normal_high_pass": sl["high_pass"].value,
-                "normal_threshold": sl["threshold"].value,
-                "ao_radius": int(sl["ao_radius"].value),
-                "ao_intensity": sl["ao_intensity"].value,
-                "rough_base": sl["rough_base"].value,
-                "rough_variation": sl["rough_var"].value,
+                "normal_high_pass": vals.get("high_pass", 40.0),
+                "normal_threshold": vals.get("threshold", 0.05),
+                "ao_radius": int(vals.get("ao_radius", 8.0)),
+                "ao_intensity": vals.get("ao_intensity", 1.5),
+                "rough_base": vals.get("rough_base", 0.7),
+                "rough_variation": vals.get("rough_var", 0.3),
+                "rough_detail": vals.get("rough_detail", 1.0),
                 "metallic_mode": _metallic_mode,
                 "metallic_custom": _metallic_custom,
                 "roughness_mode": _rough_mode,
@@ -1892,9 +2128,10 @@ def main(page: ft.Page):
                     sub = os.path.join(out_root, base)
                     os.makedirs(sub, exist_ok=True)
                     img.save(str(os.path.join(sub, f"{base}_albedo.png")))
-                    bit_depth = S.get("pbr_bit_depth", 16)
+                    bit_per_map = S.get("pbr_bit_depth_per_map", {})
                     for k, m in result.items():
-                        save_pbr_map(m, str(os.path.join(sub, f"{base}_{k}.png")), bit_depth)
+                        bd = bit_per_map.get(k, 8)
+                        save_pbr_map(m, str(os.path.join(sub, f"{base}_{k}.png")), bd)
                     count += 1
                     S["pbr_batch_results"][base] = sub
                     log(f"  [{i}/{total_files}] ✓ {os.path.basename(fp)}", SUCCESS)
@@ -2751,11 +2988,11 @@ def main(page: ft.Page):
                 ft.Container(height=16),
                 ft.Row([ft.Text(f"{t('about_version')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("1.7.3-beta", color=FG, size=12,
+                        ft.Text("1.7.4-beta", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_build')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("2026-09-23", color=FG, size=12,
+                        ft.Text("2026-09-24", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_author')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
@@ -3098,6 +3335,8 @@ def main(page: ft.Page):
             "soap_fix_strength": S["soap_fix_strength"],
             "saturation_boost": S["saturation_boost"],
             "pbr_bit_depth": S["pbr_bit_depth"],
+            "pbr_bit_depth_per_map": S.get("pbr_bit_depth_per_map", {}),
+            "pbr_values": S.get("pbr_values", {}),
             "last_folder": S.get("last_folder", ""),
             "seamless_hipass": S.get("seamless_hipass", True),
             "realism_grain": S.get("realism_grain", 0.15),
@@ -3109,7 +3348,13 @@ def main(page: ft.Page):
             "export_detail_mode": S.get("export_detail_mode", "edge"),
             "export_bit_depth": S.get("export_bit_depth", 8),
             "pbr_metallic": S.get("pbr_metallic", "black"),
+            "pbr_metal_tolerance": S.get("pbr_metal_tolerance", 0.15),
+            "pbr_metal_softness": S.get("pbr_metal_softness", 0.05),
+            "pbr_metal_negative_tolerance": S.get("pbr_metal_negative_tolerance", 0.10),
             "pbr_roughness": S.get("pbr_roughness", "procedural"),
+            "rough_detail": (S.get("pbr_sliders", {}).get("rough_detail").value
+                             if S.get("pbr_sliders") and "rough_detail" in S["pbr_sliders"]
+                             else 1.0),
             "tiling_mode": S.get("tiling_mode", False),
             "pbr_current_map": S.get("pbr_current_map", "albedo"),
             "first_launch_done": S.get("first_launch_done", False),
@@ -3622,9 +3867,116 @@ def main(page: ft.Page):
 
         S["update_pbr_preview"] = update_pbr_preview
 
+        def build_pbr_params_panel():
+            """Динамически строит панель параметров по текущей карте."""
+            key = S.get("pbr_current_map", "albedo")
+
+            def make_bit_radio_for(map_key):
+                cur_bd = str(S.get("pbr_bit_depth_per_map", {}).get(map_key, 8))
+                def _on_bd_change(e):
+                    S.setdefault("pbr_bit_depth_per_map", {})[map_key] = int(e.control.value)
+                    persist_settings()
+                return ft.RadioGroup(
+                    content=ft.Row([
+                        ft.Radio(value="8", label=t("pbr_bit_8"), fill_color=PBR_COLOR),
+                        ft.Radio(value="16", label=t("pbr_bit_16"), fill_color=PBR_COLOR),
+                    ]),
+                    value=cur_bd,
+                    on_change=_on_bd_change,
+                )
+
+            header = ft.Text(t("pbr_params"), size=10, weight=ft.FontWeight.BOLD,
+                             color=FG3, font_family=FONT)
+
+            bit_block = ft.Column([
+                ft.Divider(color=FG3, height=1),
+                ft.Text(f"{t('pbr_bit_depth')} ({key})", color=FG2, size=12, font_family=FONT),
+                make_bit_radio_for(key),
+            ], spacing=6)
+
+            if key == "albedo":
+                content = [
+                    header,
+                    ft.Text(t("pbr_preset_label"), color=FG2, size=11, font_family=FONT),
+                    pbr_preset_buttons,
+                    bit_block,
+                ]
+            elif key == "height":
+                content = [
+                    header,
+                    make_pbr_slider(t("pbr_sl_height_blur"), "height_blur", 2.0, 0.0, 10.0, 0.5),
+                    bit_block,
+                ]
+            elif key == "normal":
+                content = [
+                    header,
+                    make_pbr_slider(t("pbr_sl_strength"), "strength", 1.5, 0.1, 5.0, 0.1),
+                    make_pbr_slider(t("pbr_sl_smooth"), "smooth", 1.5, 0.0, 5.0, 0.1),
+                    make_pbr_slider(t("pbr_sl_threshold"), "threshold", 0.05, 0.0, 0.20, 0.01),
+                    make_pbr_slider(t("pbr_sl_high_pass"), "high_pass", 40.0, 0.0, 100.0, 1.0),
+                    bit_block,
+                ]
+            elif key == "ao":
+                content = [
+                    header,
+                    make_pbr_slider(t("pbr_sl_ao_radius"), "ao_radius", 8.0, 2.0, 30.0, 1.0),
+                    make_pbr_slider(t("pbr_sl_ao_intensity"), "ao_intensity", 1.5, 0.1, 3.0, 0.1),
+                    bit_block,
+                ]
+            elif key == "roughness":
+                content = [
+                    header,
+                    ft.Text(t("pbr_roughness"), color=FG2, size=12, font_family=FONT),
+                    pbr_rough_radio,
+                    pbr_rough_custom_block,
+                    ft.Container(
+                        content=ft.Column([
+                            make_pbr_slider(t("pbr_sl_rough_base"), "rough_base", 0.7, 0.0, 1.0, 0.05),
+                            make_pbr_slider(t("pbr_sl_rough_var"), "rough_var", 0.3, 0.0, 1.0, 0.05),
+                            make_pbr_slider(t("pbr_sl_rough_detail"), "rough_detail", 1.0, 0.0, 1.0, 0.05),
+                        ], spacing=6),
+                        visible=(S.get("pbr_roughness") != "custom"),
+                    ),
+                    bit_block,
+                ]
+            elif key == "metallic":
+                content = [
+                    header,
+                    ft.Text(t("pbr_metallic"), color=FG2, size=12, font_family=FONT),
+                    pbr_metal_radio,
+                    pbr_metal_custom_block,
+                    pbr_metal_auto_block,
+                    bit_block,
+                ]
+            elif key == "edge":
+                content = [
+                    header,
+                    ft.Text(t("pbr_edge_info"), color=FG2, size=11,
+                            font_family=FONT, selectable=True),
+                    bit_block,
+                ]
+            elif key == "orm":
+                content = [
+                    header,
+                    ft.Text(t("pbr_orm_info"), color=FG2, size=11,
+                            font_family=FONT, selectable=True),
+                    bit_block,
+                ]
+            else:
+                content = [header, bit_block]
+
+            return ft.Container(
+                content=ft.Column(content, spacing=6, scroll=ft.ScrollMode.AUTO),
+                bgcolor=PANEL, border_radius=12, padding=14, width=250,
+            )
+
         def show_pbr_map(key):
             S["pbr_current_map"] = key
             update_pbr_preview()
+            # Перестроить правую панель
+            if S.get("pbr_params_ref"):
+                S["pbr_params_ref"].content = build_pbr_params_panel()
+                page.update()
 
         map_row = ft.Row([], spacing=4)
         for key, label in map_keys:
@@ -3646,11 +3998,18 @@ def main(page: ft.Page):
         S["pbr_sliders"] = sliders
 
         def make_pbr_slider(label, key_name, default, minv, maxv, res):
-            preset_val = PBR_PRESETS.get(S["profile"], {}).get(key_name, default)
+            # Значение из S["pbr_values"] если есть, иначе из пресета
+            preset_val = S.get("pbr_values", {}).get(key_name)
+            if preset_val is None:
+                preset_val = PBR_PRESETS.get(S["profile"], {}).get(key_name, default)
             divisions = max(1, int((maxv - minv) / res))
+            def _on_change(e):
+                S.setdefault("pbr_values", {})[key_name] = e.control.value
+                persist_settings()
             var = ft.Slider(min=minv, max=maxv, divisions=divisions,
                             value=preset_val, label="{value}",
-                            active_color=PBR_COLOR, inactive_color=INPUT)
+                            active_color=PBR_COLOR, inactive_color=INPUT,
+                            on_change=_on_change)
             sliders[key_name] = var
             return ft.Column([
                 ft.Text(label, color=FG2, size=12, font_family=FONT),
@@ -3674,7 +4033,9 @@ def main(page: ft.Page):
                 ft.Row([
                     ft.Radio(value="custom", label=t("pbr_metal_custom"),
                              fill_color=PBR_COLOR),
-                ]),
+                    ft.Radio(value="auto", label=t("pbr_metal_auto"),
+                             fill_color=PBR_COLOR),
+                ], spacing=8),
             ], spacing=2),
             value=S.get("pbr_metallic", PBR_PRESETS.get(S["profile"], {}).get("metallic", "black")),
             on_change=_on_metallic_mode_change,
@@ -3693,6 +4054,215 @@ def main(page: ft.Page):
                 ),
             ], spacing=2),
             visible=(S.get("pbr_metallic") == "custom"),
+        )
+        
+        _auto_rgb = S.get("pbr_metal_target_rgb")
+        _auto_rgb_text = (
+            f"RGB({_auto_rgb[0]}, {_auto_rgb[1]}, {_auto_rgb[2]})"
+            if _auto_rgb else "—"
+        )
+        _neg_rgb = S.get("pbr_metal_negative_rgb")
+        _neg_rgb_text = (
+            f"RGB({_neg_rgb[0]}, {_neg_rgb[1]}, {_neg_rgb[2]})"
+            if _neg_rgb else "—"
+        )
+
+        def _clear_negative(e=None):
+            S["pbr_metal_negative_rgb"] = None
+            persist_settings()
+            rebuild_ui()
+
+        def _make_metal_preset_btn(preset_key, label_key, tol, soft, neg_tol):
+            """Кнопка пресета для Metallic tolerance."""
+            is_active = (
+                abs(S.get("pbr_metal_tolerance", 0.20) - tol) < 0.001 and
+                abs(S.get("pbr_metal_softness", 0.05) - soft) < 0.001
+            )
+            def _apply(e):
+                S["pbr_metal_tolerance"] = tol
+                S["pbr_metal_softness"] = soft
+                S["pbr_metal_negative_tolerance"] = neg_tol
+                persist_settings()
+                rebuild_ui()
+            return ft.Container(
+                content=ft.Text(
+                    t(label_key),
+                    color=ON_ACCENT if is_active else FG2,
+                    size=11, font_family=FONT,
+                    weight=ft.FontWeight.W_600,
+                    text_align=ft.TextAlign.CENTER,
+                ),
+                bgcolor=ACCENT if is_active else CARD,
+                border_radius=8,
+                padding=ft.Padding.symmetric(vertical=8, horizontal=4),
+                expand=True, ink=True,
+                on_click=_apply,
+            )
+
+        pbr_metal_auto_block = ft.Container(
+            content=ft.Column([
+                ft.Container(height=4),
+                ft.Text(t("pbr_metal_auto_hint"), color=FG3, size=10,
+                        font_family=FONT),
+                ft.Container(height=6),
+
+                make_btn(t("pbr_metal_pick"),
+                         lambda e: page.run_task(pbr_pick_color, None, "positive"),
+                         ACCENT),
+                ft.Container(height=4),
+                ft.Row([
+                    ft.Text(t("pbr_metal_target_label"), color=FG3, size=10, font_family=FONT),
+                    ft.Text(_auto_rgb_text, color=FG2, size=11,
+                            font_family="Consolas", selectable=True),
+                ], spacing=6),
+
+                ft.Container(height=8),
+
+                make_btn(t("pbr_metal_negative_pick"),
+                         lambda e: page.run_task(pbr_pick_color, None, "negative"),
+                         "#6a4a9f"),
+                ft.Container(height=4),
+                ft.Row([
+                    ft.Text(t("pbr_metal_negative_label"), color=FG3, size=10, font_family=FONT),
+                    ft.Text(_neg_rgb_text, color=FG2, size=11,
+                            font_family="Consolas", selectable=True),
+                ], spacing=6),
+                ft.Container(
+                    content=make_btn(t("pbr_metal_negative_clear"), _clear_negative, RESET_COLOR),
+                    visible=(_neg_rgb is not None),
+                ),
+
+                ft.Container(height=8),
+                ft.Text(t("pbr_metal_tolerance"), color=FG2, size=11, font_family=FONT),
+                ft.Slider(
+                    min=0.05, max=0.60, divisions=22,
+                    value=S.get("pbr_metal_tolerance", 0.15),
+                    label="{value:.2f}",
+                    active_color=PBR_COLOR, inactive_color=INPUT,
+                    on_change=lambda e: (S.update({"pbr_metal_tolerance": e.control.value}),
+                                          persist_settings()),
+                ),
+                ft.Text(t("pbr_metal_softness"), color=FG2, size=11, font_family=FONT),
+                ft.Slider(
+                    min=0.0, max=0.5, divisions=20,
+                    value=S.get("pbr_metal_softness", 0.05),
+                    label="{value:.2f}",
+                    active_color=PBR_COLOR, inactive_color=INPUT,
+                    on_change=lambda e: (S.update({"pbr_metal_softness": e.control.value}),
+                                          persist_settings()),
+                ),
+                ft.Text(t("pbr_metal_negative_tolerance"), color=FG2, size=11, font_family=FONT),
+                ft.Slider(
+                    min=0.02, max=0.40, divisions=19,
+                    value=S.get("pbr_metal_negative_tolerance", 0.10),
+                    label="{value:.2f}",
+                    active_color="#6a4a9f", inactive_color=INPUT,
+                    on_change=lambda e: (S.update({"pbr_metal_negative_tolerance": e.control.value}),
+                                          persist_settings()),
+                ),
+                ft.Container(height=6),
+                ft.Text(t("pbr_metal_auto_footer"),
+                        color=FG3, size=10, font_family=FONT),
+            ], spacing=2),
+            visible=(S.get("pbr_metallic") == "auto"),
+        )
+        
+        _auto_rgb = S.get("pbr_metal_target_rgb")
+        _auto_rgb_text = (
+            f"RGB({_auto_rgb[0]}, {_auto_rgb[1]}, {_auto_rgb[2]})"
+            if _auto_rgb else "—"
+        )
+        _neg_rgb = S.get("pbr_metal_negative_rgb")
+        _neg_rgb_text = (
+            f"RGB({_neg_rgb[0]}, {_neg_rgb[1]}, {_neg_rgb[2]})"
+            if _neg_rgb else "—"
+        )
+
+        def _clear_negative(e=None):
+            S["pbr_metal_negative_rgb"] = None
+            persist_settings()
+            rebuild_ui()
+
+        pbr_metal_auto_block = ft.Container(
+            content=ft.Column([
+                ft.Container(height=4),
+                ft.Text(t("pbr_metal_auto_hint"), color=FG3, size=10,
+                        font_family=FONT),
+                ft.Container(height=6),
+
+                make_btn(t("pbr_metal_pick"),
+                         lambda e: page.run_task(pbr_pick_color, None, "positive"),
+                         ACCENT),
+                ft.Container(height=4),
+                ft.Row([
+                    ft.Text(t("pbr_metal_target_label"), color=FG3, size=10, font_family=FONT),
+                    ft.Text(_auto_rgb_text, color=FG2, size=11,
+                            font_family="Consolas", selectable=True),
+                ], spacing=6),
+
+                ft.Container(height=8),
+
+                make_btn(t("pbr_metal_negative_pick"),
+                         lambda e: page.run_task(pbr_pick_color, None, "negative"),
+                         "#6a4a9f"),
+                ft.Container(height=4),
+                ft.Row([
+                    ft.Text(t("pbr_metal_negative_label"), color=FG3, size=10, font_family=FONT),
+                    ft.Text(_neg_rgb_text, color=FG2, size=11,
+                            font_family="Consolas", selectable=True),
+                ], spacing=6),
+                ft.Container(
+                    content=make_btn(t("pbr_metal_negative_clear"), _clear_negative, RESET_COLOR),
+                    visible=(_neg_rgb is not None),
+                ),
+
+                ft.Container(height=8),
+
+                # ═══ Пресеты tolerance ═══
+                ft.Text(t("pbr_metal_presets_title"), color=FG3, size=10,
+                        font_family=FONT, weight=ft.FontWeight.W_600),
+                ft.Container(height=4),
+                ft.Row([
+                    _make_metal_preset_btn("tight",  "pbr_metal_preset_tight",  0.10, 0.02, 0.05),
+                    _make_metal_preset_btn("medium", "pbr_metal_preset_medium", 0.20, 0.05, 0.10),
+                    _make_metal_preset_btn("loose",  "pbr_metal_preset_loose",  0.40, 0.10, 0.15),
+                ], spacing=4),
+
+                ft.Container(height=10),
+
+                # ═══ Ручная настройка (Advanced) ═══
+                ft.Text(t("pbr_metal_manual_title"), color=FG3, size=10,
+                        font_family=FONT, weight=ft.FontWeight.W_600),
+                ft.Container(height=4),
+                ft.Text(t("pbr_metal_tolerance"), color=FG2, size=11, font_family=FONT),
+                ft.Slider(
+                    min=0.05, max=0.60, divisions=22,
+                    value=S.get("pbr_metal_tolerance", 0.20),
+                    label="{value:.2f}",
+                    active_color=PBR_COLOR, inactive_color=INPUT,
+                    on_change=lambda e: S.update({"pbr_metal_tolerance": e.control.value}),
+                ),
+                ft.Text(t("pbr_metal_softness"), color=FG2, size=11, font_family=FONT),
+                ft.Slider(
+                    min=0.0, max=0.5, divisions=20,
+                    value=S.get("pbr_metal_softness", 0.05),
+                    label="{value:.2f}",
+                    active_color=PBR_COLOR, inactive_color=INPUT,
+                    on_change=lambda e: S.update({"pbr_metal_softness": e.control.value}),
+                ),
+                ft.Text(t("pbr_metal_negative_tolerance"), color=FG2, size=11, font_family=FONT),
+                ft.Slider(
+                    min=0.02, max=0.40, divisions=19,
+                    value=S.get("pbr_metal_negative_tolerance", 0.10),
+                    label="{value:.2f}",
+                    active_color="#6a4a9f", inactive_color=INPUT,
+                    on_change=lambda e: S.update({"pbr_metal_negative_tolerance": e.control.value}),
+                ),
+                ft.Container(height=8),
+                ft.Text(t("pbr_metal_auto_footer"),
+                        color=FG3, size=10, font_family=FONT),
+            ], spacing=2),
+            visible=(S.get("pbr_metallic") == "auto"),
         )
 
         def _on_roughness_mode_change(e):
@@ -3760,41 +4330,8 @@ def main(page: ft.Page):
                 bgcolor=PANEL, border_radius=12, padding=14, width=200,
             )
         else:
-            pbr_params_panel = ft.Container(
-                content=ft.Column([
-                    ft.Text(t("pbr_params"), size=10, weight=ft.FontWeight.BOLD,
-                            color=FG3, font_family=FONT),
-                    ft.Text(t("pbr_preset_label"), color=FG2, size=11, font_family=FONT),
-                    pbr_preset_buttons,
-                    ft.Divider(color=FG3, height=1),
-                    ft.Text(t("pbr_metallic"), color=FG2, size=12, font_family=FONT),
-                    pbr_metal_radio,
-                    pbr_metal_custom_block,
-                    ft.Divider(color=FG3, height=1),
-                    ft.Text(t("pbr_roughness"), color=FG2, size=12, font_family=FONT),
-                    pbr_rough_radio,
-                    pbr_rough_custom_block,
-                    ft.Container(
-                        content=ft.Column([
-                            make_pbr_slider(t("pbr_sl_rough_base"), "rough_base", 0.7, 0.0, 1.0, 0.05),
-                            make_pbr_slider(t("pbr_sl_rough_var"), "rough_var", 0.3, 0.0, 1.0, 0.05),
-                        ], spacing=6),
-                        visible=(S.get("pbr_roughness") != "custom"),
-                    ),
-                    ft.Divider(color=FG3, height=1),
-                    ft.Text(t("pbr_bit_depth"), color=FG2, size=12, font_family=FONT),
-                    pbr_bit_radio,
-                    ft.Divider(color=FG3, height=1),
-                    make_pbr_slider(t("pbr_sl_strength"), "strength", 1.5, 0.1, 5.0, 0.1),
-                    make_pbr_slider(t("pbr_sl_smooth"), "smooth", 1.5, 0.0, 5.0, 0.1),
-                    make_pbr_slider(t("pbr_sl_threshold"), "threshold", 0.05, 0.0, 0.20, 0.01),
-                    make_pbr_slider(t("pbr_sl_high_pass"), "high_pass", 40.0, 0.0, 100.0, 1.0),
-                    make_pbr_slider(t("pbr_sl_height_blur"), "height_blur", 2.0, 0.0, 10.0, 0.5),
-                    make_pbr_slider(t("pbr_sl_ao_radius"), "ao_radius", 8.0, 2.0, 30.0, 1.0),
-                    make_pbr_slider(t("pbr_sl_ao_intensity"), "ao_intensity", 1.5, 0.1, 3.0, 0.1),
-                ], spacing=6, scroll=ft.ScrollMode.AUTO),
-                bgcolor=PANEL, border_radius=12, padding=14, width=250,
-            )
+            pbr_params_panel = build_pbr_params_panel()
+            S["pbr_params_ref"] = pbr_params_panel
 
         if is_simple:
             pbr_simple_btn = make_btn("🚀 " + t("pbr_gen"), pbr_do_simple_generate, SUCCESS)
@@ -4430,7 +4967,7 @@ def main(page: ft.Page):
                                 weight=ft.FontWeight.BOLD,
                                 color=ACCENT, font_family=FONT),
                         ft.Container(
-                            content=ft.Text("v1.7.3-beta", size=10, color=FG2,
+                            content=ft.Text("v1.7.4-beta", size=10, color=FG2,
                                             font_family=FONT,
                                             weight=ft.FontWeight.W_600),
                             bgcolor=CARD, border_radius=6,

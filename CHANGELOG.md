@@ -1,6 +1,57 @@
 # Changelog
 
 
+## [1.7.4-beta] — 2026-09-24
+
+Advanced Roughness + Color-Based Metallic + dynamic right panel.
+
+### Added
+- **Advanced Roughness** — 4-signal extractor: luminance + local variance + edge density + saturation variance
+  - Slider `Rough detail` (0.0–1.0): 0 = old luminance-only, 1 = full multi-feature
+  - Much better roughness on textured surfaces (stone, wood, rust)
+- **Color-Based Metallic** — user-guided metallic mask by color
+  - **Pick on Albede** button — opens preview, click on metal part
+  - **Negative pick** — click on non-metal to exclude similar colors
+  - **5×5 averaging** — reduces noise and specular highlights in pick
+  - **Tolerance presets:** 🌿 Tight (0.10) / ⚖ Medium (0.20) / 🔥 Loose (0.40)
+  - Manual tuning sliders below presets
+  - **LAB color distance** for better separation
+  - Mask diagnostics in log: `X.X% белых` + warnings if mask empty or too wide
+  - Auto-recalculation when PBR is generated (no separate button needed)
+- **Dynamic right panel in PBR** — panel content changes based on selected map:
+  - `Albedo` → presets
+  - `Height` → height blur
+  - `Normal` → strength, smoothing, threshold, high-pass
+  - `AO` → AO radius, intensity
+  - `Rough` → roughness mode, custom map, base, variation, detail
+  - `Metal` → metallic mode, custom map, auto pick, presets, sliders
+  - `Edge` → info message
+  - `ORM` → info message
+- **Per-map PNG bit depth** — each PBR map saves in its own 8/16 bit setting
+  - Normal and Height default to 16-bit, Albedo/Metallic/Roughness to 8-bit
+  - Saved in `config.json` as `pbr_bit_depth_per_map`
+- **PBR values persistence** — slider values stored in `S["pbr_values"]` and saved to `config.json`
+  - Fixed KeyError `'height_blur'` after dynamic panel introduction
+
+### Fixed
+- **Metallic pick was returning black mask** — was comparing float32 (0–1) LAB with uint8 (0–255) LAB. Now both in 0–255.
+- **PBR panel overcrowded** — dynamic rebuild on map switch instead of static list of all sliders
+- **`[DEBUG]` prints** removed from `pbr_generator.py` and `main.py`
+- **`pbr_do_generate` KeyError** — now reads values from `S["pbr_values"]` instead of `S["pbr_sliders"]`
+
+### Changed
+- **Tolerance slider** now shows current value
+- **`Generate Mask` button removed** — mask recalculated automatically on Generate
+
+### Internal
+- New keys in `translations.py`: `pbr_metal_presets_title`, `pbr_metal_preset_tight/medium/loose`, `pbr_metal_manual_title`, `pbr_metal_auto_footer`, `pbr_edge_info`, `pbr_orm_info`
+- `pbr_generator.py` — `generate_roughness_advanced()` added, `extract_metallic_by_color()` added
+- `main.py` — `build_pbr_params_panel()` — dynamic panel builder
+
+
+---
+
+
 ## [1.7.3-beta] — 2026-09-23
 
 Custom maps, GIMP seamless, hotkeys, settings persistence, welcome dialog.

@@ -2,7 +2,7 @@
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.7.3--beta-orange)
+![Version](https://img.shields.io/badge/version-1.7.4--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -20,35 +20,42 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 ## Screenshots
 ![Main UI](screenshots/main_int.jpg)
 
-## 🆕 What's new in v1.7.3-beta
+## 🆕 What's new in v1.7.4-beta
 
-### Custom Metallic / Roughness Maps
-- Load your own grayscale PNG for **Metallic** or **Roughness** channels
-- Auto-resize with confirmation dialog if size doesn't match albedo
-- Auto-regenerate PBR after loading custom map
-- Batch PBR warns when custom map is applied to a whole folder
+### Advanced Roughness
+- **4-signal extractor** — luminance + local variance + edge density + saturation variance
+- **Slider `Rough detail`** (0.0–1.0): 0 = old luminance-only, 1 = full multi-feature
+- Much better roughness on textured surfaces (stone, wood, rust)
 
-### GIMP-style Make Seamless
-- **Exact port** of GIMP's `tile-seamless.c` (Tim Rowley, 1997) via diagonal weight function
-- Optional **Hi-pass pre-filter** to even out brightness between edges (checkbox)
-- Works on textures where previous seamless algorithm failed
+### Color-Based Metallic
+- **Pick on Albede** — click on the metal part of your texture
+- **Negative pick** — click on non-metal to exclude similar colors
+- **5×5 averaging** — reduces noise and specular highlights
+- **Tolerance presets:** 🌿 Tight / ⚖ Medium / 🔥 Loose — one click, no manual tuning
+- **LAB color distance** for accurate separation
+- Mask diagnostics in log (`X.X% белых`)
+- Auto-recalculation on Generate — no separate button
 
-### Realism Presets
-- Three one-click presets: **Soft** / **Medium** / **Hard**
-- Sets grain, highpass, variation sliders instantly
+### Dynamic Right Panel in PBR
+- Panel content changes based on selected map:
+  - `Albedo` → presets
+  - `Height` → height blur
+  - `Normal` → strength, smoothing, threshold, high-pass
+  - `AO` → AO radius, intensity
+  - `Rough` → roughness mode, custom map, base, variation, detail
+  - `Metal` → metallic mode, custom map, auto pick, presets, sliders
+  - `Edge` / `ORM` → info message
+- No more cluttered panel with all sliders at once
 
-### Simple Mode Improvements
-- **Compress tab** in Simple mode — two big buttons, auto-save to `_compressed`
-- **CLIP auto-detect** — detects material on texture load, picks best preset automatically
-- **Welcome dialog** on first launch — explains Simple / Advanced modes, quick start
+### Per-map PNG Bit Depth
+- Each PBR map saves in its own 8/16 bit setting
+- Normal and Height default to 16-bit, Albedo/Metallic/Roughness to 8-bit
+- Saved across sessions
 
-### Quality of Life
-- **Global hotkeys** — `Ctrl+O` Open, `Ctrl+S` Save, `Ctrl+R` Reset, `Ctrl+Z` Undo, `Space` toggle preview, `Enter` context action
-- **Settings persistence** — Realism, batch threads, export options, seamless hipass, pbr metallic/roughness, tiling saved across sessions
-- **Preview toggle Original/Result** — button in Single toolbar
-- **File info bar** — name, resolution, mode, size under toolbar
-- **Compress** shows size delta (original → new, % saved) after save
-- **Batch PBR warning** when custom map applied to whole folder
+### Fixed
+- **Metallic pick was returning black mask** — was comparing float32 (0–1) LAB with uint8 (0–255) LAB. Now both in 0–255.
+- **PBR panel overcrowded** — dynamic rebuild on map switch
+- **`[DEBUG]` prints** removed from `pbr_generator.py` and `main.py`
 
 ---
 
@@ -71,11 +78,11 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - **Height** — height map
 - **Normal** — normals (Sobel-based)
 - **AO** — ambient occlusion
-- **Roughness** — surface roughness (procedural or custom map)
-- **Metallic** — metalness (black / white / **custom map**)
+- **Roughness** — surface roughness (procedural or custom map, 4-signal advanced)
+- **Metallic** — metalness (black / white / custom map / color pick)
 - **ORM** — packed map (AO in R, Roughness in G, Metallic in B)
 - **Edge** — edge map (Sobel via OpenCV)
-- **16-bit PNG output** — Height and Normal maps in full precision
+- **Per-map bit depth** — each map in its own 8/16-bit PNG
 
 ### 🎮 Engine Export
 - **Unity HDRP** Mask Map — R=Metallic, G=AO, B=Detail Mask, A=Smoothness
@@ -137,7 +144,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 
 ### Installer (recommended)
 
-1. Download `Albedolizer_Setup_v1.7.3-beta.exe` from the [latest release](../../releases/latest)
+1. Download `Albedolizer_Setup_v1.7.4-beta.exe` from the [latest release](../../releases/latest)
 2. Run the installer — it places everything in `Program Files\Albedolizer`
 3. Launch from Start Menu or Desktop shortcut
 
@@ -160,16 +167,16 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 3. Click **🔍 Check** — you'll see stats and heatmap
 4. If FAIL → **✨ Auto-Correct** (AI + fallback)
 5. **💾 Save** the result
-6. **👁 Оригинал / Результат** — toggle preview between original and corrected
+6. **👁 Original / Result** — toggle preview between original and corrected
 
 ### PBR generation + 3D preview
 1. **🎨 PBR** tab
 2. **📂 Load Albedo**
 3. Pick a **preset** (sliders auto-tune)
 4. Adjust sliders if needed
-5. Optional: **⚙ Metal** or **🔧 Rough** → **Custom** → load your own grayscale map
+5. Optional: **⚙ Metal** → **🎨 By color** → pick on Albede
 6. **🎨 Generate** → 7 maps
-7. Switch between maps with buttons on top
+7. Switch between maps with buttons on top — right panel changes per map
 8. **👁 3D Preview** — opens the OpenGL viewer
 9. **💾 Save all** — creates a `<name>_pbr/` folder
 
@@ -243,7 +250,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.7.3-beta  
+**Version:** 1.7.4-beta  
 **Date:** 2026
 
 ---
@@ -263,35 +270,42 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ---
 
-## 🆕 Что нового в v1.7.3-beta
+## 🆕 Что нового в v1.7.4-beta
 
-### Свои Metallic / Roughness карты
-- Загрузка своей **grayscale PNG** для каналов **Metallic** и **Roughness**
-- Авто-ресайз с диалогом подтверждения если размер не совпадает с albedo
-- Авто-перегенерация PBR после загрузки своей карты
-- Batch PBR предупреждает в логе если custom-карта применена к целой папке
+### Продвинутый Roughness
+- **4-сигнальный экстрактор** — luminance + local variance + edge density + saturation variance
+- **Слайдер `Rough детализация`** (0.0–1.0): 0 = старый luminance-only, 1 = полный multi-feature
+- Заметно лучше roughness на текстурных поверхностях (камень, дерево, ржавчина)
 
-### Seamless как в GIMP
-- **Точный порт** `tile-seamless.c` (Tim Rowley, 1997) через диагональную весовую функцию
-- Опциональный **Hi-pass pre-filter** для выравнивания яркости краёв (чекбокс)
-- Работает на текстурах где предыдущий алгоритм давал швы
+### Color-Based Metallic
+- **Ткнуть в Albede** — клик по металлической части текстуры
+- **Negative pick** — клик по НЕ-металлу, чтобы исключить похожие цвета
+- **Усреднение 5×5** — убирает шум и блики
+- **Пресеты tolerance:** 🌿 Точный / ⚖ Средний / 🔥 Широкий — один клик, без ручной настройки
+- **LAB color distance** для точного разделения
+- Диагностика маски в логе (`X.X% белых`)
+- Авто-пересчёт при Generate — без отдельной кнопки
 
-### Пресеты Realism
-- Три пресета в один клик: **🌿 Мягкий** / **⚖ Средний** / **🔥 Жёсткий**
-- Мгновенно выставляют три слайдера
+### Динамическая правая панель в PBR
+- Содержимое панели меняется в зависимости от выбранной карты:
+  - `Albedo` → пресеты
+  - `Height` → height blur
+  - `Normal` → strength, smoothing, threshold, high-pass
+  - `AO` → AO radius, intensity
+  - `Rough` → roughness mode, custom map, base, variation, detail
+  - `Metal` → metallic mode, custom map, auto pick, пресеты, слайдеры
+  - `Edge` / `ORM` → сообщение
+- Больше нет свалки слайдеров в одной панели
 
-### Улучшения Simple-режима
-- **Compress вкладка** в Simple — две большие кнопки, автосохранение в `_compressed`
-- **CLIP авто-детект** — определяет материал при загрузке, сам подбирает пресет
-- **Welcome-диалог** при первом запуске — объясняет Simple / Advanced
+### Per-map битность PNG
+- Каждая PBR-карта сохраняется в своей 8/16 битности
+- Normal и Height по умолчанию 16-bit, Albedo/Metallic/Roughness — 8-bit
+- Сохраняется между сессиями
 
-### Качество жизни
-- **Глобальные хоткеи** — `Ctrl+O` Открыть, `Ctrl+S` Сохранить, `Ctrl+R` Сброс, `Ctrl+Z` Undo, `Space` toggle превью, `Enter` контекстное действие
-- **Сохранение настроек** — Realism, batch threads, export опции, seamless hipass, pbr metallic/roughness, tiling между сессиями
-- **Кнопка оригинал/Результат** в Single — переключение превью
-- **Инфо-плашка файла** — имя, разрешение, режим, размер
-- **Compress** показывает размер до/после с процентами
-- **Batch PBR warning** при custom-картах
+### Исправлено
+- **Металлик-пик возвращал чёрную маску** — сравнивался float32 (0–1) LAB с uint8 (0–255) LAB. Теперь оба в 0–255.
+- **Правая панель PBR перегружена** — динамическая перестройка при смене карты
+- **`[DEBUG]` принты** убраны из `pbr_generator.py` и `main.py`
 
 ---
 
@@ -314,11 +328,11 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **Height** — карта высот
 - **Normal** — нормали (на основе Sobel)
 - **AO** — ambient occlusion
-- **Roughness** — шероховатость (процедурная или своя карта)
-- **Metallic** — металличность (чёрная / белая / **своя карта**)
+- **Roughness** — шероховатость (процедурная или своя карта, 4-сигнальный advanced)
+- **Metallic** — металличность (чёрная / белая / своя карта / по цвету)
 - **ORM** — упакованная карта (AO в R, Roughness в G, Metallic в B)
 - **Edge** — карта граней (Sobel через OpenCV)
-- **16-битный PNG** — Height и Normal в полной точности
+- **Per-map битность** — каждая карта в своей 8/16-bit PNG
 
 ### 🎮 Экспорт для движков
 - **Unity HDRP** Mask Map — R=Metallic, G=AO, B=Detail Mask, A=Smoothness
@@ -380,7 +394,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ### Инсталлер (рекомендуется)
 
-1. Скачай `Albedolizer_Setup_v1.7.3-beta.exe` из [последнего релиза](../../releases/latest)
+1. Скачай `Albedolizer_Setup_v1.7.4-beta.exe` из [последнего релиза](../../releases/latest)
 2. Запусти установщик — всё встанет в `Program Files\Albedolizer`
 3. Запускай из меню Пуск или ярлыка на рабочем столе
 
@@ -410,9 +424,9 @@ Albedolizer — инструмент для 3D-художников, геймд�
 2. **📂 Load Albedo**
 3. Выбери **пресет** (слайдеры настроятся автоматически)
 4. При необходимости подкрути параметры
-5. Опционально: **⚙ Metal** или **🔧 Rough** → **Custom** → загрузи свою grayscale карту
+5. Опционально: **⚙ Metal** → **🎨 By color** → ткни в Albede
 6. **🎨 Generate** → 7 карт
-7. Переключайся между картами кнопками сверху
+7. Переключайся между картами — правая панель меняется под карту
 8. **👁 3D Preview** — открывает OpenGL-вьюер
 9. **💾 Save all** — создастся папка `<имя>_pbr/`
 
@@ -481,5 +495,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.7.3-beta  
+**Версия:** 1.7.4-beta  
 **Дата:** 2026
