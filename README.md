@@ -2,7 +2,7 @@
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.7.2--beta-orange)
+![Version](https://img.shields.io/badge/version-1.7.3--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -20,25 +20,35 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 ## Screenshots
 ![Main UI](screenshots/main_int.jpg)
 
-## 🆕 What's new in v1.7.2-beta
+## 🆕 What's new in v1.7.3-beta
 
-### 3D Viewer Overhaul
-- **4 shapes:** Sphere / Cylinder / Cube / Plane — switch on the fly
-- **Substance-style lighting** — key + fill + rim lights, proper volume on all shapes
-- **ACES tone mapping** instead of Reinhard — richer contrast, no more washed-out look
-- **Exposure slider** (0.5–2.0) in the viewer panel
-- **Rim light** — separates the object from the background
-- **Control panel:** Shape / Lighting / Tiling in one window
+### Custom Metallic / Roughness Maps
+- Load your own grayscale PNG for **Metallic** or **Roughness** channels
+- Auto-resize with confirmation dialog if size doesn't match albedo
+- Auto-regenerate PBR after loading custom map
+- Batch PBR warns when custom map is applied to a whole folder
 
-### 50 Texture Presets (was 47)
-- **Stucco** (🏛) — Mineral
-- **Gemstone** (🔮) — Mineral
-- **Cardboard** (📦) — Synthetic
+### GIMP-style Make Seamless
+- **Exact port** of GIMP's `tile-seamless.c` (Tim Rowley, 1997) via diagonal weight function
+- Optional **Hi-pass pre-filter** to even out brightness between edges (checkbox)
+- Works on textures where previous seamless algorithm failed
+
+### Realism Presets
+- Three one-click presets: **Soft** / **Medium** / **Hard**
+- Sets grain, highpass, variation sliders instantly
+
+### Simple Mode Improvements
+- **Compress tab** in Simple mode — two big buttons, auto-save to `_compressed`
+- **CLIP auto-detect** — detects material on texture load, picks best preset automatically
+- **Welcome dialog** on first launch — explains Simple / Advanced modes, quick start
 
 ### Quality of Life
-- **PBR preview is now zoomable** with the mouse wheel (InteractiveViewer)
-- **Log panel title** now follows the app language (RU / EN)
-- **manual.html** — full Russian translation with in-page RU / EN switcher
+- **Global hotkeys** — `Ctrl+O` Open, `Ctrl+S` Save, `Ctrl+R` Reset, `Ctrl+Z` Undo, `Space` toggle preview, `Enter` context action
+- **Settings persistence** — Realism, batch threads, export options, seamless hipass, pbr metallic/roughness, tiling saved across sessions
+- **Preview toggle Original/Result** — button in Single toolbar
+- **File info bar** — name, resolution, mode, size under toolbar
+- **Compress** shows size delta (original → new, % saved) after save
+- **Batch PBR warning** when custom map applied to whole folder
 
 ---
 
@@ -61,8 +71,8 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - **Height** — height map
 - **Normal** — normals (Sobel-based)
 - **AO** — ambient occlusion
-- **Roughness** — surface roughness
-- **Metallic** — metalness (black / white / auto)
+- **Roughness** — surface roughness (procedural or custom map)
+- **Metallic** — metalness (black / white / **custom map**)
 - **ORM** — packed map (AO in R, Roughness in G, Metallic in B)
 - **Edge** — edge map (Sobel via OpenCV)
 - **16-bit PNG output** — Height and Normal maps in full precision
@@ -83,6 +93,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 - **Detail** — adaptive high-pass overlay for micro-detail
 - **Variation** — large-scale color/brightness patches + subtle vignette
 - **Tileable noise** — noise pattern can be tiled without visible seams
+- **Presets** — Soft / Medium / Hard one-click
 
 ### 👁 Built-in 3D Viewer
 - Real-time PBR preview via OpenGL (`viewer.exe`)
@@ -116,7 +127,9 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 ### 🌐 Interface
 - Russian / English with auto-detection
 - Interactive preview with zoom (0.5x–8x)
+- **Global hotkeys** — Ctrl+O, Ctrl+S, Ctrl+R, Ctrl+Z, Space, Enter
 - **Last opened folder is remembered** across sessions
+- **Settings persistence** — all key options saved to `config.json`
 
 ---
 
@@ -124,7 +137,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 
 ### Installer (recommended)
 
-1. Download `Albedolizer_Setup_v1.7.2-beta.exe` from the [latest release](../../releases/latest)
+1. Download `Albedolizer_Setup_v1.7.3-beta.exe` from the [latest release](../../releases/latest)
 2. Run the installer — it places everything in `Program Files\Albedolizer`
 3. Launch from Start Menu or Desktop shortcut
 
@@ -147,16 +160,18 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 3. Click **🔍 Check** — you'll see stats and heatmap
 4. If FAIL → **✨ Auto-Correct** (AI + fallback)
 5. **💾 Save** the result
+6. **👁 Оригинал / Результат** — toggle preview between original and corrected
 
 ### PBR generation + 3D preview
 1. **🎨 PBR** tab
 2. **📂 Load Albedo**
 3. Pick a **preset** (sliders auto-tune)
 4. Adjust sliders if needed
-5. **🎨 Generate** → 7 maps
-6. Switch between maps with buttons on top
-7. **👁 3D Preview** — opens the OpenGL viewer
-8. **💾 Save all** — creates a `<name>_pbr/` folder
+5. Optional: **⚙ Metal** or **🔧 Rough** → **Custom** → load your own grayscale map
+6. **🎨 Generate** → 7 maps
+7. Switch between maps with buttons on top
+8. **👁 3D Preview** — opens the OpenGL viewer
+9. **💾 Save all** — creates a `<name>_pbr/` folder
 
 ### Engine Export
 1. **🎮 Engine** tab
@@ -171,9 +186,10 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 ### Realism filter
 1. **🎞 Realism** tab
 2. **📂 Open** — load a texture
-3. Adjust three sliders: **grain**, **detail**, **variation**
-4. **🎞 Apply** — see the result in the preview
-5. **💾 Save** the result
+3. Click preset: **🌿 Soft** / **⚖ Medium** / **🔥 Hard**
+4. Or adjust three sliders manually: **grain**, **detail**, **variation**
+5. **🎞 Apply** — see the result in the preview
+6. **💾 Save** the result
 
 ### Batch processing
 1. **Batch** tab
@@ -189,6 +205,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 3. Choose **8-bit** or **16-bit** PNG on the right
 4. **🗜 Compress** or **▶ Compress folder**
 5. Output to `_compressed` folder next to sources
+6. After save — see size delta: `12.4 MB → 8.1 MB (−4.3 MB, −34.7%)`
 
 ### Manual
 Click **ℹ Info** in the header → **📖 Manual** tab.
@@ -211,6 +228,7 @@ Click **ℹ Info** in the header → **📖 Manual** tab.
 ## 🙏 Credits
 
 - **LUTwithBGrid** (ECCV 2024) — Wontae Kim, Nam Ik Cho — [Apache 2.0](https://github.com/WontaeaeKim/LUTwithBGrid)
+- **GIMP tile-seamless** (1997) — Tim Rowley — GPL (algorithm ported)
 
 ## 🤝 Contributing
 
@@ -225,7 +243,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.7.2-beta  
+**Version:** 1.7.3-beta  
 **Date:** 2026
 
 ---
@@ -245,25 +263,35 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ---
 
-## 🆕 Что нового в v1.7.2-beta
+## 🆕 Что нового в v1.7.3-beta
 
-### Капитальный ремонт 3D-вьюера
-- **4 формы:** Sphere / Cylinder / Cube / Plane — переключение на лету
-- **Освещение как в Substance Painter** — key + fill + rim, объём видно на всех формах
-- **ACES tone mapping** вместо Reinhard — контраст богаче, нет «вымытости»
-- **Слайдер Exposure** (0.5–2.0) прямо в панели вьюера
-- **Rim light** — отрывает объект от фона
-- **Панель управления:** Shape / Lighting / Tiling в одном окне
+### Свои Metallic / Roughness карты
+- Загрузка своей **grayscale PNG** для каналов **Metallic** и **Roughness**
+- Авто-ресайз с диалогом подтверждения если размер не совпадает с albedo
+- Авто-перегенерация PBR после загрузки своей карты
+- Batch PBR предупреждает в логе если custom-карта применена к целой папке
 
-### 50 пресетов текстур (было 47)
-- **Stucco** (🏛) — Штукатурка, в Mineral
-- **Gemstone** (🔮) — Самоцвет, в Mineral
-- **Cardboard** (📦) — Картон, в Synthetic
+### Seamless как в GIMP
+- **Точный порт** `tile-seamless.c` (Tim Rowley, 1997) через диагональную весовую функцию
+- Опциональный **Hi-pass pre-filter** для выравнивания яркости краёв (чекбокс)
+- Работает на текстурах где предыдущий алгоритм давал швы
+
+### Пресеты Realism
+- Три пресета в один клик: **🌿 Мягкий** / **⚖ Средний** / **🔥 Жёсткий**
+- Мгновенно выставляют три слайдера
+
+### Улучшения Simple-режима
+- **Compress вкладка** в Simple — две большие кнопки, автосохранение в `_compressed`
+- **CLIP авто-детект** — определяет материал при загрузке, сам подбирает пресет
+- **Welcome-диалог** при первом запуске — объясняет Simple / Advanced
 
 ### Качество жизни
-- **PBR-превью теперь зумится** колёсиком мыши (InteractiveViewer)
-- **Заголовок панели лога** следует за языком приложения (RU / EN)
-- **manual.html** — полный русский перевод с переключателем RU / EN прямо на странице
+- **Глобальные хоткеи** — `Ctrl+O` Открыть, `Ctrl+S` Сохранить, `Ctrl+R` Сброс, `Ctrl+Z` Undo, `Space` toggle превью, `Enter` контекстное действие
+- **Сохранение настроек** — Realism, batch threads, export опции, seamless hipass, pbr metallic/roughness, tiling между сессиями
+- **Кнопка оригинал/Результат** в Single — переключение превью
+- **Инфо-плашка файла** — имя, разрешение, режим, размер
+- **Compress** показывает размер до/после с процентами
+- **Batch PBR warning** при custom-картах
 
 ---
 
@@ -286,8 +314,8 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **Height** — карта высот
 - **Normal** — нормали (на основе Sobel)
 - **AO** — ambient occlusion
-- **Roughness** — шероховатость
-- **Metallic** — металличность (чёрная / белая / авто)
+- **Roughness** — шероховатость (процедурная или своя карта)
+- **Metallic** — металличность (чёрная / белая / **своя карта**)
 - **ORM** — упакованная карта (AO в R, Roughness в G, Metallic в B)
 - **Edge** — карта граней (Sobel через OpenCV)
 - **16-битный PNG** — Height и Normal в полной точности
@@ -308,6 +336,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 - **Detail** — адаптивный high-pass для микро-деталей
 - **Variation** — крупные пятна цвета/яркости + лёгкая виньетка
 - **Тайлящийся шум** — паттерн не создаёт видимых швов при тайлинге
+- **Пресеты** — Мягкий / Средний / Жёсткий в один клик
 
 ### 👁 Встроенный 3D-вьюер
 - Просмотр PBR в реальном времени через OpenGL (`viewer.exe`)
@@ -341,7 +370,9 @@ Albedolizer — инструмент для 3D-художников, геймд�
 ### 🌐 Интерфейс
 - Русский / English с автоопределением системы
 - Интерактивное превью с зумом (0.5x–8x)
+- **Глобальные хоткеи** — Ctrl+O, Ctrl+S, Ctrl+R, Ctrl+Z, Space, Enter
 - **Запоминается последняя открытая папка** между сессиями
+- **Сохранение настроек** — все ключевые опции в `config.json`
 
 ---
 
@@ -349,7 +380,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ### Инсталлер (рекомендуется)
 
-1. Скачай `Albedolizer_Setup_v1.7.2-beta.exe` из [последнего релиза](../../releases/latest)
+1. Скачай `Albedolizer_Setup_v1.7.3-beta.exe` из [последнего релиза](../../releases/latest)
 2. Запусти установщик — всё встанет в `Program Files\Albedolizer`
 3. Запускай из меню Пуск или ярлыка на рабочем столе
 
@@ -372,16 +403,18 @@ Albedolizer — инструмент для 3D-художников, геймд�
 3. Нажми **🔍 Check** — увидишь статистику и heatmap
 4. Если FAIL → **✨ Auto-Correct** (AI + fallback)
 5. **💾 Save** результат
+6. **👁 Оригинал / Результат** — переключение превью
 
 ### PBR-генерация + 3D-превью
 1. Вкладка **🎨 PBR**
 2. **📂 Load Albedo**
 3. Выбери **пресет** (слайдеры настроятся автоматически)
 4. При необходимости подкрути параметры
-5. **🎨 Generate** → 7 карт
-6. Переключайся между картами кнопками сверху
-7. **👁 3D Preview** — открывает OpenGL-вьюер
-8. **💾 Save all** — создастся папка `<имя>_pbr/`
+5. Опционально: **⚙ Metal** или **🔧 Rough** → **Custom** → загрузи свою grayscale карту
+6. **🎨 Generate** → 7 карт
+7. Переключайся между картами кнопками сверху
+8. **👁 3D Preview** — открывает OpenGL-вьюер
+9. **💾 Save all** — создастся папка `<имя>_pbr/`
 
 ### Экспорт для движков
 1. Вкладка **🎮 Engine**
@@ -396,9 +429,10 @@ Albedolizer — инструмент для 3D-художников, геймд�
 ### Фильтр реализма
 1. Вкладка **🎞 Realism**
 2. **📂 Open** — загрузи текстуру
-3. Крути три слайдера: **Grain**, **Detail**, **Variation**
-4. **🎞 Apply** — результат в превью
-5. **💾 Save** результат
+3. Кликни пресет: **🌿 Мягкий** / **⚖ Средний** / **🔥 Жёсткий**
+4. Или крути три слайдера вручную: **Grain**, **Detail**, **Variation**
+5. **🎞 Apply** — результат в превью
+6. **💾 Save** результат
 
 ### Пакетная обработка
 1. Вкладка **Batch**
@@ -414,6 +448,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 3. Выбери **8-bit** или **16-bit** PNG справа
 4. **🗜 Compress** или **▶ Compress folder**
 5. Результат в папке `_compressed` рядом с исходниками
+6. После сохранения — размер до/после: `12.4 MB → 8.1 MB (−4.3 MB, −34.7%)`
 
 ### Мануал
 Нажми **ℹ Info** в хедере → вкладка **📖 Manual**.
@@ -446,5 +481,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.7.2-beta  
+**Версия:** 1.7.3-beta  
 **Дата:** 2026
