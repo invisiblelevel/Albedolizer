@@ -1,5 +1,50 @@
 # Changelog
 
+
+## [1.7.3-beta] — 2026-09-23
+
+Custom maps, GIMP seamless, hotkeys, settings persistence, welcome dialog.
+
+### Added
+- **Custom Metallic / Roughness maps** — load your own grayscale PNG, tool uses it instead of procedural / black / white
+  - Auto-resize with confirmation dialog if size doesn't match albedo
+  - Auto-regenerate PBR after loading custom map
+  - Sliders `Rough base` / `Rough var` hidden when Custom Roughness selected
+- **GIMP-style Make Seamless** — exact port of `tile-seamless.c` (Tim Rowley, 1997) via diagonal weight function
+  - Optional Hi-pass pre-filter to even out brightness between edges (checkbox in Single panel)
+- **Realism presets** — Soft / Medium / Hard buttons (one click = 3 sliders set)
+- **Simple mode Compress tab** — two big buttons: single file / folder, auto-save to `_compressed`
+- **Compress done dialog** — shows original → new size, % saved, button `Open folder`
+- **Preview toggle** — button in Single toolbar to flip original/result
+- **Global hotkeys** — `Ctrl+O` Open, `Ctrl+S` Save, `Ctrl+R` Reset, `Ctrl+Z` Undo (reset), `Space` toggle preview, `Enter` context action
+- **Settings persistence** — Realism params, batch threads, export options, seamless hipass, pbr metallic/roughness, tiling, current map saved to `config.json`
+- **Welcome dialog** on first launch — explains Simple / Advanced modes, quick start, opens manual, switch to Advanced
+- **CLIP auto-detect in Simple mode** — detects material on texture load, picks best preset automatically
+- **File info bar** — shows filename, resolution, mode, size under toolbar in Single
+- **Batch PBR warning** — logs warning when Custom Metallic/Roughness applied to whole folder
+
+### Changed
+- **Compress** — now shows `12.4 MB → 8.1 MB (−4.3 MB, −34.7%)` after save (single and batch)
+- **Realism preset log** now localized (RU / EN)
+- **Welcome text** — mentions both Simple and Advanced modes explicitly
+
+### Fixed
+- **Preview toggle button** — was missing in Single toolbar, now works
+- **Custom Metallic/Roughness** — preview updates immediately after load / regenerate
+- **seamless_hipass checkbox** — state now persists across sessions
+- **toggle_tiling** now saves state to config.json
+
+### Internal
+- `pbr_generator.make_seamless()` — replaced with GIMP `tile-seamless.c` port
+- `settings.py` — expanded to save more fields
+- `translations.py` — new keys: `preview_toggle_orig/result`, `seamless_hipass`, `welcome_*`, `realism_preset_log`, `compress_done_*`, `realism_preset_log`
+- `main.py` — `on_keyboard` handler with global hotkeys
+- Version bumped to 1.7.3-beta across all files
+
+
+---
+
+
 ## [1.7.2-beta] — 2026-09-22
 
 Viewer overhaul + 50 presets + QoL fixes.
