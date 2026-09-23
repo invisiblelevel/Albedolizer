@@ -6,9 +6,9 @@ config.py — все константы, словари и настройки Al
 # ═══════════════════════════════════════════════════════════
 #  МЕТА
 # ═══════════════════════════════════════════════════════════
-PP_TITLE = "Albedolizer v1.7.1-beta"
-APP_VERSION = "1.7.1-beta"
-APP_BUILD = "2026-09-21"
+PP_TITLE = "Albedolizer v1.7.3-beta"
+APP_VERSION = "1.7.3-beta"
+APP_BUILD = "2026-09-23"
 APP_AUTHOR = "INV.LVL"
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 820
@@ -126,6 +126,8 @@ TEXTURE_PROFILES = {
     "sand":           {"dark": 40,  "light": 245, "ru": "Песок",          "en": "Sand",           "emoji": "🟨"},
     "clay":           {"dark": 30,  "light": 230, "ru": "Глина",          "en": "Clay",           "emoji": "🟫"},
     "granite":        {"dark": 25,  "light": 230, "ru": "Гранит",         "en": "Granite",        "emoji": "⬛"},
+    "stucco":         {"dark": 40,  "light": 250, "ru": "Штукатурка",     "en": "Stucco",         "emoji": "🏛"},
+    "gemstone":       {"dark": 30,  "light": 250, "ru": "Самоцвет",       "en": "Gemstone",       "emoji": "🔮"},
     # 🧪 SYNTHETIC
     "plastic":        {"dark": 30,  "light": 245, "ru": "Пластик",        "en": "Plastic",        "emoji": "🎨"},
     "rubber":         {"dark": 20,  "light": 200, "ru": "Резина",         "en": "Rubber",         "emoji": "⚫"},
@@ -133,6 +135,7 @@ TEXTURE_PROFILES = {
     "ceramic":        {"dark": 35,  "light": 245, "ru": "Керамика",       "en": "Ceramic",        "emoji": "🏺"},
     "painted_metal":  {"dark": 25,  "light": 240, "ru": "Краш. металл",   "en": "Painted Metal",  "emoji": "🎭"},
     "carbon":         {"dark": 15,  "light": 200, "ru": "Карбон",         "en": "Carbon",         "emoji": "⬛"},
+    "cardboard":      {"dark": 45,  "light": 245, "ru": "Картон",         "en": "Cardboard",      "emoji": "📦"},
     # 💧 SPECIAL
     "water":          {"dark": 40,  "light": 250, "ru": "Вода",           "en": "Water",          "emoji": "💧"},
     "mud":            {"dark": 20,  "light": 220, "ru": "Грязь",          "en": "Mud",            "emoji": "🟤"},
@@ -186,6 +189,8 @@ PBR_PRESETS = {
     "sand":           {"strength": 1.2, "smooth": 2.0, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 8,  "ao_intensity": 1.3, "rough_base": 0.90, "rough_var": 0.20, "metallic": "black"},
     "clay":           {"strength": 1.4, "smooth": 2.0, "threshold": 0.05, "high_pass": 38, "height_blur": 2.2, "ao_radius": 9,  "ao_intensity": 1.4, "rough_base": 0.85, "rough_var": 0.20, "metallic": "black"},
     "granite":        {"strength": 1.6, "smooth": 1.8, "threshold": 0.05, "high_pass": 45, "height_blur": 2.2, "ao_radius": 10, "ao_intensity": 1.7, "rough_base": 0.75, "rough_var": 0.25, "metallic": "black"},
+    "stucco":         {"strength": 1.3, "smooth": 2.2, "threshold": 0.05, "high_pass": 35, "height_blur": 2.8, "ao_radius": 9,  "ao_intensity": 1.3, "rough_base": 0.75, "rough_var": 0.20, "metallic": "black"},
+    "gemstone":       {"strength": 0.8, "smooth": 1.2, "threshold": 0.05, "high_pass": 28, "height_blur": 1.2, "ao_radius": 5,  "ao_intensity": 0.8, "rough_base": 0.15, "rough_var": 0.30, "metallic": "black"},
     # 🧪 SYNTHETIC
     "plastic":        {"strength": 0.8, "smooth": 1.5, "threshold": 0.05, "high_pass": 30, "height_blur": 1.5, "ao_radius": 6,  "ao_intensity": 0.8, "rough_base": 0.35, "rough_var": 0.30, "metallic": "black"},
     "rubber":         {"strength": 1.2, "smooth": 2.0, "threshold": 0.05, "high_pass": 35, "height_blur": 2.0, "ao_radius": 7,  "ao_intensity": 1.2, "rough_base": 0.90, "rough_var": 0.10, "metallic": "black"},
@@ -193,6 +198,7 @@ PBR_PRESETS = {
     "ceramic":        {"strength": 0.9, "smooth": 1.5, "threshold": 0.05, "high_pass": 32, "height_blur": 1.8, "ao_radius": 6,  "ao_intensity": 0.9, "rough_base": 0.30, "rough_var": 0.25, "metallic": "black"},
     "painted_metal":  {"strength": 1.0, "smooth": 1.5, "threshold": 0.05, "high_pass": 32, "height_blur": 1.8, "ao_radius": 6,  "ao_intensity": 1.0, "rough_base": 0.45, "rough_var": 0.30, "metallic": "black"},
     "carbon":         {"strength": 1.0, "smooth": 1.2, "threshold": 0.05, "high_pass": 35, "height_blur": 1.5, "ao_radius": 6,  "ao_intensity": 1.0, "rough_base": 0.30, "rough_var": 0.25, "metallic": "black"},
+    "cardboard":      {"strength": 0.7, "smooth": 2.0, "threshold": 0.05, "high_pass": 30, "height_blur": 2.0, "ao_radius": 7,  "ao_intensity": 0.9, "rough_base": 0.90, "rough_var": 0.15, "metallic": "black"},
     # 💧 SPECIAL
     "water":          {"strength": 0.6, "smooth": 1.5, "threshold": 0.05, "high_pass": 25, "height_blur": 1.2, "ao_radius": 5,  "ao_intensity": 0.7, "rough_base": 0.05, "rough_var": 0.10, "metallic": "black"},
     "mud":            {"strength": 1.5, "smooth": 2.0, "threshold": 0.05, "high_pass": 40, "height_blur": 2.0, "ao_radius": 9,  "ao_intensity": 1.5, "rough_base": 0.85, "rough_var": 0.20, "metallic": "black"},
@@ -223,9 +229,11 @@ PROFILE_CATEGORIES = {
                 "items": ["wood", "leaves", "moss", "organic", "grass", "bark"]},
     "mineral": {"emoji": "🪨", "ru": "Минерал",    "en": "Mineral",
                 "items": ["stone", "concrete", "brick", "ground", "asphalt", "marble", "sand",
-                          "tile", "gravel", "coal", "roof_tiles", "clay", "granite"]},
+                          "tile", "gravel", "coal", "roof_tiles", "clay", "granite",
+                          "stucco", "gemstone"]},
     "synth":   {"emoji": "🧪", "ru": "Синтетика",  "en": "Synthetic",
-                "items": ["plastic", "rubber", "glass", "ceramic", "painted_metal", "carbon"]},
+                "items": ["plastic", "rubber", "glass", "ceramic", "painted_metal", "carbon",
+                          "cardboard"]},
     "fabric":  {"emoji": "🧵", "ru": "Ткани",      "en": "Fabric",
                 "items": ["cotton", "wool", "silk", "denim", "carpet", "velvet"]},
     "special": {"emoji": "💧", "ru": "Спецэффекты","en": "Special",

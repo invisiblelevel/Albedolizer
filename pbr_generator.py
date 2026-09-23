@@ -206,6 +206,9 @@ def generate_all_pbr(albedo_pil,
                      rough_base=0.7,
                      rough_variation=0.3,
                      metallic_mode="black",
+                     metallic_custom=None,
+                     roughness_mode="procedural",
+                     roughness_custom=None,
                      edge_blur=1.0,
                      edge_strength=1.0):
     height = generate_height(albedo_pil, blur=height_blur, contrast=height_contrast)
@@ -218,8 +221,33 @@ def generate_all_pbr(albedo_pil,
         threshold=normal_threshold,
     )
     ao = generate_ao(height, radius=ao_radius, intensity=ao_intensity, ao_range=ao_range)
-    roughness = generate_roughness(albedo_pil, base=rough_base, variation=rough_variation)
-    metallic = generate_metallic(albedo_pil, mode=metallic_mode)
+
+    # Roughness: custom map из файла, если загружена
+    if roughness_mode == "custom" and roughness_custom is not None:
+        w, h = albedo_pil.size
+        if roughness_custom.shape[:2] != (h, w):
+            roughness = cv2.resize(
+                roughness_custom, (w, h), interpolation=cv2.INTER_LINEAR
+            ).astype(np.float32)
+        else:
+            roughness = roughness_custom.astype(np.float32)
+        roughness = np.clip(roughness, 0.0, 1.0)
+    else:
+        roughness = generate_roughness(albedo_pil, base=rough_base, variation=rough_variation)
+
+    # Metallic: custom map из файла, если загружена
+    if metallic_mode == "custom" and metallic_custom is not None:
+        w, h = albedo_pil.size
+        if metallic_custom.shape[:2] != (h, w):
+            metallic = cv2.resize(
+                metallic_custom, (w, h), interpolation=cv2.INTER_LINEAR
+            ).astype(np.float32)
+        else:
+            metallic = metallic_custom.astype(np.float32)
+        metallic = np.clip(metallic, 0.0, 1.0)
+    else:
+        metallic = generate_metallic(albedo_pil, mode=metallic_mode)
+
     edge = generate_edge(height, blur=edge_blur, strength=edge_strength)
     orm = pack_orm(ao, roughness, metallic)
 
@@ -297,61 +325,69 @@ def boost_saturation(pil, strength=1.15):
     result = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
     return Image.fromarray(result, mode="RGB")
     
-def make_seamless(pil, inner_radius=0.6, outer_radius=1.0,
-                   scatter_strength=0.3, blend_curve="smootherstep"):
+def make_seamless(pil, hipass=True, hipass_blur=0.15, strength=1.0):
     """
-    Radial mask blend — делает текстуру бесшовной.
+    Точный порт GIMP tile-seamless.c + опциональный hi-pass pre-filter.
     
-    inner_radius: где начинается бленд (0.0-1.0). Меньше = больше сохраняется центр.
-    outer_radius: где заканчивается (должен быть > inner_radius).
-    scatter_strength: волнистость границы (0 = идеальный круг, 0.5 = сильно рваная).
-    blend_curve: "linear" | "cosine" | "smoothstep" | "smootherstep".
+    hipass: выравнивает яркость краёв (убирает цветовые полосы после бленда).
+    hipass_blur: радиус blur для hi-pass (доля от min(w,h)). Дефолт 0.15.
+    strength: множитель веса (0.5-2.0). 1.0 = чистый GIMP.
     """
-    import cv2
-
     arr = np.array(pil.convert("RGB")).astype(np.float32) / 255.0
     h, w, c = arr.shape
 
-    # Радиальное расстояние от центра (0 = центр, 1 = угол)
+    # ─── Hi-pass pre-filter ───
+    if hipass:
+        blur_r = max(3.0, min(w, h) * hipass_blur)
+        blurred = cv2.GaussianBlur(arr, (0, 0), sigmaX=blur_r)
+
+        # Grain Extract: src - blur + 0.5
+        hp = arr - blurred + 0.5
+
+        # Overlay с усреднённым цветом
+        mean_color = arr.mean(axis=(0, 1), keepdims=True)
+        mean_color = np.ones_like(arr) * mean_color
+
+        # Overlay blend
+        arr = np.where(
+            hp < 0.5,
+            2.0 * hp * mean_color,
+            1.0 - 2.0 * (1.0 - hp) * (1.0 - mean_color)
+        )
+        arr = np.clip(arr, 0.0, 1.0)
+
+    # ─── Точный порт GIMP tile-seamless.c ───
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    cy, cx = h / 2.0, w / 2.0
-    ny = (yy - cy) / cy
-    nx = (xx - cx) / cx
-    dist = np.sqrt(nx * nx + ny * ny)
-    dist = np.clip(dist / np.sqrt(2.0), 0, 1)
 
-    # Scatter — волнистость границы
-    if scatter_strength > 0:
-        angle = np.arctan2(ny, nx)
-        scatter = (
-            0.08 * np.sin(angle * 5.0) +
-            0.05 * np.sin(angle * 11.0) +
-            0.03 * np.sin(angle * 17.0)
-        ) * scatter_strength
-        dist = dist + scatter
-        dist = np.clip(dist, 0, 1)
+    a = (np.abs(xx - w) - 1.0) / max(w - 1, 1)
+    b = (np.abs(yy - h) - 1.0) / max(h - 1, 1)
 
-    # Нормализуем радиус в t ∈ [0,1]
-    span = max(outer_radius - inner_radius, 1e-6)
-    t = np.clip((dist - inner_radius) / span, 0.0, 1.0)
+    denom = a * b + (1.0 - a) * (1.0 - b)
+    denom = np.maximum(denom, 1e-8)
 
-    # Кривая бленда
-    if blend_curve == "cosine":
-        mask = 0.5 * (1.0 - np.cos(np.pi * t))
-    elif blend_curve == "smoothstep":
-        mask = t * t * (3.0 - 2.0 * t)
-    elif blend_curve == "smootherstep":
-        mask = t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
-    else:  # linear
-        mask = t
+    weight = 1.0 - (a * b) / denom
 
-    # Инвертируем: центр = 1, край = 0
-    mask = 1.0 - mask
-    mask = np.stack([mask] * 3, axis=2)
+    # Особые случаи из GIMP
+    special1 = (a < 1e-8) & (b > 0.99999999)
+    special2 = (a > 0.99999999) & (b < 1e-8)
+    weight = np.where(special1, 1.0, weight)
+    weight = np.where(special2, 0.0, weight)
 
-    # Размытая версия для бленда краёв
-    sigma = w * 0.15
-    blurred = cv2.GaussianBlur(arr, (0, 0), sigmaX=sigma)
+    # Strength — множитель
+    if strength != 1.0:
+        weight = np.clip(weight ** strength, 0.0, 1.0)
 
-    result = arr * mask + blurred * (1.0 - mask)
-    return Image.fromarray((np.clip(result, 0, 1) * 255).astype(np.uint8))
+    weight = np.clip(weight, 0.0, 1.0)
+
+    # Зеркало относительно центра
+    x_mirror = (w - xx).astype(int)
+    y_mirror = (h - yy).astype(int)
+    x_mirror = np.clip(x_mirror, 0, w - 1)
+    y_mirror = np.clip(y_mirror, 0, h - 1)
+
+    mirrored = arr[y_mirror, x_mirror, :]
+
+    result = weight[..., None] * arr + (1.0 - weight[..., None]) * mirrored
+
+    result = np.clip(result, 0.0, 1.0)
+    return Image.fromarray((result * 255).astype(np.uint8), mode="RGB")

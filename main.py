@@ -30,10 +30,6 @@ from engine_export import (
     pack_for_engine, save_engine_map,
     load_pbr_folder, engine_folder_suffix,
 )
-from engine_export import (
-    pack_for_engine, save_engine_map,
-    load_pbr_folder, engine_folder_suffix,
-)
 
 
 def _detect_system_lang():
@@ -57,25 +53,32 @@ def main(page: ft.Page):
     S = {
         "image_path": None,
         "original": None,
+        "file_info_label": None,
         "corrected": None,
         "profile": USER_SETTINGS.get("profile", "metal"),
         "profile_category": USER_SETTINGS.get("profile_category", "metal"),
         "correction_mode": USER_SETTINGS.get("correction_mode", "ai"),
         "ai_model": USER_SETTINGS.get("ai_model", DEFAULT_AI_MODEL),
-        "soap_fix_strength": 1.0,
-        "saturation_boost": 1.15,
-        "pbr_bit_depth": 16,
+        "soap_fix_strength": USER_SETTINGS.get("soap_fix_strength", 1.0),
+        "saturation_boost": USER_SETTINGS.get("saturation_boost", 1.15),
+        "pbr_bit_depth": USER_SETTINGS.get("pbr_bit_depth", 16),
         "last_op": None,
-        "lang": _detect_system_lang(),
-        "theme": "dark",
-        "ui_mode": "simple",
+        "show_original": False,
+        "lang": USER_SETTINGS.get("lang") or _detect_system_lang(),
+        "theme": USER_SETTINGS.get("theme", "dark"),
+        "ui_mode": USER_SETTINGS.get("ui_mode", "simple"),
         "log_lines": [],
         "stats_lines": [],
         "pbr_source": None,
         "pbr_source_path": None,
         "pbr_result": None,
-        "pbr_current_map": "albedo",
-        "pbr_metallic": "black",
+        "pbr_current_map": USER_SETTINGS.get("pbr_current_map", "albedo"),
+        "pbr_metallic": USER_SETTINGS.get("pbr_metallic", "black"),
+        "pbr_metallic_custom": None,
+        "pbr_metallic_custom_path": None,
+        "pbr_roughness": USER_SETTINGS.get("pbr_roughness", "procedural"),
+        "pbr_roughness_custom": None,
+        "pbr_roughness_custom_path": None,
         "pbr_sliders": {},
         "pbr_preview": None,
         "pbr_preview_hint": None,
@@ -86,13 +89,14 @@ def main(page: ft.Page):
         "pbr_batch_label": None,
         "pbr_batch_nav_panel": None,
         "batch_files": [],
-        "batch_threads": 3,
+        "batch_threads": USER_SETTINGS.get("batch_threads", 3),
         "compress_files": [],
         "active_tab": "single",
-        "tiling_mode": False,
-        "realism_grain": 0.15,
-        "realism_highpass": 0.30,
-        "realism_variation": 0.20,
+        "tiling_mode": USER_SETTINGS.get("tiling_mode", False),
+        "seamless_hipass": USER_SETTINGS.get("seamless_hipass", True),
+        "realism_grain": USER_SETTINGS.get("realism_grain", 0.15),
+        "realism_highpass": USER_SETTINGS.get("realism_highpass", 0.30),
+        "realism_variation": USER_SETTINGS.get("realism_variation", 0.20),
         "realism_source": None,
         "viewer_tile_x": 4,
         "viewer_tile_y": 3,
@@ -105,13 +109,25 @@ def main(page: ft.Page):
         "export_source_label": None,
         "export_packed": None,
         "export_normal_out": None,
-        "export_engine": "unity_hdrp",
-        "export_normal_format": "opengl",
-        "export_detail_mode": "edge",
+       "export_engine": USER_SETTINGS.get("export_engine", "unity_hdrp"),
+        "export_normal_format": USER_SETTINGS.get("export_normal_format", "opengl"),
+        "export_detail_mode": USER_SETTINGS.get("export_detail_mode", "edge"),
         "export_custom_detail": None,
-        "export_bit_depth": 8,
+        "export_bit_depth": USER_SETTINGS.get("export_bit_depth", 8),
         "export_preview_channel": "rgb",
+        "first_launch_done": USER_SETTINGS.get("first_launch_done", False),
     }
+
+# Валидация: profile должен быть в profile_category
+    _cat_items = PROFILE_CATEGORIES.get(S["profile_category"], {}).get("items", [])
+    if S["profile"] not in _cat_items:
+        for _ck, _cat in PROFILE_CATEGORIES.items():
+            if S["profile"] in _cat["items"]:
+                S["profile_category"] = _ck
+                break
+        else:
+            S["profile"] = "metal"
+            S["profile_category"] = "metal"
 
     # ═══ Цвета темы ═══
     _theme = THEME_DARK if S["theme"] == "dark" else THEME_LIGHT
@@ -135,7 +151,7 @@ def main(page: ft.Page):
     ON_ACCENT = "#ffffff"
 
     cv2.setNumThreads(os.cpu_count() or 4)
-    page.title = "Albedolizer v1.7.2-beta"
+    page.title = "Albedolizer v1.7.3-beta"
 
     # ═══ FilePicker — один на всё приложение ═══
     picker = ft.FilePicker()
@@ -218,6 +234,52 @@ def main(page: ft.Page):
     def get_luminance(pil):
         arr = np.array(pil.convert("RGB")).astype(np.float32)
         return 0.2126 * arr[:, :, 0] + 0.7152 * arr[:, :, 1] + 0.0722 * arr[:, :, 2]
+        
+    def update_preview_display():
+        """Ставит preview_image.src в зависимости от S["show_original"]."""
+        if S["show_original"] and S["original"] is not None:
+            img = S["original"]
+        elif S["corrected"] is not None:
+            img = S["corrected"]
+        elif S["original"] is not None:
+            img = S["original"]
+        else:
+            return
+        S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(img)}"
+        S["preview_image"].visible = True
+        
+    def update_file_info():
+        """Обновляет инфо-плашку файла в Single."""
+        lbl = S.get("file_info_label")
+        if lbl is None:
+            return
+        if not S.get("image_path") or S.get("original") is None:
+            lbl.visible = False
+            return
+        try:
+            import os as _os
+            name = _os.path.basename(S["image_path"])
+            w, h = S["original"].size
+            mode = S["original"].mode
+            try:
+                size_bytes = _os.path.getsize(S["image_path"])
+                size_str = _fmt_size(size_bytes)
+            except Exception:
+                size_str = "—"
+            lbl.content.value = f"📂 {name}  ·  {w}×{h}  ·  {mode}  ·  {size_str}"
+            lbl.visible = True
+        except Exception:
+            lbl.visible = False
+        
+    def _fmt_size(b):
+        """Байты → человекочитаемо: 1.2 KB / 3.4 MB / 1.5 GB."""
+        if b < 1024:
+            return f"{b} B"
+        if b < 1024 * 1024:
+            return f"{b / 1024:.1f} KB"
+        if b < 1024 * 1024 * 1024:
+            return f"{b / 1024 / 1024:.2f} MB"
+        return f"{b / 1024 / 1024 / 1024:.2f} GB"    
 
     def smart_correct_ai(pil):
         """Обёртка вокруг ai_correct / lut_correct — выбор модели."""
@@ -425,13 +487,18 @@ def main(page: ft.Page):
             arr[lum < s["dark_t"]] = [255, 0, 0]
             arr[lum > s["light_t"]] = [0, 100, 255]
             heatmap = Image.fromarray(arr.astype(np.uint8))
+            S["show_original"] = False
             S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(heatmap)}"
+            S["preview_image"].visible = True
+            if S["buttons"].get("preview_toggle"):
+                S["buttons"]["preview_toggle"].content.value = t("preview_toggle_orig")
 
     async def do_check(e):
         if S["original"] is None:
             return
         await show_progress(t("progress_check"))
         await asyncio.sleep(0.1)
+        S["show_original"] = False
         img = S["corrected"] if S["corrected"] else S["original"]
         run_check(img, True)
         page.update()
@@ -456,7 +523,8 @@ def main(page: ft.Page):
                     )
                 S["corrected"] = result
                 S["last_op"] = "corrected"
-                S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
+                S["show_original"] = False
+                update_preview_display()
                 log("", FG2)
                 log(t("log_fix_done"), SUCCESS)
 
@@ -466,6 +534,7 @@ def main(page: ft.Page):
 
                 if S["buttons"].get("save"): S["buttons"]["save"].disabled = False
                 if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = False
+                if S["buttons"].get("preview_toggle"): S["buttons"]["preview_toggle"].disabled = False
                 page.update()
 
                 await asyncio.sleep(0.1)
@@ -483,7 +552,8 @@ def main(page: ft.Page):
             if ai_ok and ai_result is not None:
                 S["corrected"] = ai_result
                 S["last_op"] = "corrected"
-                S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(ai_result)}"
+                S["show_original"] = False
+                update_preview_display()
                 log("", FG2)
                 log(t("log_fix_done"), SUCCESS)
 
@@ -501,6 +571,7 @@ def main(page: ft.Page):
 
                 if S["buttons"].get("save"): S["buttons"]["save"].disabled = False
                 if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = False
+                if S["buttons"].get("preview_toggle"): S["buttons"]["preview_toggle"].disabled = False
                 page.update()
             else:
                 log("   → AI недоступен. Применяется fallback.", WARN)
@@ -511,7 +582,8 @@ def main(page: ft.Page):
                     )
                 S["corrected"] = result
                 S["last_op"] = "corrected"
-                S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
+                S["show_original"] = False
+                update_preview_display()
                 log("", FG2)
                 log(t("log_fix_done"), SUCCESS)
 
@@ -521,6 +593,7 @@ def main(page: ft.Page):
 
                 if S["buttons"].get("save"): S["buttons"]["save"].disabled = False
                 if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = False
+                if S["buttons"].get("preview_toggle"): S["buttons"]["preview_toggle"].disabled = False
                 page.update()
 
             await asyncio.sleep(0.1)
@@ -536,10 +609,12 @@ def main(page: ft.Page):
             return
         S["corrected"] = None
         S["last_op"] = None
-        S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(S['original'])}"
+        S["show_original"] = False
+        update_preview_display()
         log(t("log_reset"), FG2)
         if S["buttons"].get("save"): S["buttons"]["save"].disabled = True
         if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = True
+        if S["buttons"].get("preview_toggle"): S["buttons"]["preview_toggle"].disabled = True
         page.update()
 
     async def do_auto_detect_material(e):
@@ -604,7 +679,7 @@ def main(page: ft.Page):
             page.update()
 
     async def do_simple_process(e):
-        """Simple mode: открыть → AI → saturation → результат."""
+        """Simple mode: открыть → auto-detect → AI → saturation → результат."""
         try:
             files = await picker.pick_files(
                 dialog_title=t("dialog_pick_title"),
@@ -624,15 +699,60 @@ def main(page: ft.Page):
             S["original"] = img
             S["corrected"] = None
             S["last_op"] = None
+            S["show_original"] = False
             S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(img)}"
             S["preview_image"].visible = True
+            update_file_info()
 
             log("", FG2)
             log(f"{t('log_loaded')} {os.path.basename(fp)}", SUCCESS)
-            log(f"{t('log_type')} {profile_label(S['profile'])}", FG2)
             page.update()
 
-            await show_progress(t("progress_fix"))
+            # ═══ AUTO-DETECT материала ═══
+            S["progress_text"].value = t("auto_detect_progress")
+            page.update()
+            await asyncio.sleep(0.05)
+
+            detected = False
+            try:
+                if not S["clip"].is_loaded():
+                    log(t("auto_detect_loading"), FG2)
+                    page.update()
+                    ok = await asyncio.to_thread(
+                        S["clip"].load, CLIP_VISION_PATH, CLIP_TEXT_PATH
+                    )
+                    if not ok:
+                        log(t("auto_detect_no_clip"), WARN)
+
+                if S["clip"].is_loaded():
+                    profile, conf, top5 = await asyncio.to_thread(
+                        S["clip"].classify, img
+                    )
+                    if profile:
+                        old_profile = S["profile"]
+                        S["profile"] = profile
+                        for cat_key, cat in PROFILE_CATEGORIES.items():
+                            if profile in cat["items"]:
+                                S["profile_category"] = cat_key
+                                break
+                        log(f"🤖 {t('auto_detect_winner')} {profile_label(profile)} ({conf*100:.1f}%)", SUCCESS)
+                        detected = True
+                    else:
+                        log(t("auto_detect_fail"), WARN)
+            except Exception as ex:
+                log(f"   ⚠ Auto-detect: {ex}", WARN)
+
+            if not detected:
+                log(f"{t('log_type')} {profile_label(S['profile'])}", FG2)
+            else:
+                persist_settings()
+
+            page.update()
+            await asyncio.sleep(0.1)
+
+            # ═══ AI-коррекция ═══
+            S["progress_text"].value = t("progress_fix")
+            page.update()
             await asyncio.sleep(0.1)
 
             ai_result, ai_ok = await asyncio.to_thread(smart_correct_ai, img)
@@ -649,7 +769,8 @@ def main(page: ft.Page):
 
             S["corrected"] = result
             S["last_op"] = "corrected"
-            S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
+            S["show_original"] = False
+            update_preview_display()
             log(t("log_fix_done"), SUCCESS)
 
             if S["buttons"].get("save"): S["buttons"]["save"].disabled = False
@@ -683,8 +804,9 @@ def main(page: ft.Page):
                     S["original"] = img
                     S["corrected"] = None
                     S["last_op"] = None
-                    S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(img)}"
-                    S["preview_image"].visible = True
+                    S["show_original"] = False
+                    update_preview_display()
+                    update_file_info()
 
                     log("", FG2)
                     log(f"{t('log_loaded')} {os.path.basename(fp)}", SUCCESS)
@@ -695,6 +817,7 @@ def main(page: ft.Page):
                     if S["buttons"].get("fix"): S["buttons"]["fix"].disabled = True
                     if S["buttons"].get("save"): S["buttons"]["save"].disabled = True
                     if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = True
+                    if S["buttons"].get("preview_toggle"): S["buttons"]["preview_toggle"].disabled = True
                     page.update()
 
                     rebuild_ui()
@@ -828,6 +951,21 @@ def main(page: ft.Page):
             _remember_folder(str(path))
             log(f"{t('log_saved')} {os.path.basename(str(path))}", SUCCESS)
 
+            try:
+                orig_size = os.path.getsize(S["compress_path"]) if S.get("compress_path") and os.path.exists(S["compress_path"]) else 0
+                new_size = os.path.getsize(str(path)) if os.path.exists(str(path)) else 0
+                if orig_size > 0 and new_size > 0:
+                    saved = orig_size - new_size
+                    pct = (saved / orig_size) * 100
+                    if saved > 0:
+                        log(f"   📉 Сжатие: {_fmt_size(orig_size)} → {_fmt_size(new_size)}  (−{_fmt_size(saved)}, −{pct:.1f}%)", SUCCESS)
+                    elif saved < 0:
+                        log(f"   📈 Файл вырос: {_fmt_size(orig_size)} → {_fmt_size(new_size)}  (+{_fmt_size(-saved)}, +{abs(pct):.1f}%)", WARN)
+                    else:
+                        log(f"   📊 Размер не изменился: {_fmt_size(orig_size)}", FG2)
+            except Exception:
+                pass
+
             S["compress_progress_bar"].visible = False
             S["compress_progress_text"].visible = False
             page.update()
@@ -894,6 +1032,8 @@ def main(page: ft.Page):
         page.update()
 
         count = 0
+        total_orig = 0
+        total_new = 0
         for i, fp in enumerate(files, 1):
             try:
                 img = Image.open(fp).convert("RGB")
@@ -904,7 +1044,23 @@ def main(page: ft.Page):
                 await asyncio.to_thread(save_16bit_or_8bit, result, out_path, bd)
                 img.close()
                 count += 1
-                log(f"  [{i}/{total}] ✓ {os.path.basename(fp)}", SUCCESS)
+
+                try:
+                    osz = os.path.getsize(fp)
+                    nsz = os.path.getsize(out_path)
+                    total_orig += osz
+                    total_new += nsz
+                    saved = osz - nsz
+                    pct = (saved / osz) * 100 if osz > 0 else 0
+                    if saved > 0:
+                        log(f"  [{i}/{total}] ✓ {os.path.basename(fp)}  −{pct:.1f}%", SUCCESS)
+                    elif saved < 0:
+                        log(f"  [{i}/{total}] ⚠ {os.path.basename(fp)}  +{abs(pct):.1f}%", WARN)
+                    else:
+                        log(f"  [{i}/{total}] ✓ {os.path.basename(fp)}", SUCCESS)
+                except Exception:
+                    log(f"  [{i}/{total}] ✓ {os.path.basename(fp)}", SUCCESS)
+
                 update_compress_progress(i, total)
                 if i % 5 == 0:
                     gc.collect()
@@ -914,11 +1070,257 @@ def main(page: ft.Page):
                 update_compress_progress(i, total)
 
         log(f"✅ {t('batch_processed')} {count} / {total}", SUCCESS)
+        if total_orig > 0 and total_new > 0:
+            saved = total_orig - total_new
+            pct = (saved / total_orig) * 100
+            if saved > 0:
+                log(f"   📉 Итого: {_fmt_size(total_orig)} → {_fmt_size(total_new)}  (−{_fmt_size(saved)}, −{pct:.1f}%)", SUCCESS)
+            elif saved < 0:
+                log(f"   📈 Итого файлы выросли: {_fmt_size(total_orig)} → {_fmt_size(total_new)}  (+{_fmt_size(-saved)}, +{abs(pct):.1f}%)", WARN)
+            else:
+                log(f"   📊 Итого без изменений: {_fmt_size(total_orig)}", FG2)
         log(f"📁 {out_dir}", FG2)
         update_compress_progress(total, total, f"{t('batch_done')}: {count} / {total}")
         S["compress_files"] = []
         page.update()
         
+        
+        # ═══ SIMPLE MODE COMPRESS ═══
+    async def compress_simple_process(e):
+        """Simple: открыть файл → LAB → сохранить в _compressed рядом."""
+        try:
+            files = await picker.pick_files(
+                dialog_title=t("dialog_pick_title"),
+                allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+                initial_directory=_init_dir(),
+            )
+            if not files or not files[0].path:
+                return
+            fp = files[0].path
+            _remember_folder(fp)
+
+            S["compress_progress_text"].value = t("progress_compress")
+            S["compress_progress_text"].visible = True
+            S["compress_progress_bar"].value = None
+            S["compress_progress_bar"].visible = True
+            page.update()
+            await asyncio.sleep(0.05)
+
+            img = Image.open(fp).convert("RGB")
+            result = await asyncio.to_thread(
+                lambda: img.convert("LAB").convert("RGB")
+            )
+
+            base = os.path.splitext(os.path.basename(fp))[0]
+            folder = os.path.dirname(fp)
+            out_dir = os.path.join(folder, "_compressed")
+            os.makedirs(out_dir, exist_ok=True)
+            out_path = os.path.join(out_dir, f"{base}.png")
+
+            bd = S.get("pbr_bit_depth", 16)
+            await asyncio.to_thread(save_16bit_or_8bit, result, out_path, bd)
+            img.close()
+
+            log(f"🗜 {os.path.basename(fp)}", SUCCESS)
+
+            osz = os.path.getsize(fp)
+            nsz = os.path.getsize(out_path)
+            saved = osz - nsz
+            pct = (saved / osz) * 100 if osz > 0 else 0
+            if saved > 0:
+                log(f"   📉 {_fmt_size(osz)} → {_fmt_size(nsz)}  (−{_fmt_size(saved)}, −{pct:.1f}%)", SUCCESS)
+            elif saved < 0:
+                log(f"   📈 {_fmt_size(osz)} → {_fmt_size(nsz)}  (+{_fmt_size(-saved)}, +{abs(pct):.1f}%)", WARN)
+            else:
+                log(f"   📊 Без изменений: {_fmt_size(osz)}", FG2)
+            log(f"📁 {out_dir}", FG2)
+
+            S["compress_progress_bar"].visible = False
+            S["compress_progress_text"].visible = False
+            page.update()
+
+            show_compress_done_dialog(out_path, osz, nsz, is_batch=False)
+
+        except Exception as ex:
+            S["compress_progress_bar"].visible = False
+            S["compress_progress_text"].visible = False
+            log(f"❌ {t('err')}: {ex}", DANGER)
+            page.update()
+
+    async def compress_simple_batch(e):
+        """Simple: выбрать папку → LAB все → сохранить в _compressed."""
+        try:
+            folder = await picker.get_directory_path(
+                dialog_title=t("batch_select_folder"))
+            if not folder:
+                return
+            if folder and folder != S.get("last_folder"):
+                S["last_folder"] = folder
+                persist_settings()
+
+            exts = ('.png', '.jpg', '.jpeg', '.tif', '.tiff', '.bmp')
+            files = [os.path.join(folder, f) for f in os.listdir(folder)
+                     if f.lower().endswith(exts)]
+            if not files:
+                log(t("batch_no_files"), WARN)
+                page.update()
+                return
+
+            total = len(files)
+            out_dir = os.path.join(folder, "_compressed")
+            os.makedirs(out_dir, exist_ok=True)
+
+            log("", FG2)
+            log("━━━━━━━━━━━━━━━━━━━━━━", FG3)
+            log(f"{t('compress_batch_started')} {total}", FG)
+            log(f"   {t('compress_out')} {out_dir}", FG2)
+
+            S["compress_progress_bar"].value = 0
+            S["compress_progress_bar"].visible = True
+            S["compress_progress_text"].visible = True
+            page.update()
+
+            count = 0
+            total_orig = 0
+            total_new = 0
+            for i, fp in enumerate(files, 1):
+                try:
+                    img = Image.open(fp).convert("RGB")
+                    result = img.convert("LAB").convert("RGB")
+                    base = os.path.splitext(os.path.basename(fp))[0]
+                    out_path = os.path.join(out_dir, f"{base}.png")
+                    bd = S.get("pbr_bit_depth", 16)
+                    await asyncio.to_thread(save_16bit_or_8bit, result, out_path, bd)
+                    img.close()
+                    count += 1
+
+                    try:
+                        osz = os.path.getsize(fp)
+                        nsz = os.path.getsize(out_path)
+                        total_orig += osz
+                        total_new += nsz
+                        saved = osz - nsz
+                        pct = (saved / osz) * 100 if osz > 0 else 0
+                        if saved > 0:
+                            log(f"  [{i}/{total}] ✓ {os.path.basename(fp)}  −{pct:.1f}%", SUCCESS)
+                        elif saved < 0:
+                            log(f"  [{i}/{total}] ⚠ {os.path.basename(fp)}  +{abs(pct):.1f}%", WARN)
+                        else:
+                            log(f"  [{i}/{total}] ✓ {os.path.basename(fp)}", SUCCESS)
+                    except Exception:
+                        log(f"  [{i}/{total}] ✓ {os.path.basename(fp)}", SUCCESS)
+
+                    S["compress_progress_bar"].value = i / total
+                    S["compress_progress_text"].value = f"{i} / {total}  ({int(i / total * 100)}%)"
+                    page.update()
+
+                    if i % 5 == 0:
+                        gc.collect()
+                    await asyncio.sleep(0.01)
+                except Exception as ex:
+                    log(f"  ✗ {os.path.basename(fp)}: {ex}", DANGER)
+
+            log(f"✅ {t('batch_processed')} {count} / {total}", SUCCESS)
+            if total_orig > 0 and total_new > 0:
+                saved = total_orig - total_new
+                pct = (saved / total_orig) * 100
+                if saved > 0:
+                    log(f"   📉 Итого: {_fmt_size(total_orig)} → {_fmt_size(total_new)}  (−{_fmt_size(saved)}, −{pct:.1f}%)", SUCCESS)
+                elif saved < 0:
+                    log(f"   📈 Итого файлы выросли: {_fmt_size(total_orig)} → {_fmt_size(total_new)}  (+{_fmt_size(-saved)}, +{abs(pct):.1f}%)", WARN)
+            log(f"📁 {out_dir}", FG2)
+
+            S["compress_progress_bar"].visible = False
+            S["compress_progress_text"].visible = False
+            page.update()
+
+            if count > 0 and total_orig > 0 and total_new > 0:
+                show_compress_done_dialog(out_dir, total_orig, total_new,
+                                          is_batch=True, count=count, total=total)
+
+        except Exception as ex:
+            S["compress_progress_bar"].visible = False
+            S["compress_progress_text"].visible = False
+            log(f"❌ {t('err')}: {ex}", DANGER)
+            page.update()
+            
+    def show_compress_done_dialog(out_path, orig_size, new_size,
+                                   is_batch=False, count=0, total=0):
+        """Диалог 'Готово' с размерами и кнопкой открыть папку."""
+        saved = orig_size - new_size
+        pct = (saved / orig_size) * 100 if orig_size > 0 else 0
+
+        if saved > 0:
+            size_line = f"{_fmt_size(orig_size)} → {_fmt_size(new_size)}  (−{_fmt_size(saved)}, −{pct:.1f}%)"
+            size_color = SUCCESS
+        elif saved < 0:
+            size_line = f"{_fmt_size(orig_size)} → {_fmt_size(new_size)}  (+{_fmt_size(-saved)}, +{abs(pct):.1f}%)"
+            size_color = WARN
+        else:
+            size_line = f"{_fmt_size(orig_size)}  ({t('compress_done_same')})"
+            size_color = FG2
+
+        folder = os.path.dirname(out_path) if os.path.isfile(out_path) else out_path
+
+        def _open_folder(e=None):
+            try:
+                os.startfile(folder)
+            except Exception as ex:
+                log(f"⚠ Не удалось открыть папку: {ex}", WARN)
+            dlg.open = False
+            page.update()
+
+        def _close(e=None):
+            dlg.open = False
+            page.update()
+
+        rows = []
+        if is_batch:
+            rows.append(ft.Row([
+                ft.Text(t("compress_done_batch"), color=FG3, size=12,
+                        font_family=FONT, width=170),
+                ft.Text(f"{count} / {total}", color=FG, size=12,
+                        font_family="Consolas", weight=ft.FontWeight.W_600),
+            ], spacing=8))
+        else:
+            rows.append(ft.Row([
+                ft.Text(t("compress_done_single"), color=FG3, size=12,
+                        font_family=FONT, width=170),
+                ft.Text(os.path.basename(out_path), color=FG, size=12,
+                        font_family="Consolas", weight=ft.FontWeight.W_600,
+                        selectable=True),
+            ], spacing=8))
+        rows.append(ft.Row([
+            ft.Text(t("compress_done_size"), color=FG3, size=12,
+                    font_family=FONT, width=170),
+            ft.Text(size_line, color=size_color, size=12,
+                    font_family="Consolas", weight=ft.FontWeight.W_600),
+        ], spacing=8))
+        rows.append(ft.Container(height=6))
+        rows.append(ft.Text(folder, color=FG3, size=11,
+                            font_family="Consolas", selectable=True))
+
+        dlg = ft.AlertDialog(
+            modal=True,
+            title=ft.Row([
+                ft.Text("✅", size=18),
+                ft.Text(t("compress_done_title"), color=FG, size=14,
+                        weight=ft.FontWeight.W_600),
+            ], spacing=8),
+            content=ft.Container(
+                content=ft.Column(rows, spacing=6, tight=True),
+                width=460,
+            ),
+            actions=[
+                ft.TextButton(t("compress_open_folder"), on_click=_open_folder),
+                ft.TextButton(t("compress_ok"), on_click=_close),
+            ],
+            inset_padding=ft.Padding.symmetric(horizontal=80, vertical=120),
+            bgcolor=PANEL,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
         
     # ═══ ПАКЕТНАЯ AI-ОБРАБОТКА ═══
     async def batch_select_folder(e):
@@ -1037,6 +1439,130 @@ def main(page: ft.Page):
         update_batch_progress(total, total, f"{t('batch_done')}: {count} / {total}")
         S["batch_files"] = []
         page.update()
+        
+    async def pbr_load_metallic_map(e=None):
+        """Загрузка своей Metallic-карты (grayscale)."""
+        try:
+            files = await picker.pick_files(
+                dialog_title="Выбери Metallic map (grayscale)",
+                allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+                initial_directory=_init_dir(),
+            )
+            if not files or not files[0].path:
+                return
+            fp = files[0].path
+            _remember_folder(fp)
+            img = Image.open(fp).convert("L")
+            arr = np.array(img).astype(np.float32) / 255.0
+
+            if S.get("pbr_source") is not None:
+                arr, ok = await _ask_resize_dialog(arr, S["pbr_source"], "Metallic")
+                if not ok:
+                    log("   ⚠ Metallic загрузка отменена", WARN)
+                    page.update()
+                    return
+
+            S["pbr_metallic_custom"] = arr
+            S["pbr_metallic_custom_path"] = fp
+            S["pbr_metallic"] = "custom"
+            log(f"⚙ Metallic map загружена: {os.path.basename(fp)}", SUCCESS)
+            page.update()
+
+            if S.get("pbr_source") is not None and S.get("pbr_result") is not None:
+                log("   → Автогенерация PBR с новой картой...", FG2)
+                await pbr_do_generate(None)
+            else:
+                if S.get("update_pbr_preview"):
+                    S["update_pbr_preview"]()
+        except Exception as ex:
+            log(f"❌ Metallic load: {ex}", DANGER)
+            page.update()
+            
+    async def _ask_resize_dialog(custom_arr, albedo_pil, map_name):
+        """Диалог ресайза при несовпадении размеров. → (arr, ok)."""
+        ah, aw = albedo_pil.size[1], albedo_pil.size[0]
+        ch, cw = custom_arr.shape[:2]
+        if (cw, ch) == (aw, ah):
+            return custom_arr, True
+
+        loop = asyncio.get_event_loop()
+        fut = loop.create_future()
+
+        def _resolve(ok):
+            if not fut.done():
+                fut.set_result(ok)
+
+        dlg = ft.AlertDialog(
+            modal=True,
+            title=ft.Text(t("pbr_resize_title"), color=FG, size=14),
+            content=ft.Container(
+                content=ft.Text(
+                    t("pbr_resize_text").format(w1=cw, h1=ch, w2=aw, h2=ah),
+                    color=FG2, size=12, font_family=FONT,
+                ),
+                width=380, height=100,
+            ),
+            actions=[
+                ft.TextButton(t("pbr_resize_no"), on_click=lambda e: _resolve(False)),
+                ft.TextButton(t("pbr_resize_yes"), on_click=lambda e: _resolve(True)),
+            ],
+            inset_padding=ft.Padding.symmetric(horizontal=80, vertical=120),
+            bgcolor=PANEL,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
+        ok = await fut
+        dlg.open = False
+        page.update()
+
+        if not ok:
+            return custom_arr, False
+
+        resized = cv2.resize(
+            custom_arr, (aw, ah), interpolation=cv2.INTER_LANCZOS4
+        ).astype(np.float32)
+        log(f"   ✅ {map_name} resized: {cw}×{ch} → {aw}×{ah}", FG2)
+        return resized, True
+
+    async def pbr_load_roughness_map(e=None):
+        """Загрузка своей Roughness-карты (grayscale)."""
+        try:
+            files = await picker.pick_files(
+                dialog_title="Выбери Roughness map (grayscale)",
+                allowed_extensions=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+                initial_directory=_init_dir(),
+            )
+            if not files or not files[0].path:
+                return
+            fp = files[0].path
+            _remember_folder(fp)
+            img = Image.open(fp).convert("L")
+            arr = np.array(img).astype(np.float32) / 255.0
+
+            if S.get("pbr_source") is not None:
+                arr, ok = await _ask_resize_dialog(arr, S["pbr_source"], "Roughness")
+                if not ok:
+                    log("   ⚠ Roughness загрузка отменена", WARN)
+                    page.update()
+                    return
+
+            S["pbr_roughness_custom"] = arr
+            S["pbr_roughness_custom_path"] = fp
+            S["pbr_roughness"] = "custom"
+            log(f"🔧 Roughness map загружена: {os.path.basename(fp)}", SUCCESS)
+            page.update()
+
+            if S.get("pbr_source") is not None and S.get("pbr_result") is not None:
+                log("   → Автогенерация PBR с новой картой...", FG2)
+                await pbr_do_generate(None)
+            else:
+                if S.get("update_pbr_preview"):
+                    S["update_pbr_preview"]()
+        except Exception as ex:
+            log(f"❌ Roughness load: {ex}", DANGER)
+            page.update()
 
     # ═══ PBR-ОБРАБОТЧИКИ ═══
     async def pbr_do_load(e):
@@ -1080,6 +1606,10 @@ def main(page: ft.Page):
             await asyncio.sleep(0.15)
 
             sl = S["pbr_sliders"]
+            _metallic_mode = S.get("pbr_metallic", "black")
+            _metallic_custom = S.get("pbr_metallic_custom") if _metallic_mode == "custom" else None
+            _rough_mode = S.get("pbr_roughness", "procedural")
+            _rough_custom = S.get("pbr_roughness_custom") if _rough_mode == "custom" else None
             result = generate_all_pbr(
                 S["pbr_source"],
                 height_blur=sl["height_blur"].value,
@@ -1092,7 +1622,10 @@ def main(page: ft.Page):
                 ao_intensity=sl["ao_intensity"].value,
                 rough_base=sl["rough_base"].value,
                 rough_variation=sl["rough_var"].value,
-                metallic_mode=PBR_PRESETS.get(S["profile"], {}).get("metallic", S["pbr_metallic"]),
+                metallic_mode=_metallic_mode,
+                metallic_custom=_metallic_custom,
+                roughness_mode=_rough_mode,
+                roughness_custom=_rough_custom,
             )
             S["pbr_result"] = result
             log(t("pbr_log_gen_done"), SUCCESS)
@@ -1100,6 +1633,9 @@ def main(page: ft.Page):
             if S["pbr_buttons"].get("save"): S["pbr_buttons"]["save"].disabled = False
             if S["pbr_buttons"].get("viewer"): S["pbr_buttons"]["viewer"].disabled = False
             page.update()
+
+            if S.get("update_pbr_preview"):
+                S["update_pbr_preview"]()
 
             await asyncio.sleep(0.15)
             await hide_pbr_progress()
@@ -1135,6 +1671,11 @@ def main(page: ft.Page):
             await show_pbr_progress(t("pbr_progress_gen"))
             await asyncio.sleep(0.1)
 
+            _metallic_mode = S.get("pbr_metallic", "black")
+            _metallic_custom = S.get("pbr_metallic_custom") if _metallic_mode == "custom" else None
+            _rough_mode = S.get("pbr_roughness", "procedural")
+            _rough_custom = S.get("pbr_roughness_custom") if _rough_mode == "custom" else None
+
             if S["pbr_sliders"]:
                 sl = S["pbr_sliders"]
                 result = generate_all_pbr(
@@ -1149,7 +1690,10 @@ def main(page: ft.Page):
                     ao_intensity=sl["ao_intensity"].value,
                     rough_base=sl["rough_base"].value,
                     rough_variation=sl["rough_var"].value,
-                    metallic_mode=PBR_PRESETS.get(S["profile"], {}).get("metallic", S["pbr_metallic"]),
+                    metallic_mode=_metallic_mode,
+                    metallic_custom=_metallic_custom,
+                    roughness_mode=_rough_mode,
+                    roughness_custom=_rough_custom,
                 )
             else:
                 preset = PBR_PRESETS.get(S["profile"], {})
@@ -1165,7 +1709,10 @@ def main(page: ft.Page):
                     ao_intensity=preset.get("ao_intensity", 1.5),
                     rough_base=preset.get("rough_base", 0.7),
                     rough_variation=preset.get("rough_var", 0.3),
-                    metallic_mode=preset.get("metallic", "black"),
+                    metallic_mode=_metallic_mode,
+                    metallic_custom=_metallic_custom,
+                    roughness_mode=_rough_mode,
+                    roughness_custom=_rough_custom,
                 )
 
             S["pbr_result"] = result
@@ -1174,6 +1721,9 @@ def main(page: ft.Page):
             if S["pbr_buttons"].get("save"): S["pbr_buttons"]["save"].disabled = False
             if S["pbr_buttons"].get("viewer"): S["pbr_buttons"]["viewer"].disabled = False
             page.update()
+
+            if S.get("update_pbr_preview"):
+                S["update_pbr_preview"]()
 
             await asyncio.sleep(0.15)
             await hide_pbr_progress()
@@ -1297,7 +1847,20 @@ def main(page: ft.Page):
             out_root = os.path.join(folder, "_pbr_output")
             os.makedirs(out_root, exist_ok=True)
 
+            _m_mode = S.get("pbr_metallic", "black")
+            _r_mode = S.get("pbr_roughness", "procedural")
+            if _m_mode == "custom":
+                log(f"   ⚠ Custom Metallic map будет применена ко ВСЕМ {len(files)} текстурам", WARN)
+                log(f"      Убедись что все они одного материала!", WARN)
+            if _r_mode == "custom":
+                log(f"   ⚠ Custom Roughness map будет применена ко ВСЕМ {len(files)} текстурам", WARN)
+                log(f"      Убедись что все они одного материала!", WARN)
+
             sl = S["pbr_sliders"]
+            _metallic_mode = S.get("pbr_metallic", "black")
+            _metallic_custom = S.get("pbr_metallic_custom") if _metallic_mode == "custom" else None
+            _rough_mode = S.get("pbr_roughness", "procedural")
+            _rough_custom = S.get("pbr_roughness_custom") if _rough_mode == "custom" else None
             params = {
                 "height_blur": sl["height_blur"].value,
                 "normal_strength": sl["strength"].value,
@@ -1309,7 +1872,10 @@ def main(page: ft.Page):
                 "ao_intensity": sl["ao_intensity"].value,
                 "rough_base": sl["rough_base"].value,
                 "rough_variation": sl["rough_var"].value,
-                "metallic_mode": PBR_PRESETS.get(S["profile"], {}).get("metallic", S["pbr_metallic"]),
+                "metallic_mode": _metallic_mode,
+                "metallic_custom": _metallic_custom,
+                "roughness_mode": _rough_mode,
+                "roughness_custom": _rough_custom,
             }
 
             S["pbr_batch_results"] = {}
@@ -1585,18 +2151,21 @@ def main(page: ft.Page):
     def export_set_engine(eng):
         S["export_engine"] = eng
         S["export_packed"] = None
+        persist_settings()
         page.update()
         rebuild_ui()
 
     def export_set_normal_format(nf):
         S["export_normal_format"] = nf
         S["export_packed"] = None
+        persist_settings()
         page.update()
         rebuild_ui()
 
     def export_set_detail_mode(mode):
         S["export_detail_mode"] = mode
         S["export_packed"] = None
+        persist_settings()
         page.update()
         rebuild_ui()
 
@@ -1667,13 +2236,16 @@ def main(page: ft.Page):
             )
 
         def make_radio_bit():
+            def _on_change(e):
+                S["export_bit_depth"] = int(e.control.value)
+                persist_settings()
             return ft.RadioGroup(
                 content=ft.Row([
                     ft.Radio(value="8", label="8-bit", fill_color=SAVE_COLOR),
                     ft.Radio(value="16", label="16-bit", fill_color=SAVE_COLOR),
                 ]),
                 value=str(S.get("export_bit_depth", 8)),
-                on_change=lambda e: S.update({"export_bit_depth": int(e.control.value)}),
+                on_change=_on_change,
             )
 
         detail_block = ft.Container(
@@ -1750,11 +2322,13 @@ def main(page: ft.Page):
             )
             S["corrected"] = result
             S["last_op"] = "soap_fix"
-            S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
+            S["show_original"] = False
+            update_preview_display()
             log(t("soap_fix_done"), SUCCESS)
 
             if S["buttons"].get("save"): S["buttons"]["save"].disabled = False
             if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = False
+            if S["buttons"].get("preview_toggle"): S["buttons"]["preview_toggle"].disabled = False
 
             page.update()
             await asyncio.sleep(0.1)
@@ -1779,11 +2353,13 @@ def main(page: ft.Page):
             )
             S["corrected"] = result
             S["last_op"] = "saturation"
-            S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
+            S["show_original"] = False
+            update_preview_display()
             log(t("sat_done"), SUCCESS)
 
             if S["buttons"].get("save"): S["buttons"]["save"].disabled = False
             if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = False
+            if S["buttons"].get("preview_toggle"): S["buttons"]["preview_toggle"].disabled = False
 
             page.update()
             await asyncio.sleep(0.1)
@@ -1811,13 +2387,16 @@ def main(page: ft.Page):
             )
             S["corrected"] = result
             S["last_op"] = "realism"
-            S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
+            S["show_original"] = False
+            update_preview_display()
             log(t("realism_done"), SUCCESS)
 
             if S["buttons"].get("save"):
                 S["buttons"]["save"].disabled = False
             if S["buttons"].get("reset"):
                 S["buttons"]["reset"].disabled = False
+            if S["buttons"].get("preview_toggle"):
+                S["buttons"]["preview_toggle"].disabled = False
 
             page.update()
             await asyncio.sleep(0.1)
@@ -1829,8 +2408,11 @@ def main(page: ft.Page):
 
     def toggle_tiling(e):
         S["tiling_mode"] = not S["tiling_mode"]
+        persist_settings()
         img = None
-        if S["corrected"] is not None:
+        if S["show_original"] and S["original"] is not None:
+            img = S["original"]
+        elif S["corrected"] is not None:
             img = S["corrected"]
         elif S["original"] is not None:
             img = S["original"]
@@ -1847,6 +2429,96 @@ def main(page: ft.Page):
             else:
                 S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(img)}"
         rebuild_ui()
+        
+    def toggle_preview(e):
+        """Переключает превью между оригиналом и результатом."""
+        if S["original"] is None:
+            return
+        S["show_original"] = not S["show_original"]
+        update_preview_display()
+        if S["buttons"].get("preview_toggle"):
+            if S["show_original"]:
+                S["buttons"]["preview_toggle"].content.value = t("preview_toggle_result")
+            else:
+                S["buttons"]["preview_toggle"].content.value = t("preview_toggle_orig")
+        page.update()
+        
+    def on_keyboard(e: ft.KeyboardEvent):
+        """Глобальные горячие клавиши."""
+        # Игнорируем если открыт диалог
+        if page.overlay:
+            for dlg in page.overlay:
+                if isinstance(dlg, ft.AlertDialog) and dlg.open:
+                    return
+
+        key = (e.key or "").lower()
+        tab = S.get("active_tab", "single")
+        is_simple = S.get("ui_mode", "simple") == "simple"
+
+        # ═══ Ctrl+O — Open ═══
+        if e.ctrl and key == "o":
+            if tab == "single":
+                if is_simple:
+                    page.run_task(do_simple_process, None)
+                else:
+                    page.run_task(open_file, None)
+            elif tab == "pbr":
+                if is_simple:
+                    page.run_task(pbr_do_simple_generate, None)
+                else:
+                    page.run_task(pbr_do_load, None)
+            elif tab == "compress":
+                if is_simple:
+                    page.run_task(compress_simple_process, None)
+                else:
+                    page.run_task(compress_open_file, None)
+            return
+
+        # ═══ Ctrl+S — Save ═══
+        if e.ctrl and key == "s":
+            if tab == "single" and S.get("corrected") is not None:
+                page.run_task(open_save, None)
+            elif tab == "pbr" and S.get("pbr_result") is not None:
+                page.run_task(pbr_do_save, None)
+            elif tab == "compress" and S.get("compress_corrected") is not None:
+                if not is_simple:
+                    page.run_task(compress_save, None)
+            elif tab == "export" and S.get("export_packed") is not None:
+                page.run_task(export_save, None)
+            return
+
+        # ═══ Ctrl+R — Reset ═══
+        if e.ctrl and key == "r":
+            if tab == "single" and S.get("original") is not None:
+                page.run_task(do_reset, None)
+            return
+
+        # ═══ Ctrl+Z — Undo (пока = Reset) ═══
+        if e.ctrl and key == "z":
+            if tab == "single" and S.get("corrected") is not None:
+                page.run_task(do_reset, None)
+            return
+
+        # ═══ Space — toggle preview original/result ═══
+        if key == " " or key == "space":
+            if tab == "single" and not is_simple and S.get("corrected") is not None:
+                toggle_preview(None)
+            return
+
+        # ═══ Enter — быстрые действия по вкладкам ═══
+        if key == "enter":
+            if tab == "single":
+                if is_simple:
+                    if S.get("original") is None:
+                        page.run_task(do_simple_process, None)
+                else:
+                    if S.get("corrected") is not None:
+                        page.run_task(open_save, None)
+                    elif S.get("original") is not None:
+                        page.run_task(do_auto_correct, None)
+            elif tab == "pbr" and S.get("pbr_result") is not None:
+                page.run_task(pbr_open_viewer, None)
+            return
 
     async def do_make_seamless(e):
         source = S["corrected"] if S["corrected"] is not None else S["original"]
@@ -1860,15 +2532,17 @@ def main(page: ft.Page):
 
             result = await asyncio.to_thread(
                 make_seamless, source,
-                0.6, 1.0, 0.3, "smootherstep"
+                S.get("seamless_hipass", True),
             )
             S["corrected"] = result
             S["last_op"] = "seamless"
-            S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
+            S["show_original"] = False
+            update_preview_display()
             log(t("seamless_done"), SUCCESS)
 
             if S["buttons"].get("save"): S["buttons"]["save"].disabled = False
             if S["buttons"].get("reset"): S["buttons"]["reset"].disabled = False
+            if S["buttons"].get("preview_toggle"): S["buttons"]["preview_toggle"].disabled = False
 
             page.update()
             await asyncio.sleep(0.1)
@@ -2077,11 +2751,11 @@ def main(page: ft.Page):
                 ft.Container(height=16),
                 ft.Row([ft.Text(f"{t('about_version')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("1.7.2-beta", color=FG, size=12,
+                        ft.Text("1.7.3-beta", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_build')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
-                        ft.Text("2026-09-22", color=FG, size=12,
+                        ft.Text("2026-09-23", color=FG, size=12,
                                 font_family="Consolas", weight=ft.FontWeight.W_600)]),
                 ft.Row([ft.Text(f"{t('about_author')}:", color=FG3, size=12,
                                 font_family=FONT, width=100),
@@ -2214,6 +2888,71 @@ def main(page: ft.Page):
         set_info_tab("help")
         return dlg
 
+    def show_welcome_dialog():
+        """Welcome-диалог при первом запуске."""
+        def _close(e=None):
+            dlg.open = False
+            S["first_launch_done"] = True
+            persist_settings()
+            page.update()
+
+        def _open_manual(e=None):
+            dlg.open = False
+            S["first_launch_done"] = True
+            persist_settings()
+            import webbrowser
+            manual_path = os.path.join(_base_dir, "manual.html")
+            if os.path.exists(manual_path):
+                webbrowser.open(f"file:///{manual_path.replace(os.sep, '/')}")
+            page.update()
+
+        def _switch_advanced(e=None):
+            dlg.open = False
+            S["first_launch_done"] = True
+            S["ui_mode"] = "advanced"
+            persist_settings()
+            rebuild_ui()
+
+        dlg = ft.AlertDialog(
+            modal=True,
+            title=ft.Row([
+                ft.Text("◐", size=24, color=ACCENT),
+                ft.Text(t("welcome_title"), color=FG, size=16,
+                        weight=ft.FontWeight.W_600),
+            ], spacing=10),
+            content=ft.Container(
+                content=ft.Text(
+                    t("welcome_text"),
+                    color=FG2, size=12, font_family=FONT,
+                    selectable=True,
+                ),
+                width=480,
+                padding=ft.Padding.symmetric(vertical=8),
+            ),
+            actions=[
+                ft.TextButton(
+                    t("welcome_manual"),
+                    on_click=_open_manual,
+                ),
+                ft.TextButton(
+                    t("welcome_switch_simple"),
+                    on_click=_switch_advanced,
+                ),
+                ft.FilledButton(
+                    content=ft.Text(t("welcome_ok"), color=ON_ACCENT,
+                                    size=13, weight=ft.FontWeight.W_600),
+                    style=ft.ButtonStyle(bgcolor=SUCCESS),
+                    on_click=_close,
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            bgcolor=PANEL,
+            inset_padding=ft.Padding.symmetric(horizontal=60, vertical=80),
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
     def show_fallback_dialog(current_img, stats):
         dialog_ref = {"dlg": None}
 
@@ -2240,7 +2979,8 @@ def main(page: ft.Page):
                     )
                 S["corrected"] = result
                 S["last_op"] = "corrected"
-                S["preview_image"].src = f"data:image/png;base64,{pil_to_b64(result)}"
+                S["show_original"] = False
+                update_preview_display()
                 log("", FG2)
                 log(t("fb_dialog_applied"), SUCCESS)
                 run_check(result, False)
@@ -2359,6 +3099,20 @@ def main(page: ft.Page):
             "saturation_boost": S["saturation_boost"],
             "pbr_bit_depth": S["pbr_bit_depth"],
             "last_folder": S.get("last_folder", ""),
+            "seamless_hipass": S.get("seamless_hipass", True),
+            "realism_grain": S.get("realism_grain", 0.15),
+            "realism_highpass": S.get("realism_highpass", 0.30),
+            "realism_variation": S.get("realism_variation", 0.20),
+            "batch_threads": S.get("batch_threads", 3),
+            "export_engine": S.get("export_engine", "unity_hdrp"),
+            "export_normal_format": S.get("export_normal_format", "opengl"),
+            "export_detail_mode": S.get("export_detail_mode", "edge"),
+            "export_bit_depth": S.get("export_bit_depth", 8),
+            "pbr_metallic": S.get("pbr_metallic", "black"),
+            "pbr_roughness": S.get("pbr_roughness", "procedural"),
+            "tiling_mode": S.get("tiling_mode", False),
+            "pbr_current_map": S.get("pbr_current_map", "albedo"),
+            "first_launch_done": S.get("first_launch_done", False),
             "window": {
                 "width": page.window.width or 1280,
                 "height": page.window.height or 820,
@@ -2475,6 +3229,18 @@ def main(page: ft.Page):
                 ft.Container(expand=True),
                 buttons["save"],
             ], spacing=6)
+            
+            file_info_lbl = ft.Container(
+                content=ft.Text(
+                    "", color=FG, size=12, font_family="Consolas",
+                    selectable=True,
+                ),
+                bgcolor=INPUT, border_radius=6,
+                padding=ft.Padding.symmetric(vertical=6, horizontal=10),
+                visible=False,
+            )
+            S["file_info_label"] = file_info_lbl
+            update_file_info()
 
             preview_hint = ft.Text(t("preview_hint"), color=FG3, size=14,
                                     font_family=FONT)
@@ -2530,6 +3296,7 @@ def main(page: ft.Page):
                 content=ft.Column([
                     simple_toolbar,
                     ft.Container(height=4),
+                    file_info_lbl,
                     S["progress_bar"],
                     S["progress_text"],
                     ft.Container(height=6),
@@ -2560,15 +3327,33 @@ def main(page: ft.Page):
                                         disabled=(S["corrected"] is None))
             buttons["reset"] = make_btn(t("reset"), do_reset, RESET_COLOR,
                                          disabled=(S["corrected"] is None))
+            buttons["preview_toggle"] = make_btn(
+                t("preview_toggle_result") if S["show_original"] else t("preview_toggle_orig"),
+                toggle_preview, "#00897b",
+                disabled=(S["corrected"] is None),
+            )
 
             toolbar = ft.Row([
                 buttons["load"],
                 buttons["check"],
                 buttons["fix"],
+                buttons["preview_toggle"],
                 ft.Container(expand=True),
                 buttons["reset"],
                 buttons["save"],
             ], spacing=6)
+
+            file_info_lbl = ft.Container(
+                content=ft.Text(
+                    "", color=FG, size=12, font_family="Consolas",
+                    selectable=True,
+                ),
+                bgcolor=INPUT, border_radius=6,
+                padding=ft.Padding.symmetric(vertical=6, horizontal=10),
+                visible=False,
+            )
+            S["file_info_label"] = file_info_lbl
+            update_file_info()
 
             preview_hint = ft.Text(t("preview_hint"), color=FG3, size=14,
                                     font_family=FONT)
@@ -2643,6 +3428,14 @@ def main(page: ft.Page):
                             expand=True,
                         ),
                     ], spacing=6),
+                    ft.Container(height=4),
+                    ft.Checkbox(
+                        label=t("seamless_hipass"),
+                        value=S.get("seamless_hipass", True),
+                        fill_color="#00897b",
+                        label_style=ft.TextStyle(color=FG2, size=11, font_family=FONT),
+                        on_change=lambda e: (S.update({"seamless_hipass": e.control.value}), persist_settings()),
+                    ),
                     ft.Container(height=14),
                     ft.Divider(color=FG3, height=1),
                     ft.Container(height=10),
@@ -2694,6 +3487,7 @@ def main(page: ft.Page):
                 content=ft.Column([
                     toolbar,
                     ft.Container(height=4),
+                    file_info_lbl,
                     S["progress_bar"],
                     S["progress_text"],
                     ft.Container(height=6),
@@ -2780,7 +3574,13 @@ def main(page: ft.Page):
             bgcolor=CARD, border_radius=12, padding=10, expand=True,
         )
 
-        if S["pbr_result"] and S.get("pbr_batch_selected"):
+        if S["pbr_result"] and not S.get("pbr_batch_selected"):
+            key = S["pbr_current_map"] if S["pbr_current_map"] in S["pbr_result"] else "albedo"
+            if key in S["pbr_result"]:
+                pbr_preview.src = f"data:image/png;base64,{pil_to_b64(S['pbr_result'][key])}"
+                pbr_preview.visible = True
+                pbr_preview_hint.visible = False
+        elif S["pbr_result"] and S.get("pbr_batch_selected"):
             key = S["pbr_current_map"] if S["pbr_current_map"] in S["pbr_result"] else "albedo"
             if key in S["pbr_result"]:
                 pbr_preview.src = f"data:image/png;base64,{pil_to_b64(S['pbr_result'][key])}"
@@ -2796,8 +3596,9 @@ def main(page: ft.Page):
             ("edge", "🎯 Edge"), ("orm", "📦 ORM"),
         ]
 
-        def show_pbr_map(key):
-            S["pbr_current_map"] = key
+        def update_pbr_preview():
+            """Обновляет превью и подсветку кнопок по S["pbr_result"] и S["pbr_current_map"]."""
+            key = S.get("pbr_current_map", "albedo")
             if S["pbr_batch_selected"] and S["pbr_result"] and key in S["pbr_result"]:
                 pbr_preview.src = f"data:image/png;base64,{pil_to_b64(S['pbr_result'][key])}"
                 pbr_preview.visible = True
@@ -2812,10 +3613,18 @@ def main(page: ft.Page):
                 if S["pbr_result"] and key in S["pbr_result"]:
                     pbr_preview.src = f"data:image/png;base64,{pil_to_b64(S['pbr_result'][key])}"
                     pbr_preview.visible = True
+            if S.get("pbr_preview_hint"):
+                S["pbr_preview_hint"].visible = False
             for k, b in map_buttons.items():
                 b.bgcolor = ACCENT if k == key else CARD
                 b.content.color = ON_ACCENT if k == key else FG2
             page.update()
+
+        S["update_pbr_preview"] = update_pbr_preview
+
+        def show_pbr_map(key):
+            S["pbr_current_map"] = key
+            update_pbr_preview()
 
         map_row = ft.Row([], spacing=4)
         for key, label in map_keys:
@@ -2848,15 +3657,78 @@ def main(page: ft.Page):
                 var,
             ], spacing=2)
 
+        def _on_metallic_mode_change(e):
+            S["pbr_metallic"] = e.control.value
+            persist_settings()
+            page.update()
+            rebuild_ui()
+
         pbr_metal_radio = ft.RadioGroup(
-            content=ft.Row([
-                ft.Radio(value="black", label=t("pbr_metal_black"),
-                         fill_color=PBR_COLOR),
-                ft.Radio(value="white", label=t("pbr_metal_white"),
-                         fill_color=PBR_COLOR),
-            ]),
-            value=PBR_PRESETS.get(S["profile"], {}).get("metallic", S["pbr_metallic"]),
-            on_change=lambda e: S.update({"pbr_metallic": e.control.value}),
+            content=ft.Column([
+                ft.Row([
+                    ft.Radio(value="black", label=t("pbr_metal_black"),
+                             fill_color=PBR_COLOR),
+                    ft.Radio(value="white", label=t("pbr_metal_white"),
+                             fill_color=PBR_COLOR),
+                ], spacing=8),
+                ft.Row([
+                    ft.Radio(value="custom", label=t("pbr_metal_custom"),
+                             fill_color=PBR_COLOR),
+                ]),
+            ], spacing=2),
+            value=S.get("pbr_metallic", PBR_PRESETS.get(S["profile"], {}).get("metallic", "black")),
+            on_change=_on_metallic_mode_change,
+        )
+
+        pbr_metal_custom_block = ft.Container(
+            content=ft.Column([
+                ft.Container(height=4),
+                make_btn(t("pbr_metal_load"), pbr_load_metallic_map, ACCENT),
+                ft.Container(height=4),
+                ft.Text(
+                    os.path.basename(S["pbr_metallic_custom_path"])
+                    if S.get("pbr_metallic_custom_path") else "—",
+                    color=FG3, size=10, font_family="Consolas",
+                    selectable=True,
+                ),
+            ], spacing=2),
+            visible=(S.get("pbr_metallic") == "custom"),
+        )
+
+        def _on_roughness_mode_change(e):
+            S["pbr_roughness"] = e.control.value
+            persist_settings()
+            page.update()
+            rebuild_ui()
+
+        pbr_rough_radio = ft.RadioGroup(
+            content=ft.Column([
+                ft.Row([
+                    ft.Radio(value="procedural", label=t("pbr_rough_procedural"),
+                             fill_color=PBR_COLOR),
+                ], spacing=8),
+                ft.Row([
+                    ft.Radio(value="custom", label=t("pbr_rough_custom"),
+                             fill_color=PBR_COLOR),
+                ]),
+            ], spacing=2),
+            value=S.get("pbr_roughness", "procedural"),
+            on_change=_on_roughness_mode_change,
+        )
+
+        pbr_rough_custom_block = ft.Container(
+            content=ft.Column([
+                ft.Container(height=4),
+                make_btn(t("pbr_rough_load"), pbr_load_roughness_map, ACCENT),
+                ft.Container(height=4),
+                ft.Text(
+                    os.path.basename(S["pbr_roughness_custom_path"])
+                    if S.get("pbr_roughness_custom_path") else "—",
+                    color=FG3, size=10, font_family="Consolas",
+                    selectable=True,
+                ),
+            ], spacing=2),
+            visible=(S.get("pbr_roughness") == "custom"),
         )
 
         pbr_preset_buttons = ft.Column([
@@ -2897,6 +3769,18 @@ def main(page: ft.Page):
                     ft.Divider(color=FG3, height=1),
                     ft.Text(t("pbr_metallic"), color=FG2, size=12, font_family=FONT),
                     pbr_metal_radio,
+                    pbr_metal_custom_block,
+                    ft.Divider(color=FG3, height=1),
+                    ft.Text(t("pbr_roughness"), color=FG2, size=12, font_family=FONT),
+                    pbr_rough_radio,
+                    pbr_rough_custom_block,
+                    ft.Container(
+                        content=ft.Column([
+                            make_pbr_slider(t("pbr_sl_rough_base"), "rough_base", 0.7, 0.0, 1.0, 0.05),
+                            make_pbr_slider(t("pbr_sl_rough_var"), "rough_var", 0.3, 0.0, 1.0, 0.05),
+                        ], spacing=6),
+                        visible=(S.get("pbr_roughness") != "custom"),
+                    ),
                     ft.Divider(color=FG3, height=1),
                     ft.Text(t("pbr_bit_depth"), color=FG2, size=12, font_family=FONT),
                     pbr_bit_radio,
@@ -2908,8 +3792,6 @@ def main(page: ft.Page):
                     make_pbr_slider(t("pbr_sl_height_blur"), "height_blur", 2.0, 0.0, 10.0, 0.5),
                     make_pbr_slider(t("pbr_sl_ao_radius"), "ao_radius", 8.0, 2.0, 30.0, 1.0),
                     make_pbr_slider(t("pbr_sl_ao_intensity"), "ao_intensity", 1.5, 0.1, 3.0, 0.1),
-                    make_pbr_slider(t("pbr_sl_rough_base"), "rough_base", 0.7, 0.0, 1.0, 0.05),
-                    make_pbr_slider(t("pbr_sl_rough_var"), "rough_var", 0.3, 0.0, 1.0, 0.05),
                 ], spacing=6, scroll=ft.ScrollMode.AUTO),
                 bgcolor=PANEL, border_radius=12, padding=14, width=250,
             )
@@ -3054,6 +3936,37 @@ def main(page: ft.Page):
                 build_right_panel_compress(),
             ], spacing=12, expand=True),
             expand=True, visible=True,
+        )
+        
+        # ═══ SIMPLE MODE COMPRESS VIEW ═══
+        compress_simple_card = ft.Container(
+            content=ft.Column([
+                ft.Text(t("compress_single"), size=10, weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=8),
+                make_btn("🚀 " + t("compress_single_btn"), compress_simple_process, COMPRESS_COLOR),
+                ft.Container(height=8),
+                ft.Text(t("compress_simple_hint"), color=FG2, size=11,
+                        font_family=FONT),
+            ], spacing=0,
+               horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            bgcolor=PANEL, border_radius=12, padding=16,
+            width=520,
+        )
+
+        compress_batch_simple_card = ft.Container(
+            content=ft.Column([
+                ft.Text(t("compress_batch"), size=10, weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=8),
+                make_btn("📁 " + t("compress_batch_btn"), compress_simple_batch, COMPRESS_COLOR),
+                ft.Container(height=8),
+                ft.Text(t("compress_batch_hint"), color=FG2, size=11,
+                        font_family=FONT),
+            ], spacing=0,
+               horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            bgcolor=PANEL, border_radius=12, padding=16,
+            width=520,
         )
 
         # ═══ ВКЛАДКА ПАКЕТНАЯ ═══
@@ -3206,8 +4119,71 @@ def main(page: ft.Page):
             realism_save_btn,
         ], spacing=6)
 
+        REALISM_PRESETS = {
+            "soft":   {"grain": 0.08, "highpass": 0.20, "variation": 0.10},
+            "medium": {"grain": 0.15, "highpass": 0.30, "variation": 0.20},
+            "hard":   {"grain": 0.45, "highpass": 0.75, "variation": 0.55},
+        }
+
+        def apply_realism_preset(name):
+            p = REALISM_PRESETS.get(name)
+            if not p:
+                return
+            S["realism_grain"] = p["grain"]
+            S["realism_highpass"] = p["highpass"]
+            S["realism_variation"] = p["variation"]
+            _label_key = {
+                "soft": "realism_preset_soft",
+                "medium": "realism_preset_medium",
+                "hard": "realism_preset_hard",
+            }.get(name, name)
+            log(f"🎞 {t('realism_preset_log')}: {t(_label_key)}", FG2)
+            rebuild_ui()
+
+        def _realism_active_preset():
+            """Определяет какой пресет сейчас активен по значениям."""
+            for name, p in REALISM_PRESETS.items():
+                if (abs(S["realism_grain"] - p["grain"]) < 0.001 and
+                    abs(S["realism_highpass"] - p["highpass"]) < 0.001 and
+                    abs(S["realism_variation"] - p["variation"]) < 0.001):
+                    return name
+            return None
+
+        active_preset = _realism_active_preset()
+
+        def make_preset_btn(name, label_key):
+            active = (active_preset == name)
+            return ft.Container(
+                content=ft.Text(
+                    t(label_key),
+                    color=ON_ACCENT if active else FG2,
+                    size=12, font_family=FONT,
+                    weight=ft.FontWeight.W_600,
+                    text_align=ft.TextAlign.CENTER,
+                ),
+                bgcolor=ACCENT if active else CARD,
+                border_radius=8,
+                padding=ft.Padding.symmetric(vertical=10, horizontal=6),
+                expand=True, ink=True,
+                on_click=lambda e, n=name: apply_realism_preset(n),
+            )
+
         realism_right_panel = ft.Container(
             content=ft.Column([
+                ft.Text(t("realism_presets"), size=10,
+                        weight=ft.FontWeight.BOLD,
+                        color=FG3, font_family=FONT),
+                ft.Container(height=6),
+                ft.Row([
+                    make_preset_btn("soft", "realism_preset_soft"),
+                    make_preset_btn("medium", "realism_preset_medium"),
+                    make_preset_btn("hard", "realism_preset_hard"),
+                ], spacing=4),
+
+                ft.Container(height=14),
+                ft.Divider(color=FG3, height=1),
+                ft.Container(height=10),
+
                 ft.Text(t("realism_params"), size=10,
                         weight=ft.FontWeight.BOLD,
                         color=FG3, font_family=FONT),
@@ -3350,6 +4326,21 @@ def main(page: ft.Page):
             expand=True, visible=True,
         )
 
+        compress_view_simple = ft.Container(
+            content=ft.Column([
+                S["compress_progress_bar"],
+                S["compress_progress_text"],
+                ft.Container(height=8),
+                compress_simple_card,
+                ft.Container(height=8),
+                compress_batch_simple_card,
+                ft.Container(height=8),
+                log_panel_compress,
+            ], spacing=0, expand=True,
+               horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            expand=True, visible=True,
+        )
+
         # ═══ NavigationRail ═══
         def _rail_label(key):
             """Убирает emoji из начала строки, оставляет только текст."""
@@ -3367,7 +4358,7 @@ def main(page: ft.Page):
         ]
 
         active_keys = [k for k, _, _ in RAIL_TABS
-                       if not (is_simple and k not in ("single", "pbr", "export"))]
+                       if not (is_simple and k not in ("single", "pbr", "export", "compress"))]
 
         rail_destinations = []
         for key, icon, label in RAIL_TABS:
@@ -3388,7 +4379,7 @@ def main(page: ft.Page):
             "batch": batch_view,
             "pbr": pbr_view,
             "export": export_view,
-            "compress": compress_view,
+            "compress": compress_view_simple if is_simple else compress_view,
             "realism": realism_view,
         }
 
@@ -3439,7 +4430,7 @@ def main(page: ft.Page):
                                 weight=ft.FontWeight.BOLD,
                                 color=ACCENT, font_family=FONT),
                         ft.Container(
-                            content=ft.Text("v1.7.2-beta", size=10, color=FG2,
+                            content=ft.Text("v1.7.3-beta", size=10, color=FG2,
                                             font_family=FONT,
                                             weight=ft.FontWeight.W_600),
                             bgcolor=CARD, border_radius=6,
@@ -3579,6 +4570,17 @@ def main(page: ft.Page):
     log(t("welcome_1"), FG2)
     log(t("welcome_2"), FG2)
     page.update()
+
+    # ═══ Глобальные хоткеи ═══
+    page.on_keyboard_event = on_keyboard
+
+    # ═══ Welcome при первом запуске ═══
+    if not S.get("first_launch_done", False):
+        import asyncio as _aio
+        async def _show_welcome_later():
+            await _aio.sleep(0.4)
+            show_welcome_dialog()
+        page.run_task(_show_welcome_later)
 
 
 if __name__ == "__main__":
