@@ -44,7 +44,7 @@ Free Godot Editor add-on that generates PBR maps and auto-creates StandardMateri
 ---
 
 ## Screenshots
-![Main UI](screenshots/main_int.jpg)
+![Main UI](screenshots/main_int.png)
 
 ## What's new in v1.7.5-beta
 
