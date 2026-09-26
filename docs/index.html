@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Albedolizer — PBR Albedo Checker &amp; Optimizer</title>
-<meta name="google-site-verification" content="y6CELuRI3Hg8A2VIeRczOtAwZV4JCZYv2uuK84SEg4Y" />
+<meta name="google-site-verification" content="y6CELuRI3Hg8A2VIeRczOtAwZV4JCYuV2uuK84SEg4Y" />
 <meta name="description" content="Free PBR albedo checker, AI color corrector, and PBR map generator for 3D artists and modders. Custom Metallic/Roughness maps, GIMP-style Seamless, engine export for Unity/Unreal/Godot. Plus free add-ons for Blender, Unity and Godot.">
 <meta property="og:title" content="Albedolizer — PBR Albedo Checker &amp; Optimizer">
 <meta property="og:description" content="Free PBR tool for 3D artists and modders. AI color correction, 7 PBR maps, custom Metallic/Roughness, GIMP-style Seamless, engine export. Add-ons for Blender, Unity and Godot.">
@@ -30,8 +30,8 @@
   },
   "license": "https://opensource.org/licenses/MIT",
   "downloadUrl": "https://github.com/invisiblelevel/Albedolizer/releases/latest",
-  "softwareVersion": "1.7.4-beta",
-  "datePublished": "2026-09-24",
+  "softwareVersion": "1.7.5-beta",
+  "datePublished": "2026-09-26",
   "screenshot": "https://invisiblelevel.github.io/Albedolizer/screenshots/main_int.jpg"
 }
 </script>
@@ -59,6 +59,21 @@
   }
   .wrapper { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
 
+  /* ─── Lucide SVG helper ─── */
+  .icon-svg {
+    display: inline-block;
+    width: 1em; height: 1em;
+    vertical-align: -0.125em;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .icon-lg { width: 32px; height: 32px; }
+  .icon-xl { width: 40px; height: 40px; }
+  .icon-btn { width: 18px; height: 18px; margin-right: 6px; vertical-align: -0.2em; }
+
   header.top {
     position: sticky; top: 0; z-index: 100;
     background: rgba(26, 29, 35, 0.95);
@@ -70,7 +85,7 @@
     padding: 14px 24px;
     display: flex; align-items: center; gap: 16px;
   }
-  header.top h1 { margin: 0; font-size: 22px; color: var(--accent); }
+  header.top h1 { margin: 0; font-size: 22px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
   header.top .version {
     background: var(--card); color: var(--fg2);
     padding: 3px 10px; border-radius: 6px;
@@ -110,7 +125,7 @@
     display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center;
   }
   .btn {
-    display: inline-block;
+    display: inline-flex; align-items: center; gap: 8px;
     padding: 14px 28px; border-radius: 10px;
     font-size: 16px; font-weight: 700;
     text-decoration: none; cursor: pointer;
@@ -140,7 +155,10 @@
     background: var(--panel); border-radius: 12px;
     padding: 24px; border: 1px solid var(--card);
   }
-  .feature .icon { font-size: 32px; margin-bottom: 12px; }
+  .feature .icon {
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
   .feature h3 { margin: 0 0 8px; font-size: 18px; color: var(--fg); }
   .feature p { margin: 0; color: var(--fg2); font-size: 14px; }
 
@@ -151,6 +169,10 @@
   .addons h3.section-title {
     font-size: 32px; margin: 0 0 8px;
     text-align: center; color: var(--fg);
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+  }
+  .addons h3.section-title .icon-svg {
+    color: var(--accent);
   }
   .addons .section-sub {
     text-align: center; color: var(--fg2);
@@ -173,7 +195,8 @@
     box-shadow: 0 12px 40px rgba(91, 141, 217, 0.15);
   }
   .addon-card .addon-icon {
-    font-size: 40px; margin-bottom: 12px;
+    color: var(--accent);
+    margin-bottom: 16px;
   }
   .addon-card h4 {
     margin: 0 0 8px; font-size: 22px; color: var(--fg);
@@ -203,6 +226,9 @@
   .addon-card .btn.small {
     padding: 9px 16px; font-size: 13px; border-radius: 8px;
   }
+  .addon-card .btn.small .icon-svg {
+    width: 14px; height: 14px;
+  }
 
   .download {
     background: var(--panel); border-radius: 16px;
@@ -224,7 +250,10 @@
     text-align: center; padding-top: 60px;
     border-top: 2px solid var(--card);
   }
-  .manual-start h3 { font-size: 32px; color: var(--accent); margin: 0; }
+  .manual-start h3 {
+    font-size: 32px; color: var(--accent); margin: 0;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+  }
   .manual-start p { color: var(--fg2); margin-top: 8px; }
 
   .toc {
@@ -235,6 +264,7 @@
     margin: 0 0 16px; font-size: 16px;
     text-transform: uppercase; letter-spacing: 1px;
     color: var(--fg3);
+    display: flex; align-items: center; gap: 8px;
   }
   .toc ol {
     margin: 0; padding-left: 20px;
@@ -300,10 +330,39 @@
 </head>
 <body>
 
+<!-- ═══════════════════════════════════════════════════════════
+     SVG SPRITE — все Lucide-иконки инлайн.
+     Использование: <svg class="icon-svg"><use href="#i-name"/></svg>
+     ═══════════════════════════════════════════════════════════ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-wand" viewBox="0 0 24 24"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></symbol>
+    <symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></symbol>
+    <symbol id="i-palette" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></symbol>
+    <symbol id="i-square" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/></symbol>
+    <symbol id="i-gamepad" viewBox="0 0 24 24"><line x1="6" x2="10" y1="11" y2="11"/><line x1="8" x2="8" y1="9" y2="13"/><line x1="15" x2="15.01" y1="12" y2="12"/><line x1="18" x2="18.01" y1="10" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/></symbol>
+    <symbol id="i-clapper" viewBox="0 0 24 24"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 0 1-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 1 0-3.214 3.214c.446.166.855.497.925.968a.979.979 0 0 1-.276.837l-1.61 1.61a2.404 2.404 0 0 1-1.705.707 2.402 2.402 0 0 1-1.704-.706l-1.568-1.568a1.026 1.026 0 0 0-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 1 1-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 0 0-.289-.877l-1.568-1.568A2.402 2.402 0 0 1 1.998 12c0-.617.236-1.234.706-1.704L4.23 8.77c.24-.24.581-.353.917-.303.515.077.877.528 1.073 1.01a2.5 2.5 0 1 0 3.259-3.259c-.482-.196-.933-.558-1.01-1.073-.05-.336.062-.676.303-.917l1.525-1.525A2.402 2.402 0 0 1 12 1.998c.617 0 1.234.236 1.704.706l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 1 1 3.237 3.237c-.464.18-.894.527-.967 1.02Z"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol>
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
+    <symbol id="i-file-cog" viewBox="0 0 24 24"><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M4 22V4a2 2 0 0 1 2-2h8l6 6v12a2 2 0 0 1-2 2Z"/><circle cx="12" cy="14" r="2"/><path d="M12 12v0"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+  </defs>
+</svg>
+
 <header class="top">
   <div class="inner">
-    <h1>◐ Albedolizer</h1>
-    <span class="version">v1.7.4-beta</span>
+    <h1>Albedolizer</h1>
+    <span class="version">v1.7.5-beta</span>
     <nav>
       <a href="#features"><span class="ru inline">Возможности</span><span class="en inline">Features</span></a>
       <a href="#addons"><span class="ru inline">Аддоны</span><span class="en inline">Add-ons</span></a>
@@ -331,8 +390,9 @@
     </p>
     <div class="cta">
       <a class="btn primary" href="#download">
-        <span class="ru">⬇ Скачать для Windows</span>
-        <span class="en">⬇ Download for Windows</span>
+        <svg class="icon-svg icon-btn"><use href="#i-download"/></svg>
+        <span class="ru">Скачать для Windows</span>
+        <span class="en">Download for Windows</span>
       </a>
       <a class="btn secondary" href="#addons">
         <span class="ru">Аддоны для Blender / Unity / Godot</span>
@@ -352,62 +412,62 @@
   <!-- ═══ FEATURES ═══ -->
   <div class="features" id="features">
     <div class="feature">
-      <div class="icon">🔍</div>
+      <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-search"/></svg></div>
       <h3><span class="ru">Анализ Albedo</span><span class="en">Albedo Analysis</span></h3>
       <p><span class="ru">Heatmap проблемных зон + статистика: min / max / avg / median / перцентили.</span><span class="en">Heatmap of problem zones + stats: min / max / avg / median / percentiles.</span></p>
     </div>
     <div class="feature">
-      <div class="icon">✨</div>
+      <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-wand"/></svg></div>
       <h3><span class="ru">AI-коррекция цвета</span><span class="en">AI Color Correction</span></h3>
       <p><span class="ru">Три метода: Autolevels (XCiT), LUTwithBGrid (ECCV 2024), Math. Плюс фикс «мыла» и насыщенности.</span><span class="en">Three methods: Autolevels (XCiT), LUTwithBGrid (ECCV 2024), Math. Plus soap removal and saturation boost.</span></p>
     </div>
     <div class="feature">
-      <div class="icon">🤖</div>
+      <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-bot"/></svg></div>
       <h3><span class="ru">Автоопределение материала</span><span class="en">Material Auto-Detection</span></h3>
       <p><span class="ru">CLIP-классификатор сам подбирает пресет из 50 доступных.</span><span class="en">CLIP-based classifier picks the right preset from 50 options.</span></p>
     </div>
     <div class="feature">
-      <div class="icon">🎨</div>
+      <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-palette"/></svg></div>
       <h3><span class="ru">7 PBR-карт</span><span class="en">7 PBR Maps</span></h3>
       <p><span class="ru">Height, Normal, AO, Roughness, Metallic, ORM, Edge. 8 или 16 bit.</span><span class="en">Height, Normal, AO, Roughness, Metallic, ORM, Edge. 8 or 16 bit.</span></p>
     </div>
     <div class="feature">
-      <div class="icon">🎚️</div>
+      <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-sliders"/></svg></div>
       <h3><span class="ru">Свои Metallic / Roughness</span><span class="en">Custom Metallic / Roughness</span></h3>
       <p><span class="ru">Загрузка своих grayscale-карт. Авто-ресайз под размер albedo.</span><span class="en">Load your own grayscale maps. Auto-resize to albedo size.</span></p>
     </div>
     <div class="feature">
-      <div class="icon">🔲</div>
+      <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-square"/></svg></div>
       <h3><span class="ru">Seamless как в GIMP</span><span class="en">GIMP-style Seamless</span></h3>
       <p><span class="ru">Точный порт tile-seamless.c + Hi-pass pre-filter.</span><span class="en">Exact port of tile-seamless.c + Hi-pass pre-filter.</span></p>
     </div>
     <div class="feature">
-      <div class="icon">🎮</div>
+      <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-gamepad"/></svg></div>
       <h3><span class="ru">Экспорт под движки</span><span class="en">Engine Export</span></h3>
       <p><span class="ru">Unity HDRP / URP, Unreal ORM, Godot ORM. DirectX / OpenGL flip, Detail Mask.</span><span class="en">Unity HDRP / URP, Unreal ORM, Godot ORM. DirectX / OpenGL flip, Detail Mask.</span></p>
     </div>
     <div class="feature">
-      <div class="icon">🎞</div>
+      <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-clapper"/></svg></div>
       <h3><span class="ru">Realism пресеты</span><span class="en">Realism Presets</span></h3>
       <p><span class="ru">Процедурный grain, high-pass, HSV-вариация, виньетка. Мягкий / Средний / Жёсткий.</span><span class="en">Procedural grain, high-pass, HSV variation, vignette. Soft / Medium / Hard.</span></p>
     </div>
     <div class="feature">
-      <div class="icon">👁</div>
+      <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-eye"/></svg></div>
       <h3><span class="ru">Встроенный 3D-вьюер</span><span class="en">Built-in 3D Viewer</span></h3>
       <p><span class="ru">4 формы, Substance-style освещение, ACES tone mapping, слайдер экспозиции.</span><span class="en">4 shapes, Substance-style lighting, ACES tone mapping, exposure slider.</span></p>
     </div>
     <div class="feature">
-      <div class="icon">🎯</div>
+      <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-target"/></svg></div>
       <h3><span class="ru">50 пресетов в 7 категориях</span><span class="en">50 Presets in 7 Categories</span></h3>
       <p><span class="ru">Металл, природа, минерал, синтетика, ткани, спецэффекты, фауна.</span><span class="en">Metal, nature, mineral, synthetic, fabric, special, fauna.</span></p>
     </div>
     <div class="feature">
-      <div class="icon">🗂</div>
+      <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-layers"/></svg></div>
       <h3><span class="ru">Пакетная обработка</span><span class="en">Batch Processing</span></h3>
       <p><span class="ru">1–8 потоков. AI-коррекция или сжатие целых папок.</span><span class="en">1–8 threads. AI correction or compression for whole folders.</span></p>
     </div>
     <div class="feature">
-      <div class="icon">⌨️</div>
+      <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-keyboard"/></svg></div>
       <h3><span class="ru">Глобальные хоткеи</span><span class="en">Global Hotkeys</span></h3>
       <p><span class="ru">Ctrl+O, Ctrl+S, Ctrl+R, Ctrl+Z, Space, Enter.</span><span class="en">Ctrl+O, Ctrl+S, Ctrl+R, Ctrl+Z, Space, Enter.</span></p>
     </div>
@@ -416,8 +476,9 @@
   <!-- ═══ ADD-ONS ═══ -->
   <div class="addons" id="addons">
     <h3 class="section-title">
-      <span class="ru">🧩 Бесплатные аддоны</span>
-      <span class="en">🧩 Free Add-ons</span>
+      <svg class="icon-svg icon-lg"><use href="#i-puzzle"/></svg>
+      <span class="ru">Бесплатные аддоны</span>
+      <span class="en">Free Add-ons</span>
     </h3>
     <p class="section-sub">
       <span class="ru">Albedolizer доступен прямо внутри Blender, Unity и Godot — тот же движок, тот же результат.</span>
@@ -428,7 +489,7 @@
 
       <!-- Blender Add-on -->
       <div class="addon-card">
-        <div class="addon-icon">🅱️</div>
+        <div class="addon-icon"><svg class="icon-svg icon-xl"><use href="#i-cube"/></svg></div>
         <h4>Albedolizer-Blender</h4>
         <span class="addon-tag">FREE · GPL-3.0</span>
         <p>
@@ -443,7 +504,8 @@
         </ul>
         <div class="addon-cta">
           <a class="btn primary small" href="https://github.com/invisiblelevel/Albedolizer-Blender/releases/latest" target="_blank">
-            <span class="ru inline">⬇ Скачать</span><span class="en inline">⬇ Download</span>
+            <svg class="icon-svg"><use href="#i-download"/></svg>
+            <span class="ru inline">Скачать</span><span class="en inline">Download</span>
           </a>
           <a class="btn secondary small" href="https://github.com/invisiblelevel/Albedolizer-Blender" target="_blank">
             GitHub
@@ -456,7 +518,7 @@
 
       <!-- Unity Add-on -->
       <div class="addon-card">
-        <div class="addon-icon">🎮</div>
+        <div class="addon-icon"><svg class="icon-svg icon-xl"><use href="#i-gamepad"/></svg></div>
         <h4>Albedolizer-Unity</h4>
         <span class="addon-tag">FREE · MIT</span>
         <p>
@@ -481,7 +543,7 @@
 
       <!-- Godot Add-on -->
       <div class="addon-card">
-        <div class="addon-icon">🤖</div>
+        <div class="addon-icon"><svg class="icon-svg icon-xl"><use href="#i-bot"/></svg></div>
         <h4>Albedolizer-Godot</h4>
         <span class="addon-tag">FREE · MIT</span>
         <p>
@@ -499,7 +561,8 @@
             GitHub
           </a>
           <a class="btn secondary small" href="https://github.com/invisiblelevel/Albedolizer-Godot/releases/latest" target="_blank">
-            <span class="ru inline">⬇ Скачать</span><span class="en inline">⬇ Download</span>
+            <svg class="icon-svg"><use href="#i-download"/></svg>
+            <span class="ru inline">Скачать</span><span class="en inline">Download</span>
           </a>
         </div>
       </div>
@@ -511,13 +574,14 @@
   <div class="download" id="download">
     <h3><span class="ru">Скачать Albedolizer</span><span class="en">Download Albedolizer</span></h3>
     <p>
-      <span class="ru">Версия 1.7.4-beta для Windows. Установщик сделает всё сам — ярлыки, меню Пуск, удаление.</span>
-      <span class="en">Version 1.7.4-beta for Windows. Installer handles everything — shortcuts, Start Menu, uninstaller.</span>
+      <span class="ru">Версия 1.7.5-beta для Windows. Установщик сделает всё сам — ярлыки, меню Пуск, удаление.</span>
+      <span class="en">Version 1.7.5-beta for Windows. Installer handles everything — shortcuts, Start Menu, uninstaller.</span>
     </p>
     <div class="cta">
       <a class="btn primary" href="https://invlvl.itch.io/albedolizer" target="_blank">
-        <span class="ru">⬇ Скачать с itch.io</span>
-        <span class="en">⬇ Download from itch.io</span>
+        <svg class="icon-svg icon-btn"><use href="#i-download"/></svg>
+        <span class="ru">Скачать с itch.io</span>
+        <span class="en">Download from itch.io</span>
       </a>
       <a class="btn secondary" href="https://github.com/invisiblelevel/Albedolizer/releases/latest" target="_blank">
         GitHub Releases
@@ -534,12 +598,18 @@
 
   <!-- ═══ MANUAL START ═══ -->
   <div class="manual-start" id="manual">
-    <h3><span class="ru">📖 Мануал</span><span class="en">📖 Manual</span></h3>
+    <h3>
+      <svg class="icon-svg icon-lg"><use href="#i-book"/></svg>
+      <span class="ru">Мануал</span><span class="en">Manual</span>
+    </h3>
     <p><span class="ru">Полное руководство по всем вкладкам и инструментам</span><span class="en">Full guide to all tabs and tools</span></p>
   </div>
 
   <nav class="toc">
-    <h2><span class="ru">📑 Содержание</span><span class="en">📑 Table of Contents</span></h2>
+    <h2>
+      <svg class="icon-svg"><use href="#i-list"/></svg>
+      <span class="ru">Содержание</span><span class="en">Table of Contents</span>
+    </h2>
     <ol>
       <li><a href="#header"><span class="ru inline">Хедер и навигация</span><span class="en inline">Header &amp; Navigation</span></a></li>
       <li><a href="#single"><span class="ru inline">Single — одиночная</span><span class="en inline">Single</span></a></li>
@@ -573,15 +643,15 @@
     <h2><span class="ru">2. Single — одиночная обработка</span><span class="en">2. Single Processing</span></h2>
 
     <h3><span class="ru">Simple режим</span><span class="en">Simple mode</span></h3>
-    <p class="ru">Одна кнопка <code>🚀 Process texture</code> делает всё: открывает файл, AI-коррекция, буст насыщенности, результат. Плюс CLIP автоматически определяет материал и подбирает пресет.</p>
-    <p class="en">One button <code>🚀 Process texture</code> does everything: open file, AI correction, saturation boost, result. CLIP auto-detects material and picks the preset.</p>
+    <p class="ru">Одна кнопка <code>Обработать текстуру</code> делает всё: открывает файл, AI-коррекция, буст насыщенности, результат. Плюс CLIP автоматически определяет материал и подбирает пресет.</p>
+    <p class="en">One button <code>Process texture</code> does everything: open file, AI correction, saturation boost, result. CLIP auto-detects material and picks the preset.</p>
     <div class="shot">
       <img src="screenshots/tab_single_simple.jpg" alt="Single Simple">
     </div>
 
     <h3><span class="ru">Advanced режим</span><span class="en">Advanced mode</span></h3>
-    <p class="ru">Отдельные кнопки: <code>📂 Open</code>, <code>🔍 Check</code>, <code>✨ Auto-Correct</code>, <code>↺ Reset</code>, <code>💾 Save</code>. Кнопка <code>👁 Оригинал / Результат</code> переключает превью. Если Check показал FAIL — жми Auto-Correct.</p>
-    <p class="en">Separate buttons: <code>📂 Open</code>, <code>🔍 Check</code>, <code>✨ Auto-Correct</code>, <code>↺ Reset</code>, <code>💾 Save</code>. The <code>👁 Original / Result</code> button toggles the preview. If Check shows FAIL — click Auto-Correct.</p>
+    <p class="ru">Отдельные кнопки: <code>Открыть</code>, <code>Проверить</code>, <code>Автокоррекция</code>, <code>Сброс</code>, <code>Сохранить</code>. Кнопка <code>Оригинал / Результат</code> переключает превью. Если Check показал FAIL — жми Auto-Correct.</p>
+    <p class="en">Separate buttons: <code>Open</code>, <code>Check</code>, <code>Auto-Correct</code>, <code>Reset</code>, <code>Save</code>. The <code>Original / Result</code> button toggles the preview. If Check shows FAIL — click Auto-Correct.</p>
     <div class="shot">
       <img src="screenshots/tab_single_advanced.jpg" alt="Single Advanced">
     </div>
@@ -597,7 +667,7 @@
       <img src="screenshots/right_panel_single.jpg" alt="Right panel">
     </div>
     <ul>
-      <li><strong>🤖 Auto-detect material</strong> — <span class="ru inline">CLIP-классификатор подбирает пресет</span><span class="en inline">CLIP classifier picks the preset</span></li>
+      <li><strong>Auto-detect material</strong> — <span class="ru inline">CLIP-классификатор подбирает пресет</span><span class="en inline">CLIP classifier picks the preset</span></li>
       <li><strong>Texture type</strong> — <span class="ru inline">категории + пресеты</span><span class="en inline">categories + presets</span></li>
       <li><strong>Correction method</strong> — <span class="ru inline">Autolevels / LUTwithBGrid / Math</span><span class="en inline">Autolevels / LUTwithBGrid / Math</span></li>
       <li><strong>Tiling 3×3</strong> — <span class="ru inline">проверка бесшовности</span><span class="en inline">seamless check</span></li>
@@ -617,11 +687,11 @@
       <img src="screenshots/tab_pbr.jpg" alt="PBR tab">
     </div>
     <ol>
-      <li><code>📂 Load Albedo</code> — <span class="ru inline">выбери текстуру</span><span class="en inline">pick texture</span></li>
+      <li><code>Load Albedo</code> — <span class="ru inline">выбери текстуру</span><span class="en inline">pick texture</span></li>
       <li><span class="ru inline">Выбери <strong>пресет</strong> — слайдеры настроятся сами</span><span class="en inline">Pick <strong>preset</strong> — sliders auto-tune</span></li>
-      <li><code>🎨 Generate</code> — <span class="ru inline">сгенерировать 7 карт</span><span class="en inline">generate 7 maps</span></li>
+      <li><code>Generate</code> — <span class="ru inline">сгенерировать 7 карт</span><span class="en inline">generate 7 maps</span></li>
       <li><span class="ru inline">Переключайся между картами кнопками сверху</span><span class="en inline">Switch maps with the buttons on top</span></li>
-      <li><code>💾 Save all</code> — <span class="ru inline">папка <code>&lt;name&gt;_pbr/</code> рядом с исходником</span><span class="en inline">folder <code>&lt;name&gt;_pbr/</code> next to source</span></li>
+      <li><code>Save all</code> — <span class="ru inline">папка <code>&lt;name&gt;_pbr/</code> рядом с исходником</span><span class="en inline">folder <code>&lt;name&gt;_pbr/</code> next to source</span></li>
     </ol>
     <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
   </section>
@@ -633,7 +703,7 @@
     <p class="en">In the PBR tab, next to Metallic and Roughness selection, pick <code>Custom</code> and load your own grayscale map.</p>
     <ol>
       <li><span class="ru inline">Выбери <code>Custom</code> для Metallic или Roughness</span><span class="en inline">Pick <code>Custom</code> for Metallic or Roughness</span></li>
-      <li><span class="ru inline">Нажми <code>📂 Load metallic map</code> или <code>📂 Load roughness map</code></span><span class="en inline">Click <code>📂 Load metallic map</code> or <code>📂 Load roughness map</code></span></li>
+      <li><span class="ru inline">Нажми <code>Load metallic map</code> или <code>Load roughness map</code></span><span class="en inline">Click <code>Load metallic map</code> or <code>Load roughness map</code></span></li>
       <li><span class="ru inline">Если размер не совпадает с Albedo — появится диалог с подтверждением авто-ресайза</span><span class="en inline">If size doesn't match Albedo — a confirmation dialog for auto-resize appears</span></li>
       <li><span class="ru inline">PBR автоматически перегенерируется с новой картой</span><span class="en inline">PBR automatically regenerates with the new map</span></li>
     </ol>
@@ -645,8 +715,8 @@
   <!-- ═══ 6. SEAMLESS ═══ -->
   <section id="seamless">
     <h2><span class="ru">6. Seamless — бесшовность</span><span class="en">6. Seamless</span></h2>
-    <p class="ru">Кнопка <code>🔲 Seamless</code> в правой панели Single делает текстуру бесшовной. Это точный порт GIMP <code>tile-seamless.c</code> — диагональная весовая функция, центр не трогается, края переплетаются.</p>
-    <p class="en">The <code>🔲 Seamless</code> button in the Single right panel makes your texture tileable. Exact port of GIMP's <code>tile-seamless.c</code> — diagonal weight function, center untouched, edges blended.</p>
+    <p class="ru">Кнопка <code>Seamless</code> в правой панели Single делает текстуру бесшовной. Это точный порт GIMP <code>tile-seamless.c</code> — диагональная весовая функция, центр не трогается, края переплетаются.</p>
+    <p class="en">The <code>Seamless</code> button in the Single right panel makes your texture tileable. Exact port of GIMP's <code>tile-seamless.c</code> — diagonal weight function, center untouched, edges blended.</p>
     <ul>
       <li><strong>Hi-pass pre-filter</strong> — <span class="ru inline">опциональный чекбокс, выравнивает яркость краёв</span><span class="en inline">optional checkbox, evens out brightness between edges</span></li>
       <li><strong>Tiling 3×3</strong> — <span class="ru inline">включи для проверки результата</span><span class="en inline">enable to check result</span></li>
@@ -746,15 +816,15 @@
   <!-- ═══ 13. INFO ═══ -->
   <section id="info">
     <h2><span class="ru">13. Info</span><span class="en">13. Info</span></h2>
-    <p class="ru">Кнопка <code>ℹ Info</code> в хедере открывает диалог: Help (краткая справка), About (версия), Support (кошельки), Manual (этот файл в браузере).</p>
-    <p class="en">The <code>ℹ Info</code> button in the header opens a dialog: Help (quick reference), About (version), Support (wallets), Manual (this file in browser).</p>
+    <p class="ru">Кнопка <code>Инфо</code> в хедере открывает диалог: Help (краткая справка), About (версия), Support (кошельки), Manual (этот файл в браузере).</p>
+    <p class="en">The <code>Info</code> button in the header opens a dialog: Help (quick reference), About (version), Support (wallets), Manual (this file in browser).</p>
     <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
   </section>
 
   <!-- ═══ FOOTER ═══ -->
   <footer>
     <p>
-      <strong>◐ Albedolizer</strong> v1.7.4-beta · MIT License · 2026
+      <strong>Albedolizer</strong> v1.7.5-beta · MIT License · 2026
     </p>
     <p>
       <a href="https://github.com/invisiblelevel/Albedolizer" target="_blank">GitHub</a> ·
