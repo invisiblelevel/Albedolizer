@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Albedolizer — PBR Albedo Checker &amp; Optimizer</title>
 <meta name="google-site-verification" content="y6CELuRI3Hg8A2VIeRczOtAwZV4JCZYv2uuK84SEg4Y" />
-<meta name="description" content="Free PBR albedo checker, AI color corrector, and PBR map generator for 3D artists and modders. Custom Metallic/Roughness maps, GIMP-style Seamless, engine export for Unity/Unreal/Godot.">
+<meta name="description" content="Free PBR albedo checker, AI color corrector, and PBR map generator for 3D artists and modders. Custom Metallic/Roughness maps, GIMP-style Seamless, engine export for Unity/Unreal/Godot. Plus free add-ons for Blender and Unity.">
 <meta property="og:title" content="Albedolizer — PBR Albedo Checker &amp; Optimizer">
-<meta property="og:description" content="Free PBR tool for 3D artists and modders. AI color correction, 7 PBR maps, custom Metallic/Roughness, GIMP-style Seamless, engine export.">
+<meta property="og:description" content="Free PBR tool for 3D artists and modders. AI color correction, 7 PBR maps, custom Metallic/Roughness, GIMP-style Seamless, engine export. Add-ons for Blender and Unity.">
 <meta property="og:image" content="https://invisiblelevel.github.io/Albedolizer/screenshots/main_int.jpg">
 <meta property="og:url" content="https://invisiblelevel.github.io/Albedolizer/">
 <meta property="og:type" content="website">
@@ -23,15 +23,15 @@
     "price": "0",
     "priceCurrency": "USD"
   },
-  "description": "Free PBR albedo checker, AI color corrector, and PBR map generator for 3D artists and modders.",
+  "description": "Free PBR albedo checker, AI color corrector, and PBR map generator for 3D artists and modders. Plus free add-ons for Blender and Unity.",
   "author": {
     "@type": "Person",
     "name": "INV.LVL"
   },
   "license": "https://opensource.org/licenses/MIT",
   "downloadUrl": "https://github.com/invisiblelevel/Albedolizer/releases/latest",
-  "softwareVersion": "1.7.3-beta",
-  "datePublished": "2026-09-23",
+  "softwareVersion": "1.7.4-beta",
+  "datePublished": "2026-09-24",
   "screenshot": "https://invisiblelevel.github.io/Albedolizer/screenshots/main_int.jpg"
 }
 </script>
@@ -144,6 +144,66 @@
   .feature h3 { margin: 0 0 8px; font-size: 18px; color: var(--fg); }
   .feature p { margin: 0; color: var(--fg2); font-size: 14px; }
 
+  /* ═══ ADD-ONS SECTION ═══ */
+  .addons {
+    margin: 60px 0;
+  }
+  .addons h3.section-title {
+    font-size: 32px; margin: 0 0 8px;
+    text-align: center; color: var(--fg);
+  }
+  .addons .section-sub {
+    text-align: center; color: var(--fg2);
+    margin: 0 0 40px; font-size: 16px;
+  }
+  .addons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 20px;
+  }
+  .addon-card {
+    background: var(--panel); border-radius: 16px;
+    padding: 28px; border: 1px solid var(--card);
+    display: flex; flex-direction: column;
+    transition: all 0.2s;
+  }
+  .addon-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(91, 141, 217, 0.15);
+  }
+  .addon-card .addon-icon {
+    font-size: 40px; margin-bottom: 12px;
+  }
+  .addon-card h4 {
+    margin: 0 0 8px; font-size: 22px; color: var(--fg);
+  }
+  .addon-card .addon-tag {
+    display: inline-block;
+    background: rgba(76, 175, 80, 0.15);
+    color: var(--success);
+    padding: 3px 10px; border-radius: 6px;
+    font-size: 12px; font-weight: 700;
+    margin-bottom: 12px;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    width: fit-content;
+  }
+  .addon-card p {
+    color: var(--fg2); font-size: 14px;
+    margin: 0 0 16px; flex-grow: 1;
+  }
+  .addon-card ul {
+    margin: 0 0 20px; padding-left: 20px;
+    color: var(--fg2); font-size: 13px;
+  }
+  .addon-card ul li { margin: 4px 0; }
+  .addon-card .addon-cta {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .addon-card .btn.small {
+    padding: 9px 16px; font-size: 13px; border-radius: 8px;
+  }
+
   .download {
     background: var(--panel); border-radius: 16px;
     padding: 40px; margin: 60px 0;
@@ -243,9 +303,10 @@
 <header class="top">
   <div class="inner">
     <h1>◐ Albedolizer</h1>
-    <span class="version">v1.7.3-beta</span>
+    <span class="version">v1.7.4-beta</span>
     <nav>
       <a href="#features"><span class="ru inline">Возможности</span><span class="en inline">Features</span></a>
+      <a href="#addons"><span class="ru inline">Аддоны</span><span class="en inline">Add-ons</span></a>
       <a href="#download"><span class="ru inline">Скачать</span><span class="en inline">Download</span></a>
       <a href="#manual"><span class="ru inline">Мануал</span><span class="en inline">Manual</span></a>
       <div class="lang-switch">
@@ -265,17 +326,17 @@
       <span class="en">Check, fix, and generate <span class="accent">PBR textures</span></span>
     </h2>
     <p class="tagline">
-      <span class="ru">Бесплатный инструмент для 3D-художников: анализ Albedo, AI-коррекция цвета, 7 PBR-карт, экспорт под Unity / Unreal / Godot и 3D-вьюер — всё в одном окне.</span>
-      <span class="en">Free tool for 3D artists: Albedo analysis, AI color correction, 7 PBR maps, engine export for Unity / Unreal / Godot, and a 3D viewer — all in one window.</span>
+      <span class="ru">Бесплатный инструмент для 3D-художников: анализ Albedo, AI-коррекция цвета, 7 PBR-карт, экспорт под Unity / Unreal / Godot и 3D-вьюер — всё в одном окне. Плюс бесплатные аддоны для Blender и Unity.</span>
+      <span class="en">Free tool for 3D artists: Albedo analysis, AI color correction, 7 PBR maps, engine export for Unity / Unreal / Godot, and a 3D viewer — all in one window. Plus free add-ons for Blender and Unity.</span>
     </p>
     <div class="cta">
       <a class="btn primary" href="#download">
         <span class="ru">⬇ Скачать для Windows</span>
         <span class="en">⬇ Download for Windows</span>
       </a>
-      <a class="btn secondary" href="#features">
-        <span class="ru">Узнать больше</span>
-        <span class="en">Learn more</span>
+      <a class="btn secondary" href="#addons">
+        <span class="ru">Аддоны для Blender / Unity</span>
+        <span class="en">Blender / Unity Add-ons</span>
       </a>
     </div>
     <p class="meta">
@@ -352,12 +413,81 @@
     </div>
   </div>
 
+  <!-- ═══ ADD-ONS ═══ -->
+  <div class="addons" id="addons">
+    <h3 class="section-title">
+      <span class="ru">🧩 Бесплатные аддоны</span>
+      <span class="en">🧩 Free Add-ons</span>
+    </h3>
+    <p class="section-sub">
+      <span class="ru">Albedolizer доступен прямо внутри Blender и Unity — тот же движок, тот же результат.</span>
+      <span class="en">Albedolizer is available right inside Blender and Unity — same engine, same result.</span>
+    </p>
+
+    <div class="addons-grid">
+
+      <!-- Blender Add-on -->
+      <div class="addon-card">
+        <div class="addon-icon">🅱️</div>
+        <h4>Albedolizer-Blender</h4>
+        <span class="addon-tag">FREE · GPL-3.0</span>
+        <p>
+          <span class="ru">Blender-аддон для генерации PBR-карт прямо в N-панели. AI-коррекция, 50 пресетов, seamless, batch, автосборка нод к Principled BSDF, упаковка под движки.</span>
+          <span class="en">Blender add-on that generates PBR maps right in the N-Panel. AI correction, 50 presets, seamless, batch, auto-wired Principled BSDF nodes, engine packing.</span>
+        </p>
+        <ul>
+          <li><span class="ru inline">7 PBR-карт из Albedo</span><span class="en inline">7 PBR maps from Albedo</span></li>
+          <li><span class="ru inline">Modal прогресс-бар — Blender не виснет</span><span class="en inline">Modal progress bar — Blender stays responsive</span></li>
+          <li><span class="ru inline">RU / EN интерфейс</span><span class="en inline">RU / EN interface</span></li>
+          <li>Blender 4.2 LTS+ · Windows</li>
+        </ul>
+        <div class="addon-cta">
+          <a class="btn primary small" href="https://github.com/invisiblelevel/Albedolizer-Blender/releases/latest" target="_blank">
+            <span class="ru inline">⬇ Скачать</span><span class="en inline">⬇ Download</span>
+          </a>
+          <a class="btn secondary small" href="https://github.com/invisiblelevel/Albedolizer-Blender" target="_blank">
+            GitHub
+          </a>
+          <a class="btn secondary small" href="https://invlvl.itch.io/albedolizer-blender" target="_blank">
+            itch.io
+          </a>
+        </div>
+      </div>
+
+      <!-- Unity Add-on -->
+      <div class="addon-card">
+        <div class="addon-icon">🎮</div>
+        <h4>Albedolizer-Unity</h4>
+        <span class="addon-tag">FREE · MIT</span>
+        <p>
+          <span class="ru">Unity Editor-аддон для генерации PBR-карт и автосоздания URP-материалов. Правильная упаковка каналов (R=Metallic, G=AO, A=Smoothness), batch, движковая упаковка.</span>
+          <span class="en">Unity Editor add-on that generates PBR maps and auto-creates URP materials. Proper channel packing (R=Metallic, G=AO, A=Smoothness), batch, engine packing.</span>
+        </p>
+        <ul>
+          <li><span class="ru inline">Автосоздание URP/Lit материала</span><span class="en inline">Auto-creation of URP/Lit material</span></li>
+          <li><span class="ru inline">Экспорт под HDRP / Unreal / Godot</span><span class="en inline">HDRP / Unreal / Godot packing</span></li>
+          <li><span class="ru inline">Установка через UPM Git URL</span><span class="en inline">UPM install via Git URL</span></li>
+          <li>Unity 2022.3 LTS+ · URP · Windows</li>
+        </ul>
+        <div class="addon-cta">
+          <a class="btn primary small" href="https://github.com/invisiblelevel/Albedolizer-Unity" target="_blank">
+            GitHub
+          </a>
+          <a class="btn secondary small" href="https://github.com/invisiblelevel/Albedolizer-Unity#installation" target="_blank">
+            <span class="ru inline">Как установить</span><span class="en inline">Installation</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- ═══ DOWNLOAD ═══ -->
   <div class="download" id="download">
     <h3><span class="ru">Скачать Albedolizer</span><span class="en">Download Albedolizer</span></h3>
     <p>
-      <span class="ru">Версия 1.7.3-beta для Windows. Установщик сделает всё сам — ярлыки, меню Пуск, удаление.</span>
-      <span class="en">Version 1.7.3-beta for Windows. Installer handles everything — shortcuts, Start Menu, uninstaller.</span>
+      <span class="ru">Версия 1.7.4-beta для Windows. Установщик сделает всё сам — ярлыки, меню Пуск, удаление.</span>
+      <span class="en">Version 1.7.4-beta for Windows. Installer handles everything — shortcuts, Start Menu, uninstaller.</span>
     </p>
     <div class="cta">
       <a class="btn primary" href="https://invlvl.itch.io/albedolizer" target="_blank">
@@ -509,7 +639,7 @@
     </div>
     <ul>
       <li><strong>Unity HDRP</strong> — R = Metallic, G = AO, B = Detail Mask, A = Smoothness</li>
-      <li><strong>Unity URP</strong> — R = Metallic, A = Smoothness</li>
+      <li><strong>Unity URP</strong> — R = Metallic, G = AO, A = Smoothness</li>
       <li><strong>Unreal / Godot</strong> — R = AO, G = Roughness, B = Metallic</li>
       <li><strong>Normal format</strong> — <span class="ru inline">OpenGL (Y+) или DirectX (Y−)</span><span class="en inline">OpenGL (Y+) or DirectX (Y−)</span></li>
       <li><strong>Detail Mask</strong> — <span class="ru inline">белая / edge / своя с диска</span><span class="en inline">white / edge / custom from disk</span></li>
@@ -599,13 +729,18 @@
   <!-- ═══ FOOTER ═══ -->
   <footer>
     <p>
-      <strong>◐ Albedolizer</strong> v1.7.3-beta · MIT License · 2026
+      <strong>◐ Albedolizer</strong> v1.7.4-beta · MIT License · 2026
     </p>
     <p>
       <a href="https://github.com/invisiblelevel/Albedolizer" target="_blank">GitHub</a> ·
       <a href="https://invlvl.itch.io/albedolizer" target="_blank">itch.io</a> ·
       <a href="https://www.nexusmods.com/skyrimspecialedition/mods/192671" target="_blank">Nexus Mods</a> ·
       <a href="https://github.com/invisiblelevel/Albedolizer/releases/latest" target="_blank">Releases</a>
+    </p>
+    <p style="margin-top: 12px;">
+      <a href="https://github.com/invisiblelevel/Albedolizer-Blender" target="_blank">Blender Add-on</a> ·
+      <a href="https://invlvl.itch.io/albedolizer-blender" target="_blank">Blender on itch.io</a> ·
+      <a href="https://github.com/invisiblelevel/Albedolizer-Unity" target="_blank">Unity Add-on</a>
     </p>
   </footer>
 
