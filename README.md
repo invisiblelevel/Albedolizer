@@ -17,6 +17,26 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 
 ---
 
+## 🧩 Add-ons
+
+Albedolizer is also available right inside **Blender** and **Unity** — same engine, same result, free.
+
+### 🅱️ Albedolizer-Blender
+Free Blender add-on that generates 7 PBR maps from Albedo textures directly in the N-Panel. AI correction, 50 presets, seamless, batch, auto-wired Principled BSDF nodes, engine packing.
+
+- GitHub: https://github.com/invisiblelevel/Albedolizer-Blender
+- itch.io: https://invlvl.itch.io/albedolizer-blender
+- License: GPL-3.0-or-later
+
+### 🎮 Albedolizer-Unity
+Free Unity Editor add-on that generates PBR maps and auto-creates URP/Lit materials with proper channel packing (R=Metallic, G=AO, A=Smoothness). Supports HDRP / Unreal / Godot packing.
+
+- GitHub: https://github.com/invisiblelevel/Albedolizer-Unity
+- Install via UPM Git URL: `https://github.com/invisiblelevel/Albedolizer-Unity.git`
+- License: MIT
+
+---
+
 ## Screenshots
 ![Main UI](screenshots/main_int.jpg)
 
@@ -86,7 +106,7 @@ Albedolizer is a tool for 3D artists, game designers, and anyone working with PB
 
 ### 🎮 Engine Export
 - **Unity HDRP** Mask Map — R=Metallic, G=AO, B=Detail Mask, A=Smoothness
-- **Unity URP** MetallicSmoothness — R=Metallic, A=Smoothness
+- **Unity URP** MetallicSmoothness — R=Metallic, G=AO, A=Smoothness
 - **Unreal ORM** — R=AO, G=Roughness, B=Metallic
 - **Godot ORM** — R=AO, G=Roughness, B=Metallic
 - **Normal map format** — OpenGL (Y+) / DirectX (Y-) with green channel flip
@@ -270,6 +290,26 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ---
 
+## 🧩 Аддоны
+
+Albedolizer также доступен прямо внутри **Blender** и **Unity** — тот же движок, тот же результат, бесплатно.
+
+### 🅱️ Albedolizer-Blender
+Бесплатный Blender-аддон, который генерирует 7 PBR-карт из Albedo прямо в N-панели. AI-коррекция, 50 пресетов, seamless, batch, автосборка нод к Principled BSDF, упаковка под движки.
+
+- GitHub: https://github.com/invisiblelevel/Albedolizer-Blender
+- itch.io: https://invlvl.itch.io/albedolizer-blender
+- Лицензия: GPL-3.0-or-later
+
+### 🎮 Albedolizer-Unity
+Бесплатный Unity Editor-аддон, который генерирует PBR-карты и автосоздаёт URP/Lit материалы с правильной упаковкой каналов (R=Metallic, G=AO, A=Smoothness). Поддержка HDRP / Unreal / Godot.
+
+- GitHub: https://github.com/invisiblelevel/Albedolizer-Unity
+- Установка через UPM Git URL: `https://github.com/invisiblelevel/Albedolizer-Unity.git`
+- Лицензия: MIT
+
+---
+
 ## 🆕 Что нового в v1.7.4-beta
 
 ### Продвинутый Roughness
@@ -336,7 +376,7 @@ Albedolizer — инструмент для 3D-художников, геймд�
 
 ### 🎮 Экспорт для движков
 - **Unity HDRP** Mask Map — R=Metallic, G=AO, B=Detail Mask, A=Smoothness
-- **Unity URP** MetallicSmoothness — R=Metallic, A=Smoothness
+- **Unity URP** MetallicSmoothness — R=Metallic, G=AO, A=Smoothness
 - **Unreal ORM** — R=AO, G=Roughness, B=Metallic
 - **Godot ORM** — R=AO, G=Roughness, B=Metallic
 - **Формат Normal** — OpenGL (Y+) / DirectX (Y-) с инверсией зелёного канала
