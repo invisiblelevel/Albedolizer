@@ -1,6 +1,40 @@
 # Changelog
 
 
+## [1.7.5-beta] — 2026-09-26
+
+### Added
+- **New UI with Lucide SVG icons** — all system emoji on buttons, tabs, rail, header, and dialogs replaced with thin-line Lucide SVG icons (1.75px stroke). Icons are inlined as base64 in `ui/icons.py`, no external files needed.
+- **Unified `make_toggle` helper** in `ui/theme.py` — single factory for all "selected / not selected" elements. Active state is always accent background + white content, fixing the "blue on blue" bug where icons and text disappeared on active chips.
+- **`Btn` class** in `ui/theme.py` — `ft.Container` subclass with `.set_disabled()` and `.set_label()` methods, for changing button state without rebuilding.
+- **`core/` package** — `state.py` (state dict + settings), `io.py` (file save/load helpers), `image_ops.py` (image processing wrappers).
+- **`ui/` package** — `icons.py`, `theme.py`, `helpers.py`, `header.py`, `rail.py`, `log_panel.py`, `dialogs.py`, `tab_single.py`, `tab_pbr.py`, `tab_export.py`, `tab_realism.py`, `tab_batch.py`, `tab_compress.py`.
+- **`ui/tab_*.py`** — one module per tab, replacing the monolithic `main.py`.
+- **`ui/dialogs.py`** — Info, Welcome, Compress-done, Fallback dialogs extracted from `main.py`.
+- **CLI seamless flags** — `--seamless`, `--seamless-hipass`, `--seamless-no-hipass`.
+- **CLI OSError handling** — clear hint message for long paths (>260 chars), permission errors, disk issues.
+
+### Changed
+- **`main.py` split into `core/` and `ui/` packages** — was ~5000 lines, now ~500. All UI logic lives in `ui/tab_*.py`, all pure logic in `core/`.
+- **All toolbar buttons re-render from state on every action** — no more stale disabled states. Buttons are rebuilt via `on_rebuild()` after each action that changes `S`, so `disabled` is always derived from the current state.
+- **Preview persists across rebuilds** — `S["preview_image_src"]`, `S["pbr_result"]`, `S["realism_result"]`, `S["compress_corrected"]` hold the current preview so it survives tab rebuilds (theme switch, language switch, category change, auto-detect, etc.).
+- **Preset buttons are text-only** — no icons on preset chips, cleaner and more compact. Category buttons keep Lucide icons.
+- **`index.html` (GitHub Pages)** — Lucide SVG sprite inline, all emoji removed from UI elements, version bumped to 1.7.5.
+- **`manual.html`** — all emoji removed from UI elements, version bumped to 1.7.5, added Lucide to credits.
+- **`README.md`** — version bumped to 1.7.5, emoji removed from headings and feature lists.
+- **`requirements.txt`** — `flet>=0.25.0` → `flet>=1.0.0`.
+
+### Fixed
+- **LUTwithBGrid on 8K textures** — `max_pixels` raised from 16M to 32M in `lut_model.py`. No more downscale on large textures.
+- **Unity URP pack** — AO is now correctly placed in G channel. Format is `R=Metallic, G=AO, B=0, A=Smoothness`. Previously G channel was empty.
+- **Toggle elements "blue on blue"** — active chips had accent background AND accent-colored icons/text, so content disappeared. Now active = accent background + white content, `ink=False` on active.
+- **Buttons visually gray but clickable** — `ft.Container` doesn't have a built-in `disabled` property in Flet 1.0, so `.disabled = False` on a container had no visual effect. Fixed by re-rendering buttons from state via `on_rebuild()` after each action.
+- **Preview lost on rebuild** — after auto-detect, category change, theme switch, or language switch, the preview image disappeared because `rebuild_ui()` recreated the `ft.Image` with empty `src`. Fixed by storing preview `src` in state and restoring it in `build()`.
+
+### Removed
+- **Emoji from all UI strings** in `translations.py`. Log messages keep emoji as color markers (standard practice), but buttons, tabs, headers, dialog titles are now text-only.
+
+
 ## [1.7.4-beta] — 2026-09-24
 
 Advanced Roughness + Color-Based Metallic + dynamic right panel.
