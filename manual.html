@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Albedolizer v1.7.5-beta — Мануал</title>
+<title>Albedolizer v1.7.6-beta — Мануал</title>
 <style>
   :root {
     --bg: #1a1d23;
@@ -24,7 +24,7 @@
     margin: 0;
     background: var(--bg);
     color: var(--fg);
-    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    font-family: "Segoe UI", "Noto Sans SC", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
     font-size: 15px;
     line-height: 1.65;
   }
@@ -267,6 +267,7 @@
 <div class="lang-switch">
   <button id="btn-ru" onclick="setLang('ru')">RU</button>
   <button id="btn-en" onclick="setLang('en')">EN</button>
+  <button id="btn-zh" onclick="setLang('zh')">中文</button>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -275,7 +276,7 @@
 <div class="container" id="content-ru">
 
 <header id="top-ru">
-  <h1>Albedolizer <span class="ver">v1.7.5-beta</span></h1>
+  <h1>Albedolizer <span class="ver">v1.7.6-beta</span></h1>
   <p class="sub">PBR Albedo Checker &amp; Optimizer — Руководство пользователя</p>
 </header>
 
@@ -550,7 +551,7 @@
 </section>
 
 <footer>
-  Albedolizer v1.7.5-beta · MIT · INV.LVL · 2026
+  Albedolizer v1.7.6-beta · MIT · INV.LVL · 2026
   <br><br>
   <a href="#top-ru" class="back">↑ Наверх</a>
 </footer>
@@ -563,7 +564,7 @@
 <div class="container" id="content-en" style="display:none;">
 
 <header id="top-en">
-  <h1>Albedolizer <span class="ver">v1.7.5-beta</span></h1>
+  <h1>Albedolizer <span class="ver">v1.7.6-beta</span></h1>
   <p class="sub">PBR Albedo Checker &amp; Optimizer — User Manual</p>
 </header>
 
@@ -838,9 +839,297 @@
 </section>
 
 <footer>
-  Albedolizer v1.7.5-beta · MIT · INV.LVL · 2026
+  Albedolizer v1.7.6-beta · MIT · INV.LVL · 2026
   <br><br>
   <a href="#top-en" class="back">↑ Back to top</a>
+</footer>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--                       中文 (简体)                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="container" id="content-zh" style="display:none;">
+
+<header id="top-zh">
+  <h1>Albedolizer <span class="ver">v1.7.6-beta</span></h1>
+  <p class="sub">PBR Albedo 检查与优化工具 — 用户手册</p>
+</header>
+
+<nav class="toc">
+  <h2>目录</h2>
+  <ol>
+    <li><a href="#intro-zh">简介</a></li>
+    <li><a href="#header-zh">顶栏与导航</a></li>
+    <li><a href="#single-zh">单张图片选项卡</a></li>
+    <li><a href="#single_panel-zh">单张图片右侧面板</a></li>
+    <li><a href="#pbr-zh">PBR 选项卡</a></li>
+    <li><a href="#engine-zh">引擎导出</a></li>
+    <li><a href="#realism-zh">真实感滤镜</a></li>
+    <li><a href="#batch-zh">批量处理</a></li>
+    <li><a href="#compress-zh">压缩</a></li>
+    <li><a href="#log-zh">日志面板</a></li>
+    <li><a href="#viewer-zh">3D 查看器</a></li>
+    <li><a href="#info-zh">信息对话框</a></li>
+    <li><a href="#license-zh">许可与致谢</a></li>
+  </ol>
+</nav>
+
+<section id="intro-zh">
+  <h2>1. 简介</h2>
+  <p><strong>Albedolizer</strong> 是一款面向 Windows 的独立工具，适用于 3D 艺术家、游戏设计师以及所有使用 PBR 纹理的用户。它可以根据标准检查 Albedo 贴图，通过 AI 自动校正颜色，生成完整的 PBR 贴图集，为目标引擎打包，并支持在内置 3D 查看器中预览结果。</p>
+
+  <h3>两种 UI 模式</h3>
+  <ul>
+    <li><strong>简单模式</strong> — 一键工作流（打开 → AI 校正 → 保存）。高级工具隐藏。</li>
+    <li><strong>高级模式</strong> — 完全控制。解锁统计、校正方法、去模糊、饱和度、平铺检查、无缝等功能。</li>
+  </ul>
+  <p>通过顶栏的 <code>简单</code> / <code>高级</code> 按钮切换模式。</p>
+</section>
+
+<section id="header-zh">
+  <h2>2. 顶栏与导航</h2>
+  <p>顶栏包含应用名称、当前版本、UI 模式切换、主题切换、语言切换以及信息按钮。</p>
+  <figure>
+    <img src="screenshots/header.jpg" alt="Albedolizer 顶栏">
+    <figcaption>图 1 — 顶栏包含模式、主题、语言和信息按钮。</figcaption>
+  </figure>
+  <p>左侧的 <strong>NavigationRail</strong> 可访问所有选项卡：</p>
+  <ul>
+    <li><strong>单张图片</strong> — 检查和校正单张纹理</li>
+    <li><strong>批量处理</strong> — 处理整个文件夹</li>
+    <li><strong>PBR</strong> — 生成 PBR 贴图</li>
+    <li><strong>引擎</strong> — 为 Unity / Unreal / Godot 打包贴图</li>
+    <li><strong>压缩</strong> — 减小文件大小</li>
+    <li><strong>真实感</strong> — 应用程序化真实感滤镜</li>
+  </ul>
+</section>
+
+<section id="single-zh">
+  <h2>3. 单张图片选项卡</h2>
+
+  <h3>简单模式</h3>
+  <p>在简单模式下，一个按钮完成所有操作：<code>自动校正</code>。它会打开文件、运行 AI 颜色校正、提升饱和度并显示结果。</p>
+  <figure>
+    <img src="screenshots/tab_single_simple.jpg" alt="简单模式下的单张图片选项卡">
+    <figcaption>图 2 — 简单模式下的单张图片选项卡。</figcaption>
+  </figure>
+
+  <h3>高级模式</h3>
+  <p>在高级模式下，您可以完全控制：</p>
+  <ol>
+    <li>在右侧选择 <strong>纹理类型</strong>（或点击 <code>自动检测材质</code>）</li>
+    <li><code>打开</code> — 加载 Albedo 纹理</li>
+    <li><code>检查</code> — 查看统计信息和热力图</li>
+    <li>如果失败 → <code>自动校正</code></li>
+    <li><code>保存</code> 结果</li>
+  </ol>
+  <figure>
+    <img src="screenshots/tab_single_advanced.jpg" alt="高级模式下的单张图片选项卡">
+    <figcaption>图 3 — 高级模式下的单张图片选项卡。</figcaption>
+  </figure>
+  <div class="note"><strong>提示。</strong> 使用 <code>重置</code> 可随时将校正后的图像与原图对比。</div>
+</section>
+
+<section id="single_panel-zh">
+  <h2>4. 单张图片右侧面板</h2>
+  <p>单张图片选项卡的右侧面板包含配置校正所需的一切：</p>
+  <ul>
+    <li><strong>自动检测材质</strong> — 基于 CLIP 的分类器从 50 个预设中选出最佳匹配</li>
+    <li><strong>纹理类型</strong> — 分类（金属、自然、矿物、合成、织物、特殊、动物）以及每个分类下的预设</li>
+    <li><strong>校正方法</strong> — Autolevels / LUTwithBGrid / 数学</li>
+    <li><strong>平铺 3×3</strong> — 在可平铺纹理上查找接缝</li>
+    <li><strong>无缝</strong> — 通过径向遮罩 + 散布使纹理可平铺</li>
+    <li><strong>去除模糊</strong> — 针对模糊区域的自适应 USM 锐化</li>
+    <li><strong>饱和度</strong> — 修正 AI 校正后颜色发白的问题</li>
+    <li><strong>统计</strong> — 最小 / 最大 / 平均 / 中位数 / 百分位</li>
+  </ul>
+  <figure style="max-width: 420px; margin-left: auto; margin-right: auto;">
+    <img src="screenshots/right_panel_single.jpg" alt="单张图片右侧面板">
+    <figcaption>图 4 — 单张图片右侧面板。</figcaption>
+  </figure>
+</section>
+
+<section id="pbr-zh">
+  <h2>5. PBR 选项卡</h2>
+  <p>从单张 Albedo 纹理生成完整的 PBR 贴图集。</p>
+  <ol>
+    <li><code>加载 Albedo</code> — 选择纹理</li>
+    <li>在右侧选择预设（滑块将自动调整）</li>
+    <li>根据需要调整滑块（法线强度、平滑、阈值、高通、高度模糊、AO 半径、AO 强度、粗糙度基础、粗糙度变化）</li>
+    <li><code>生成</code> → 7 张贴图</li>
+    <li>通过顶部按钮在贴图之间切换：<strong>Albedo / Height / Normal / AO / Rough / Metal / Edge / ORM</strong></li>
+    <li><code>3D 预览</code> — 打开 OpenGL 查看器</li>
+    <li><code>保存全部</code> — 在源文件旁创建 <code>&lt;名称&gt;_pbr/</code> 文件夹</li>
+  </ol>
+  <figure>
+    <img src="screenshots/tab_pbr.jpg" alt="PBR 选项卡">
+    <figcaption>图 5 — PBR 选项卡，包含全部 7 张贴图和参数滑块。</figcaption>
+  </figure>
+  <div class="note"><strong>提示。</strong> 选择相应选项时，高度和法线贴图将以 16 位 PNG 保存 — 为专业工作流提供完整精度。</div>
+</section>
+
+<section id="engine-zh">
+  <h2>6. 引擎导出</h2>
+  <p>一键为特定引擎打包 PBR 贴图。</p>
+
+  <h3>来源</h3>
+  <ul>
+    <li><code>从当前 PBR</code> — 使用刚刚在 PBR 选项卡中生成的贴图</li>
+    <li><code>从文件夹加载</code> — 选择包含现有 <code>*_albedo.png</code>、<code>*_normal.png</code>、<code>*_ao.png</code> 等的文件夹</li>
+  </ul>
+
+  <h3>支持的引擎</h3>
+  <table>
+    <tr><th>引擎</th><th>布局</th></tr>
+    <tr><td><strong>Unity HDRP</strong></td><td>R = 金属度, G = AO, B = 细节遮罩, A = 平滑度 (1 − 粗糙度)</td></tr>
+    <tr><td><strong>Unity URP</strong></td><td>R = 金属度, G = AO, B = 0, A = 平滑度 (1 − 粗糙度)</td></tr>
+    <tr><td><strong>Unreal</strong></td><td>R = AO, G = 粗糙度, B = 金属度</td></tr>
+    <tr><td><strong>Godot</strong></td><td>R = AO, G = 粗糙度, B = 金属度</td></tr>
+  </table>
+
+  <h3>附加选项</h3>
+  <ul>
+    <li><strong>法线贴图格式</strong> — OpenGL (Y+) 或 DirectX (Y−)，翻转绿色通道</li>
+    <li><strong>细节遮罩</strong>（仅 HDRP）— 白色 (1.0) / 边缘贴图 / 从磁盘加载的自定义贴图</li>
+    <li><strong>PNG 位深度</strong> — 8 位或 16 位</li>
+    <li><strong>通道预览</strong> — R / G / B / A / RGB / RGBA</li>
+  </ul>
+
+  <figure>
+    <img src="screenshots/tab_engine_export.jpg" alt="引擎导出选项卡">
+    <figcaption>图 6 — 引擎导出选项卡，包含打包贴图预览和通道控制。</figcaption>
+  </figure>
+
+  <p>点击 <code>打包</code> 生成打包贴图，然后点击 <code>保存全部</code> 将 <code>&lt;名称&gt;_&lt;引擎&gt;_&lt;gl|dx&gt;/</code> 写入源文件旁。</p>
+</section>
+
+<section id="realism-zh">
+  <h2>7. 真实感滤镜</h2>
+  <p>为 Albedo 纹理添加程序化真实感效果 — 颗粒、微细节、颜色变化和轻微暗角。</p>
+  <ol>
+    <li><code>打开</code> — 加载纹理</li>
+    <li>调整三个滑块：
+      <ul>
+        <li><strong>颗粒</strong> — 细粒和粗粒噪点层</li>
+        <li><strong>细节</strong> — 自适应高通叠加，增强微细节</li>
+        <li><strong>变化</strong> — 大范围颜色/亮度斑块 + 暗角</li>
+      </ul>
+    </li>
+    <li><code>应用</code> — 在预览中查看结果</li>
+    <li><code>保存</code> 结果</li>
+  </ol>
+  <figure>
+    <img src="screenshots/tab_realism.jpg" alt="真实感选项卡">
+    <figcaption>图 7 — 真实感滤镜，包含三个滑块。</figcaption>
+  </figure>
+  <div class="note"><strong>提示。</strong> 对于 8K 纹理，滤镜可能需要几秒钟 — 进度条会显示状态。</div>
+</section>
+
+<section id="batch-zh">
+  <h2>8. 批量处理</h2>
+  <p>一次性处理整个文件夹的纹理，支持 AI 校正或压缩。</p>
+  <ol>
+    <li><code>选择文件夹</code> 或 <code>选择文件</code></li>
+    <li>在右侧选择校正方法（Autolevels / LUTwithBGrid / 数学）</li>
+    <li>设置线程数（1–8 个并行任务）</li>
+    <li>可选调整 <strong>去除模糊</strong> 强度</li>
+    <li><code>开始处理</code></li>
+  </ol>
+  <figure>
+    <img src="screenshots/tab_batch.jpg" alt="批量处理选项卡">
+    <figcaption>图 8 — 批量处理，包含线程控制。</figcaption>
+  </figure>
+  <p>结果保存在源文件旁的 <code>_corrected</code> 文件夹中。</p>
+</section>
+
+<section id="compress-zh">
+  <h2>9. 压缩</h2>
+  <p>在不损失视觉质量的情况下减小 Albedo 纹理的文件大小。</p>
+  <ul>
+    <li><strong>单张压缩</strong> — <code>打开</code> 文件，点击 <code>压缩</code>，然后 <code>保存</code></li>
+    <li><strong>批量压缩</strong> — <code>选择文件夹</code> 或 <code>选择文件</code>，然后 <code>压缩文件夹</code></li>
+  </ul>
+  <p>在右侧面板选择 <strong>8 位</strong> 或 <strong>16 位</strong> PNG。</p>
+  <figure>
+    <img src="screenshots/tab_compress.jpg" alt="压缩选项卡">
+    <figcaption>图 9 — 压缩选项卡，包含位深度选择器。</figcaption>
+  </figure>
+  <p>结果保存在源文件旁的 <code>_compressed</code> 文件夹中。</p>
+</section>
+
+<section id="log-zh">
+  <h2>10. 日志面板</h2>
+  <p>窗口底部有一个共享的日志面板。折叠时仅显示最后一行。点击标题栏可展开查看完整历史。</p>
+  <figure style="max-width: 100%; margin-left: auto; margin-right: auto;">
+    <img src="screenshots/log_bottomsheet.jpg" alt="日志面板 — 折叠与展开"
+         style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
+    <figcaption>图 10 — 日志面板：折叠（底部）与展开（顶部）。</figcaption>
+  </figure>
+  <ul>
+    <li>点击日志标题栏可切换折叠 / 展开</li>
+    <li>点击清除按钮可清空日志</li>
+  </ul>
+</section>
+
+<section id="viewer-zh">
+  <h2>11. 3D 查看器</h2>
+  <p>在形状上实时预览 PBR 结果，支持 HDRI 照明和模糊反射。</p>
+
+  <h3>控制</h3>
+  <ul>
+    <li><strong>鼠标左键</strong> — 旋转对象</li>
+    <li><strong>鼠标滚轮</strong> — 放大 / 缩小</li>
+    <li><strong>形状</strong> — 球体 / 圆柱 / 立方体 / 平面 — 切换对象形状</li>
+    <li><strong>曝光</strong> — 亮度滑块（0.5 – 2.0）</li>
+    <li><strong>平铺</strong> — 点击 X / Y 按钮可将纹理缩放从 1×1 调整到 16×16</li>
+    <li><strong>重置 4x3</strong> — 恢复默认平铺</li>
+  </ul>
+
+  <figure>
+    <img src="screenshots/viewer_3d.jpg" alt="带控制面板的 3D 查看器">
+    <figcaption>图 11 — 内置 3D 查看器，控制面板位于左上角。</figcaption>
+  </figure>
+
+  <div class="note"><strong>提示。</strong> 在 PBR 选项卡中点击 <code>3D 预览</code> 时，查看器将作为独立窗口 (<code>viewer.exe</code>) 打开。</div>
+</section>
+
+<section id="info-zh">
+  <h2>12. 信息对话框</h2>
+  <p>点击顶栏中的 <code>信息</code> 打开信息对话框。其中包含：</p>
+  <ul>
+    <li><strong>帮助</strong> — 纯文本快速参考</li>
+    <li><strong>关于</strong> — 版本、构建日期、作者</li>
+    <li><strong>支持</strong> — 捐赠钱包（BTC、USDT、GRAM）</li>
+    <li><strong>手册</strong> — 本 HTML 文件，在浏览器中打开</li>
+  </ul>
+</section>
+
+<section id="license-zh">
+  <h2>13. 许可与致谢</h2>
+
+  <h3>许可</h3>
+  <p>Albedolizer 在 <strong>MIT 许可</strong> 下发布 — 可免费使用，包括商业项目。</p>
+
+  <h3>致谢</h3>
+  <ul>
+    <li><strong>LUTwithBGrid</strong> (ECCV 2024) — Wontae Kim, Nam Ik Cho — Apache 2.0</li>
+    <li><strong>OpenAI CLIP</strong> (ViT-B/32) — 用于材质自动检测</li>
+    <li><strong>Flet</strong> — 跨平台 UI 框架</li>
+    <li><strong>Lucide</strong> — SVG 图标集（ISC 许可）</li>
+    <li><strong>Moderngl + GLFW + imgui-bundle</strong> — 3D 查看器技术栈</li>
+  </ul>
+
+  <h3>源代码</h3>
+  <p><a href="https://github.com/invisiblelevel/Albedolizer" style="color: var(--accent);">github.com/invisiblelevel/Albedolizer</a></p>
+
+  <p style="margin-top: 32px;">由 <strong>INV.LVL</strong> 制作 · 2026</p>
+</section>
+
+<footer>
+  Albedolizer v1.7.6-beta · MIT · INV.LVL · 2026
+  <br><br>
+  <a href="#top-zh" class="back">↑ 返回顶部</a>
 </footer>
 
 </div>
@@ -849,23 +1138,34 @@
   function setLang(lang) {
     var ru = document.getElementById('content-ru');
     var en = document.getElementById('content-en');
+    var zh = document.getElementById('content-zh');
     var btnRu = document.getElementById('btn-ru');
     var btnEn = document.getElementById('btn-en');
+    var btnZh = document.getElementById('btn-zh');
+
+    // Hide all
+    ru.style.display = 'none';
+    en.style.display = 'none';
+    zh.style.display = 'none';
+    btnRu.classList.remove('active');
+    btnEn.classList.remove('active');
+    btnZh.classList.remove('active');
 
     if (lang === 'en') {
-      ru.style.display = 'none';
       en.style.display = 'block';
       btnEn.classList.add('active');
-      btnRu.classList.remove('active');
       document.documentElement.lang = 'en';
-      document.title = 'Albedolizer v1.7.5-beta — Manual';
+      document.title = 'Albedolizer v1.7.6-beta — Manual';
+    } else if (lang === 'zh') {
+      zh.style.display = 'block';
+      btnZh.classList.add('active');
+      document.documentElement.lang = 'zh';
+      document.title = 'Albedolizer v1.7.6-beta — 用户手册';
     } else {
       ru.style.display = 'block';
-      en.style.display = 'none';
       btnRu.classList.add('active');
-      btnEn.classList.remove('active');
       document.documentElement.lang = 'ru';
-      document.title = 'Albedolizer v1.7.5-beta — Мануал';
+      document.title = 'Albedolizer v1.7.6-beta — Мануал';
     }
     try {
       localStorage.setItem('albedo_manual_lang', lang);
@@ -878,7 +1178,9 @@
     var lang = saved;
     if (!lang) {
       var nav = (navigator.language || navigator.userLanguage || 'ru').toLowerCase();
-      lang = nav.startsWith('ru') ? 'ru' : 'en';
+      if (nav.startsWith('ru')) lang = 'ru';
+      else if (nav.startsWith('zh')) lang = 'zh';
+      else lang = 'en';
     }
     setLang(lang);
   })();

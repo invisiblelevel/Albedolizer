@@ -5,7 +5,9 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[
+        ('NotoSansSC-VariableFont_wght.ttf', '.'),
+    ],
     hiddenimports=[
         'onnxruntime',
         'lut_model',

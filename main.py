@@ -10,6 +10,7 @@ import sys
 import asyncio
 import flet as ft
 import cv2
+import concurrent.futures
 
 from config import (
     APP_VERSION, APP_BUILD, AUTOLEVELS_EXE_NAME, AUTOLEVELS_MODEL_NAME,
@@ -35,6 +36,8 @@ from ui.tab_export import ExportTab
 from ui.tab_realism import RealismTab
 from ui.tab_batch import BatchTab
 from ui.tab_compress import CompressTab
+
+from translations import get_font_path
 
 FONT = "Segoe UI"
 WINDOW_WIDTH = 1280
@@ -64,6 +67,10 @@ def _resolve_icon_path(base_dir: str) -> str:
 
 
 def main(page: ft.Page):
+    cv2.setNumThreads(1)
+    asyncio.get_event_loop().set_default_executor(
+        concurrent.futures.ThreadPoolExecutor(max_workers=4)
+    )
     # ═══ Настройки и state ═══
     user_settings = load_settings()
     S = create_state(user_settings)
@@ -87,6 +94,12 @@ def main(page: ft.Page):
     page.window.height = WINDOW_HEIGHT
     page.window.opacity = 1.0
 
+    # ═══ Шрифт для китайского ═══
+    font_path = get_font_path()
+    if font_path:
+        page.fonts = {"NotoSansSC": font_path}
+        page.theme = ft.Theme(font_family="NotoSansSC")
+
     icon_path = _resolve_icon_path(base_dir)
     if os.path.exists(icon_path):
         page.window.icon = icon_path
@@ -96,11 +109,16 @@ def main(page: ft.Page):
     picker = ft.FilePicker()
 
     # ═══ CPU threads для cv2 ═══
-    cv2.setNumThreads(os.cpu_count() or 4)
+     # cv2 внутри каждого воркера использует 1 поток,
+    # параллелизм обеспечивается на уровне asyncio.
+    cv2.setNumThreads(1)
 
     # ═══ Функции-обёртки для переводов/темы ═══
     def t(key):
-        return T[S["lang"]].get(key, key)
+        lang = S.get("lang", "en")
+        if lang not in T:
+            lang = "en"
+        return T[lang].get(key, key)
 
     def current_theme():
         return theme_for(S["theme"])
@@ -133,10 +151,21 @@ def main(page: ft.Page):
         on_persist()
         rebuild_ui()
 
-    def on_toggle_lang():
-        S["lang"] = "en" if S["lang"] == "ru" else "ru"
+    LANG_CYCLE = ["ru", "en", "zh"]
+
+    def on_set_lang(code: str):
+        if code not in LANG_CYCLE:
+            return
+        if S["lang"] == code:
+            return
+        S["lang"] = code
         on_persist()
         rebuild_ui()
+
+    def on_toggle_lang():
+        # циклическое переключение (для горячей клавиши, если есть)
+        idx = LANG_CYCLE.index(S["lang"]) if S["lang"] in LANG_CYCLE else 0
+        on_set_lang(LANG_CYCLE[(idx + 1) % len(LANG_CYCLE)])
 
     def on_open_info():
         th = current_theme()
@@ -189,6 +218,8 @@ def main(page: ft.Page):
         S["pbr_buttons"] = {}
         S["compress_buttons"] = {}
         S["pbr_map_buttons"] = {}
+        # Восстановить строки лога после rebuild
+        refresh_log(S)
 
     # ═══ Хоткеи ═══
     def on_keyboard(e: ft.KeyboardEvent):
@@ -252,6 +283,7 @@ def main(page: ft.Page):
             page, S, t, th, APP_VERSION,
             on_toggle_mode, on_toggle_theme,
             on_toggle_lang, on_open_info,
+            on_set_lang=on_set_lang,
         ).build()
 
         # ─── Активная вкладка ───

@@ -124,30 +124,43 @@ def ai_correct(pil, exe_path, model_path, timeout=300):
     except Exception as e:
         return None, False, f"{type(e).__name__}: {e}"
         
+# Синглтон ONNX-модели — грузится один раз, переиспользуется.
+_LUT_MODEL = None
+_LUT_MODEL_PATH = None
+
+
+def _get_lut_model(onnx_path: str):
+    """Возвращает singleton LUTwithBGridModel, грузит один раз."""
+    global _LUT_MODEL, _LUT_MODEL_PATH
+    if _LUT_MODEL is not None and _LUT_MODEL_PATH == onnx_path:
+        return _LUT_MODEL
+    try:
+        from lut_model import LUTwithBGridModel
+    except ImportError as e:
+        raise RuntimeError(f"lut_model не найден: {e}")
+    m = LUTwithBGridModel()
+    if not m.is_loaded():
+        if not m.load(onnx_path):
+            raise RuntimeError("не удалось загрузить ONNX")
+    _LUT_MODEL = m
+    _LUT_MODEL_PATH = onnx_path
+    return m
+
+
 def lut_correct(pil, onnx_path):
     """
     AI-коррекция через LUTwithBGrid (ONNX).
     Гибрид: яркость из модели, цвет из оригинала.
+    Модель — singleton, переиспользуется между вызовами.
     Возвращает (PIL | None, ok, error_message | None).
     """
-    try:
-        from lut_model import LUTwithBGridModel
-    except ImportError as e:
-        return None, False, f"lut_model не найден: {e}"
-    
     if not os.path.exists(onnx_path):
         return None, False, "LUTwithBGrid ONNX не найден"
-    
     try:
-        model = LUTwithBGridModel()
-        if not model.is_loaded():
-            if not model.load(onnx_path):
-                return None, False, "не удалось загрузить ONNX"
-        
+        model = _get_lut_model(onnx_path)
         result = model.correct(pil)
         if result is None:
             return None, False, "LUTwithBGrid вернул None"
-        
         return result, True, None
     except Exception as e:
         return None, False, f"{type(e).__name__}: {e}"

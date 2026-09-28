@@ -1,14 +1,14 @@
 [Setup]
 AppName=Albedolizer
-AppVersion=1.7.2-beta
-AppVerName=Albedolizer 1.7.2-beta
+AppVersion=1.7.6-beta
+AppVerName=Albedolizer 1.7.6-beta
 AppPublisher=INV.LVL
 AppPublisherURL=https://github.com/invisiblelevel/Albedolizer
 DefaultDirName={autopf}\Albedolizer
 DefaultGroupName=Albedolizer
 DisableProgramGroupPage=yes
 OutputDir=installer_output
-OutputBaseFilename=Albedolizer_Setup_v1.7.2-beta
+OutputBaseFilename=Albedolizer_Setup_v1.7.6-beta
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -36,6 +36,7 @@ Source: "dist\clip_text_encoder.onnx"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\clip_tokenizer\*"; DestDir: "{app}\clip_tokenizer"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "dist\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\manual.html"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\NotoSansSC-VariableFont_wght.ttf"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\env.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\env_blur.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\screenshots\*"; DestDir: "{app}\screenshots"; Flags: ignoreversion recursesubdirs createallsubdirs
