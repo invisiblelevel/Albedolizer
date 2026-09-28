@@ -164,7 +164,24 @@ Free Godot Editor add-on that generates PBR maps and auto-creates StandardMateri
 2. Run the installer — it places everything in `Program Files\Albedolizer`
 3. Launch from Start Menu or Desktop shortcut
 
-**Requirements:** Windows 10/11, 64-bit
+---
+
+## System Requirements
+
+| Parameter | Minimum | Recommended |
+|---|---|---|
+| **OS** | Windows 10 (64-bit) | Windows 11 (64-bit) |
+| **RAM** | 16 GB | 32 GB |
+| **CPU** | 4 cores | 8+ cores |
+| **GPU** | not required | NVIDIA for 3D viewer |
+| **Disk** | 2 GB free | SSD, 5+ GB |
+
+**Important about memory:**
+- **16 GB** — comfortable work with textures up to 4K, single-file processing.
+- **32 GB** — batch processing of 8K textures, parallel threads, AI models.
+- **8 GB** — the app will start, but processing 4K/8K textures may cause freezes and `MemoryError`. Not recommended.
+
+---
 
 ### From source
 
@@ -431,7 +448,22 @@ Albedolizer также доступен прямо внутри **Blender**, **U
 2. Запусти установщик — всё встанет в `Program Files\Albedolizer`
 3. Запускай из меню Пуск или ярлыка на рабочем столе
 
-**Требования:** Windows 10/11, 64-bit
+---
+
+## Системные требования
+
+| Параметр | Минимум | Рекомендуется |
+|---|---|---|
+| **ОС** | Windows 10 (64-bit) | Windows 11 (64-bit) |
+| **ОЗУ** | 16 ГБ | 32 ГБ |
+| **CPU** | 4 ядра | 8+ ядер |
+| **GPU** | не требуется | NVIDIA для 3D-вьюера |
+| **Диск** | 2 ГБ свободно | SSD, 5+ ГБ |
+
+**Важно про память:**
+- **16 ГБ** — комфортная работа с текстурами до 4K, одиночная обработка.
+- **32 ГБ** — батч-обработка 8K-текстур, параллельные потоки, AI-модели.
+- **8 ГБ** — приложение запустится, но при обработке 4K/8K-текстур возможны зависания и ошибки `MemoryError`. Не рекомендуется.
 
 ### Из исходников
 
