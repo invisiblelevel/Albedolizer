@@ -16,26 +16,50 @@ FONT_MONO = "Consolas"
 #  ЛОГ
 # ═══════════════════════════════════════════════════════════
 
+LOG_MAX_LINES = 200
+
+
+def _make_log_text(txt: str, col: str) -> ft.Text:
+    return ft.Text(txt, color=col, size=13, font_family=FONT_MONO,
+                   selectable=True, expand=True)
+
+
 def log(S: dict, text: str, color: str = None, fg2: str = "#9aa0a6"):
-    """Добавляет строку в лог и обновляет ListView."""
-    S["log_lines"].append((text, color or fg2))
-    if len(S["log_lines"]) > 200:
-        S["log_lines"].pop(0)
-    refresh_log(S)
+    """
+    Добавляет строку в лог. Не пересоздаёт весь ListView —
+    только добавляет один ft.Text и удаляет старый при переполнении.
+    """
+    col = color or fg2
+    S["log_lines"].append((text, col))
+
+    lc = S.get("log_column_bottom")
+    if lc is not None:
+        lc.controls.append(_make_log_text(text, col))
+        # Сброс переполнения — удаляем самые старые
+        while len(S["log_lines"]) > LOG_MAX_LINES:
+            S["log_lines"].pop(0)
+            if lc.controls:
+                lc.controls.pop(0)
+    else:
+        # UI ещё не собран — просто копим
+        while len(S["log_lines"]) > LOG_MAX_LINES:
+            S["log_lines"].pop(0)
+
+    # Свёрнутый preview
+    prev = S.get("log_collapsed_preview")
+    if prev is not None:
+        prev.value = text
+        prev.color = col
 
 
 def refresh_log(S: dict):
-    """Перерисовывает весь лог из S['log_lines']."""
+    """Полная перерисовка лога — только при rebuild UI."""
     lc = S.get("log_column_bottom")
     if lc is None:
         return
     lc.controls.clear()
     for txt, col in S["log_lines"]:
-        lc.controls.append(
-            ft.Text(txt, color=col, size=13, font_family=FONT_MONO,
-                    selectable=True, expand=True)
-        )
-    # Обновляем свёрнутый preview, если есть
+        lc.controls.append(_make_log_text(txt, col))
     prev = S.get("log_collapsed_preview")
     if prev is not None:
         if S["log_lines"]:

@@ -408,6 +408,9 @@ class CompressTab:
     async def compress_batch_run(self, e=None):
         S = self.S
         th = self.theme
+        if S.get("compress_batch_running"):
+            return
+        S["compress_batch_running"] = True
         files = S["compress_files"]
         if not files:
             log(S, self.t("batch_no_files"), color=th["warn"], fg2=th["fg2"])
@@ -456,6 +459,7 @@ class CompressTab:
                                   f"{self.t('batch_done')}: {count} / {total}",
                                   fg2=th["fg2"])
         S["compress_files"] = []
+        S["compress_batch_running"] = False
         self.page.update()
 
     # ─── SIMPLE MODE действия ───
@@ -518,6 +522,9 @@ class CompressTab:
     async def compress_simple_batch(self, e=None):
         th = self.theme
         S = self.S
+        if S.get("compress_batch_running"):
+            return
+        S["compress_batch_running"] = True
         try:
             folder = await self.picker.get_directory_path(
                 dialog_title=self.t("batch_select_folder"))
@@ -575,10 +582,12 @@ class CompressTab:
             log(S, f"📁 {out_dir}", color=th["fg2"], fg2=th["fg2"])
             S["compress_progress_bar"].visible = False
             S["compress_progress_text"].visible = False
+            S["compress_batch_running"] = False
             self.page.update()
         except Exception as ex:
             S["compress_progress_bar"].visible = False
             S["compress_progress_text"].visible = False
+            S["compress_batch_running"] = False
             log(S, f"❌ {self.t('err')}: {ex}",
                 color=th["danger"], fg2=th["fg2"])
             self.page.update()

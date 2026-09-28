@@ -1059,6 +1059,9 @@ class PbrTab:
     async def pbr_do_batch(self, e):
         S = self.S
         th = self.theme
+        if S.get("pbr_batch_running"):
+            return
+        S["pbr_batch_running"] = True
         try:
             folder = await self.picker.get_directory_path(
                 dialog_title=self.t("pbr_dialog_folder"))
@@ -1146,8 +1149,10 @@ class PbrTab:
                 S["pbr_batch_index"] = 0
                 self.pbr_load_batch_texture(keys[0])
                 self.on_rebuild()
+            S["pbr_batch_running"] = False
         except Exception as ex:
             await hide_pbr_progress(S, self.page)
+            S["pbr_batch_running"] = False
             log(S, f"❌ PBR batch: {ex}",
                 color=th["danger"], fg2=th["fg2"])
             self.page.update()

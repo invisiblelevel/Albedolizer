@@ -217,6 +217,9 @@ class BatchTab:
     async def batch_run(self, e=None):
         S = self.S
         th = self.theme
+        if S.get("batch_running"):
+            return
+        S["batch_running"] = True
         files = S["batch_files"]
         if not files:
             log(S, self.t("batch_no_files"), color=th["warn"],
@@ -252,6 +255,9 @@ class BatchTab:
                 out_path = os.path.join(out_dir, f"{base}.png")
                 err = None
                 ok = False
+                img = None
+                result = None
+                ai_res = None
                 try:
                     img = await asyncio.to_thread(safe_open_rgb, fp)
                     if S["correction_mode"] == "math":
@@ -271,18 +277,35 @@ class BatchTab:
                             color=th["fg2"], fg2=th["fg2"])
                         if ai_ok and ai_res is not None:
                             result = ai_res
+                            ai_res = None  # владение передано в result
                         else:
                             result = await asyncio.to_thread(
                                 apply_fallback, img, S["profile"])
                     if S["soap_fix_strength"] > 0:
+                        prev = result
                         result = await asyncio.to_thread(
                             apply_soap, result, S["soap_fix_strength"])
+                        if prev is not result:
+                            del prev
                     await asyncio.to_thread(
                         save_16bit_or_8bit, result, out_path, 16)
-                    img.close()
                     ok = True
                 except Exception as ex:
                     err = f"{type(ex).__name__}: {ex}"
+                finally:
+                    # Всегда освобождаем большие объекты
+                    if img is not None:
+                        try:
+                            img.close()
+                        except Exception:
+                            pass
+                        del img
+                    if result is not None:
+                        del result
+                    if ai_res is not None:
+                        del ai_res
+                    gc.collect()
+
                 done += 1
                 if ok:
                     count += 1
@@ -295,7 +318,23 @@ class BatchTab:
                                        fg2=th["fg2"])
                 self.page.update()
 
-        await asyncio.gather(*[process_one(fp) for fp in files])
+        # Пул воркеров: одновременно существует ровно N корутин,
+        # а не len(files). Экономит память на больших батчах.
+        queue = asyncio.Queue()
+        for fp in files:
+            queue.put_nowait(fp)
+
+        async def worker():
+            while True:
+                try:
+                    fp = queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+                await process_one(fp)
+
+        n_workers = max(1, min(8, S.get("batch_threads", 3)))
+        workers = [asyncio.create_task(worker()) for _ in range(n_workers)]
+        await asyncio.gather(*workers)
 
         log(S, f"✅ {self.t('batch_processed')} {count} / {total}",
             color=th["success"], fg2=th["fg2"])
@@ -304,4 +343,5 @@ class BatchTab:
                                f"{self.t('batch_done')}: {count} / {total}",
                                fg2=th["fg2"])
         S["batch_files"] = []
+        S["batch_running"] = False
         self.page.update()

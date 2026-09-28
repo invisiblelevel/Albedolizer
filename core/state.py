@@ -12,12 +12,20 @@ from config import (
 
 
 def _detect_system_lang() -> str:
-    """Windows API → 'ru' если русский, иначе 'en'."""
+    """
+    Windows API → 'ru' / 'zh' / 'en'.
+    Primary language ID (младшие 10 бит):
+      0x19 = ru, 0x04 = zh (Chinese), остальное → en.
+    """
     try:
         import ctypes
         lang_id = ctypes.windll.kernel32.GetUserDefaultUILanguage()
         primary = lang_id & 0x03FF
-        return "ru" if primary == 0x19 else "en"
+        if primary == 0x19:
+            return "ru"
+        if primary == 0x04:
+            return "zh"
+        return "en"
     except Exception:
         return "en"
 
@@ -155,6 +163,11 @@ def create_state(user_settings: dict) -> dict:
         "compress_buttons": {},
         "pbr_params_ref": None,
         "update_pbr_preview": None,
+        
+        # --- New ---
+        "batch_running": False,
+        "compress_batch_running": False,
+        "pbr_batch_running": False,
     }
 
     # Валидация: profile ∈ profile_category

@@ -728,6 +728,7 @@ class SingleTab:
                 self.S["corrected"] = ai_result
                 self.S["last_op"] = "corrected"
                 self.S["show_original"] = False
+                self._update_preview_display()
                 log(self.S, "", fg2=th["fg2"])
                 log(self.S, self.t("log_fix_done"), color=th["success"],
                     fg2=th["fg2"])
@@ -750,6 +751,7 @@ class SingleTab:
                 self.S["corrected"] = result
                 self.S["last_op"] = "corrected"
                 self.S["show_original"] = False
+                self._update_preview_display()
                 log(self.S, self.t("log_fix_done"), color=th["success"],
                     fg2=th["fg2"])
                 self.run_check(result, False)

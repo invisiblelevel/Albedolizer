@@ -44,8 +44,8 @@ def create_info_dialog(page, S, t, theme, base_dir) -> ft.AlertDialog:
 
     # ─── About content ───
     about_rows = [
-        ("about_version", "1.7.5-beta"),
-        ("about_build", "2026-09-26"),
+        ("about_version", "1.7.6-beta"),
+        ("about_build", "2026-09-28"),
         ("about_author", "INV.LVL"),
         ("about_license", "Free / Open Source"),
     ]
@@ -71,16 +71,21 @@ def create_info_dialog(page, S, t, theme, base_dir) -> ft.AlertDialog:
     )
 
     # ─── Support content ───
+    # ─── Clipboard как сервис (Flet 1.0) ───
+    clipboard = ft.Clipboard()
+    if clipboard not in page.services:
+        page.services.append(clipboard)
+
     copy_feedback = ft.Text("", color=th["success"], size=11,
                              font_family=FONT)
 
     def copy_address(addr):
-        def _do(e):
+        async def _do(e):
             try:
-                page.set_clipboard(addr)
+                await clipboard.set(addr)
                 copy_feedback.value = t("support_copied")
-            except Exception:
-                copy_feedback.value = addr
+            except Exception as ex:
+                copy_feedback.value = f"✗ {ex}"
             page.update()
         return _do
 

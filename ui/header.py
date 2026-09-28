@@ -21,16 +21,18 @@ class Header:
         S           — состояние
         t           — перевод
         theme       — цвета
-        version     — '1.7.5-beta'
+        version     — '1.7.6-beta'
         on_toggle_mode  — callback() — переключить Simple/Advanced
         on_toggle_theme — callback() — переключить тему
-        on_toggle_lang  — callback() — переключить язык
+        on_toggle_lang  — callback() — циклическое переключение языка (fallback)
         on_open_info    — callback() — открыть Info-диалог
+        on_set_lang     — callback(code) — установить конкретный язык ('ru'/'en'/'zh')
     """
 
     def __init__(self, page, S, t, theme, version,
                  on_toggle_mode, on_toggle_theme,
-                 on_toggle_lang, on_open_info):
+                 on_toggle_lang, on_open_info,
+                 on_set_lang=None):
         self.page = page
         self.S = S
         self.t = t
@@ -40,6 +42,7 @@ class Header:
         self.on_toggle_theme = on_toggle_theme
         self.on_toggle_lang = on_toggle_lang
         self.on_open_info = on_open_info
+        self.on_set_lang = on_set_lang or (lambda code: None)
 
     def build(self) -> ft.Container:
         th = self.theme
@@ -74,8 +77,7 @@ class Header:
         theme_btn = self._icon_only_btn(
             theme_icon, self.on_toggle_theme, tooltip="Toggle theme")
 
-        lang_btn = self._icon_text_btn(
-            "globe", self.t("lang_btn"), self.on_toggle_lang)
+        lang_switch = self._build_lang_switch()
 
         info_btn = self._icon_text_btn(
             "info", self.t("info_btn"), self.on_open_info)
@@ -85,7 +87,7 @@ class Header:
             ft.Container(width=8),
             theme_btn,
             ft.Container(width=8),
-            lang_btn,
+            lang_switch,
             ft.Container(width=8),
             info_btn,
         ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.CENTER)
@@ -98,6 +100,39 @@ class Header:
             ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
             padding=ft.Padding.symmetric(vertical=14, horizontal=24),
             bgcolor=th["panel"],
+        )
+
+    def _build_lang_switch(self) -> ft.Container:
+        """Сегментированный переключатель языка: RU | EN | 中文."""
+        th = self.theme
+        S = self.S
+        langs = [("ru", "RU"), ("en", "EN"), ("zh", "中文")]
+
+        chips = []
+        for code, label in langs:
+            is_active = S.get("lang", "ru") == code
+            chip = ft.Container(
+                content=ft.Text(
+                    label,
+                    color="#ffffff" if is_active else th["fg2"],
+                    size=11, font_family=FONT,
+                    weight=(ft.FontWeight.W_600 if is_active
+                            else ft.FontWeight.W_500),
+                    text_align=ft.TextAlign.CENTER,
+                ),
+                bgcolor=th["accent"] if is_active else th["card"],
+                border_radius=6,
+                padding=ft.Padding.symmetric(vertical=6, horizontal=10),
+                ink=not is_active,
+                on_click=lambda e, c=code: self.on_set_lang(c),
+            )
+            chips.append(chip)
+
+        return ft.Container(
+            content=ft.Row(chips, spacing=3, tight=True),
+            bgcolor=th["panel"],
+            border_radius=8,
+            padding=3,
         )
 
     def _icon_text_btn(self, icon_name, label, on_click):
