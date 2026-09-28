@@ -2,7 +2,7 @@
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.7.5--beta-orange)
+![Version](https://img.shields.io/badge/version-1.7.6--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -46,32 +46,28 @@ Free Godot Editor add-on that generates PBR maps and auto-creates StandardMateri
 ## Screenshots
 ![Main UI](screenshots/main_int.png)
 
-## What's new in v1.7.5-beta
+## What's new in v1.7.6-beta
 
-### New interface
-- **All UI emoji replaced with Lucide SVG icons** — thin line icons (1.75px stroke) instead of system emoji glyphs
-- **Unified `make_toggle` helper** — active state is now always accent background + white content, no more "blue on blue" bug
-- **Consistent button states** — buttons re-render from state on every action, no stale disabled states
-- **Presets use text-only chips** — no icons on preset buttons, cleaner and more compact
-- **Rail, header, tabs, log panel** — everything on Lucide
+### Chinese localization
+- **Full Simplified Chinese UI** (中文) — every button, tab, header, dialog, and log message translated
+- **Segmented language switcher** in header — `RU | EN | 中文` chips, active one highlighted
+- **Auto-detect system language** on first launch — `ru` / `zh` / `en` picked from Windows UI locale
+- **Fallback to English** if the saved language is unknown or invalid
+- **Chinese manual** — full HTML guide now in RU / EN / 中文
+- **NotoSansSC font** bundled for correct CJK rendering, with system fallback
 
-### Internal refactoring
-- **`main.py` split into `core/` and `ui/` packages** — was ~5000 lines, now ~500
-- **`core/state.py`** — state dict, settings persistence
-- **`core/io.py`** — file save/load helpers
-- **`core/image_ops.py`** — image processing wrappers
-- **`ui/theme.py`** — colors, fonts, `Btn` class, `make_btn`, `make_toggle`
-- **`ui/icons.py`** — ~65 Lucide SVG icons inline
-- **`ui/tab_*.py`** — one module per tab (Single, PBR, Export, Realism, Batch, Compress)
-- **`ui/dialogs.py`** — Info, Welcome, Compress-done, Fallback dialogs
-- **`ui/header.py`, `ui/rail.py`, `ui/log_panel.py`** — header, navigation, log panel
-- **`ui/helpers.py`** — log, stats, progress helpers
+### Batch processing fixes
+- **Critical fix:** double-clicking Batch / PBR Batch / Compress Batch no longer spawns parallel runs and corrupts output files. Added `batch_running`, `compress_batch_running`, `pbr_batch_running` flags.
+- **Memory leak fix:** worker pool instead of `asyncio.gather` — only N coroutines alive at once, not `len(files)`
+- **Memory leak fix:** explicit `del` + `gc.collect()` after each file, in a `finally` block
+- **Memory leak fix:** `LUTwithBGridModel` is now a singleton, loaded once per session, not per file
+- **Log panel optimization:** no more full ListView rebuild on every line — only appends/removes one `ft.Text`
+- **Thread pool capped at 4 workers** + `cv2.setNumThreads(1)` — keeps CPU and RAM stable on big batches
 
-### Fixed
-- **LUTwithBGrid on 8K textures** — `max_pixels` raised from 16M to 32M, no more downscale on large textures
-- **Unity URP pack** — AO is now correctly placed in G channel (`R=Metallic, G=AO, B=0, A=Smoothness`). Previously G channel was empty.
-- **CLI: seamless flags** — `--seamless`, `--seamless-hipass`, `--seamless-no-hipass`
-- **CLI: OSError handling** — clear hint on long paths, permissions, disk issues
+### Changed
+- `config.py` cleaned up — dead `"emoji"` field removed from `TEXTURE_PROFILES` and `PROFILE_CATEGORIES`
+- All 50 presets and 7 categories now have Chinese translations
+- System requirements updated — 16 GB RAM minimum, 32 GB recommended
 
 ---
 
@@ -130,7 +126,7 @@ Free Godot Editor add-on that generates PBR maps and auto-creates StandardMateri
 
 ### Built-in Manual
 - Full HTML manual with screenshots and annotations
-- **Russian / English** — switch inside the manual (RU / EN buttons, remembers your choice)
+- **Russian / English / Chinese** — switch inside the manual (RU / EN / 中文 buttons, remembers your choice)
 - Opens in your browser from the **Info → Manual** button
 
 ### 50 Texture Presets in 7 Categories
@@ -148,7 +144,7 @@ Free Godot Editor add-on that generates PBR maps and auto-creates StandardMateri
 - Tiling checker (3×3 preview) to spot seams
 
 ### Interface
-- Russian / English with auto-detection
+- Russian / English / Chinese with auto-detection
 - Interactive preview with zoom (0.5x–8x)
 - **Global hotkeys** — Ctrl+O, Ctrl+S, Ctrl+R, Ctrl+Z, Space, Enter
 - **Last opened folder is remembered** across sessions
@@ -160,7 +156,7 @@ Free Godot Editor add-on that generates PBR maps and auto-creates StandardMateri
 
 ### Installer (recommended)
 
-1. Download `Albedolizer_Setup_v1.7.5-beta.exe` from the [latest release](../../releases/latest)
+1. Download `Albedolizer_Setup_v1.7.6-beta.exe` from the [latest release](../../releases/latest)
 2. Run the installer — it places everything in `Program Files\Albedolizer`
 3. Launch from Start Menu or Desktop shortcut
 
@@ -270,6 +266,7 @@ Click **Info** in the header → **Manual** tab.
 - **LUTwithBGrid** (ECCV 2024) — Wontae Kim, Nam Ik Cho — [Apache 2.0](https://github.com/WontaeaeKim/LUTwithBGrid)
 - **GIMP tile-seamless** (1997) — Tim Rowley — GPL (algorithm ported)
 - **[Lucide](https://lucide.dev/)** — icon set (ISC License)
+- **[Noto Sans SC](https://fonts.google.com/noto/specimen/Noto+Sans+SC)** — Chinese font (SIL Open Font License)
 
 ## Contributing
 
@@ -284,7 +281,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.7.5-beta  
+**Version:** 1.7.6-beta  
 **Date:** 2026
 
 ---
@@ -330,32 +327,28 @@ Albedolizer также доступен прямо внутри **Blender**, **U
 
 ---
 
-## Что нового в v1.7.5-beta
+## Что нового в v1.7.6-beta
 
-### Новый интерфейс
-- **Все эмодзи в UI заменены на Lucide SVG-иконки** — тонкие линейные иконки (толщина 1.75px) вместо системных эмодзи
-- **Единый хелпер `make_toggle`** — активное состояние теперь всегда accent-фон + белый контент, больше нет бага «синее на синем»
-- **Консистентные состояния кнопок** — кнопки перерисовываются из state при каждом действии, никаких залипших disabled
-- **Пресеты — только текст** — без иконок на кнопках пресетов, чище и компактнее
-- **Rail, хедер, табы, лог-панель** — всё на Lucide
+### Китайская локализация
+- **Полный перевод UI на упрощённый китайский** (中文) — все кнопки, вкладки, хедер, диалоги и лог
+- **Сегментированный переключатель языка** в хедере — чипы `RU | EN | 中文`, активный подсвечен
+- **Автоопределение языка системы** при первом запуске — `ru` / `zh` / `en` из локали Windows
+- **Fallback на английский** при неизвестном языке в конфиге
+- **Китайский мануал** — полный HTML-гайд теперь на RU / EN / 中文
+- **Шрифт NotoSansSC** встроен для корректного отображения CJK, с fallback на системный
 
-### Внутренний рефакторинг
-- **`main.py` разбит на пакеты `core/` и `ui/`** — было ~5000 строк, стало ~500
-- **`core/state.py`** — словарь состояния, сохранение настроек
-- **`core/io.py`** — хелперы сохранения/загрузки
-- **`core/image_ops.py`** — обёртки обработки изображений
-- **`ui/theme.py`** — цвета, шрифты, класс `Btn`, `make_btn`, `make_toggle`
-- **`ui/icons.py`** — ~65 Lucide SVG-иконок инлайн
-- **`ui/tab_*.py`** — один модуль на вкладку (Single, PBR, Export, Realism, Batch, Compress)
-- **`ui/dialogs.py`** — Info, Welcome, Compress-done, Fallback диалоги
-- **`ui/header.py`, `ui/rail.py`, `ui/log_panel.py`** — хедер, навигация, лог
-- **`ui/helpers.py`** — лог, статистика, прогресс
+### Фиксы батч-обработки
+- **Критичный фикс:** двойной клик по Batch / PBR Batch / Compress Batch больше не запускает параллельные процессы и не ломает файлы. Добавлены флаги `batch_running`, `compress_batch_running`, `pbr_batch_running`.
+- **Фикс утечки памяти:** пул воркеров вместо `asyncio.gather` — одновременно живёт N корутин, а не `len(files)`
+- **Фикс утечки памяти:** явное `del` + `gc.collect()` после каждого файла в блоке `finally`
+- **Фикс утечки памяти:** `LUTwithBGridModel` теперь singleton, грузится один раз за сессию, а не на каждый файл
+- **Оптимизация лог-панели:** больше нет полной перерисовки ListView на каждую строку — только добавление/удаление одного `ft.Text`
+- **Thread pool ограничен 4 воркерами** + `cv2.setNumThreads(1)` — CPU и RAM стабильны на больших батчах
 
-### Исправлено
-- **LUTwithBGrid на 8K-текстурах** — `max_pixels` поднят с 16M до 32M, больше нет downscale на больших текстурах
-- **Unity URP pack** — AO теперь корректно в G-канале (`R=Metallic, G=AO, B=0, A=Smoothness`). Раньше G-канал был пустой.
-- **CLI: seamless флаги** — `--seamless`, `--seamless-hipass`, `--seamless-no-hipass`
-- **CLI: обработка OSError** — понятный hint при длинных путях, правах, проблемах с диском
+### Изменено
+- `config.py` очищен — мёртвое поле `"emoji"` убрано из `TEXTURE_PROFILES` и `PROFILE_CATEGORIES`
+- Все 50 пресетов и 7 категорий получили китайский перевод
+- Системные требования обновлены — 16 ГБ минимум, 32 ГБ рекомендуется
 
 ---
 
@@ -414,7 +407,7 @@ Albedolizer также доступен прямо внутри **Blender**, **U
 
 ### Встроенный мануал
 - Полный HTML-мануал со скринами и разметкой
-- **Русский / English** — переключение внутри мануала (кнопки RU / EN, выбор запоминается)
+- **Русский / English / 中文** — переключение внутри мануала (кнопки RU / EN / 中文, выбор запоминается)
 - Открывается из **Info → Мануал**
 
 ### 50 пресетов текстур в 7 категориях
@@ -432,7 +425,7 @@ Albedolizer также доступен прямо внутри **Blender**, **U
 - Тайлинг-чекер (3×3) для поиска швов
 
 ### Интерфейс
-- Русский / English с автоопределением системы
+- Русский / English / 中文 с автоопределением системы
 - Интерактивное превью с зумом (0.5x–8x)
 - **Глобальные хоткеи** — Ctrl+O, Ctrl+S, Ctrl+R, Ctrl+Z, Space, Enter
 - **Запоминается последняя открытая папка** между сессиями
@@ -444,7 +437,7 @@ Albedolizer также доступен прямо внутри **Blender**, **U
 
 ### Инсталлер (рекомендуется)
 
-1. Скачай `Albedolizer_Setup_v1.7.5-beta.exe` из [последнего релиза](../../releases/latest)
+1. Скачай `Albedolizer_Setup_v1.7.6-beta.exe` из [последнего релиза](../../releases/latest)
 2. Запусти установщик — всё встанет в `Program Files\Albedolizer`
 3. Запускай из меню Пуск или ярлыка на рабочем столе
 
@@ -552,6 +545,7 @@ Albedolizer также доступен прямо внутри **Blender**, **U
 - **LUTwithBGrid** (ECCV 2024) — Wontae Kim, Nam Ik Cho — [Apache 2.0](https://github.com/WontaeaeKim/LUTwithBGrid)
 - **GIMP tile-seamless** (1997) — Tim Rowley — GPL (алгоритм портирован)
 - **[Lucide](https://lucide.dev/)** — набор иконок (ISC License)
+- **[Noto Sans SC](https://fonts.google.com/noto/specimen/Noto+Sans+SC)** — китайский шрифт (SIL Open Font License)
 
 ## Вклад
 
@@ -566,5 +560,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.7.5-beta  
+**Версия:** 1.7.6-beta  
 **Дата:** 2026

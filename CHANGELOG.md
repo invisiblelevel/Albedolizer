@@ -1,5 +1,49 @@
 # Changelog
 
+## [1.7.6-beta] — 2026-09-28
+
+Chinese localization + critical batch fix + memory optimization.
+
+### Added
+- **Chinese localization (Simplified, 中文)** — full UI translated: buttons, tabs, header, dialogs, log messages, welcome text
+- **Segmented language switcher** in header — `RU | EN | 中文` chips, active one highlighted with accent
+- **Auto-detect system language** on first launch — Windows API `GetUserDefaultUILanguage()` maps to `ru` / `zh` / `en`
+- **Fallback to English** if saved language is unknown or invalid — `t()` helper now validates `lang` against `T` dict
+- **Chinese manual** — `manual.html` now has three languages (RU / EN / 中文) with segmented switcher
+- **NotoSansSC font** (`NotoSansSC-VariableFont_wght.ttf`) bundled for correct CJK rendering. `get_font_path()` searches exe dir, `_MEIPASS`, cwd, and `dist/`.
+- **`get_font_path()` in `translations.py`** — returns path to NotoSansSC if present, else `None`
+- **`DEFAULT_LANG = "en"`** in `config.py`
+- **`_detect_system_lang()` in `core/state.py`** — returns `ru` / `zh` / `en` based on Windows UI language (was `ru` / `en` only)
+- **Batch flags** in `core/state.py`: `batch_running`, `compress_batch_running`, `pbr_batch_running`
+
+### Fixed
+- **Critical: double-click on Batch / PBR Batch / Compress Batch** spawned parallel runs and corrupted output files. Now every batch method checks its `*_running` flag at entry, sets it to `True`, and resets in `finally`.
+- **Memory leak in batch processing** — `asyncio.gather(*[process_one(fp) for fp in files])` created one coroutine per file. Replaced with worker pool + `asyncio.Queue`: only N coroutines alive at once.
+- **Memory leak in batch processing** — added explicit `del img`, `del result`, `del ai_res` + `gc.collect()` inside `finally` block of `process_one`
+- **Memory leak** — `LUTwithBGridModel` was recreated and re-loaded on every file. Now a singleton with `_LUT_MODEL` / `_LUT_MODEL_PATH` module globals.
+- **Log panel memory** — `log()` no longer rebuilds the whole ListView via `refresh_log()`. Now appends one `ft.Text` and pops the oldest when over `LOG_MAX_LINES` (200).
+- **Thread pool explosion** — default `ThreadPoolExecutor` used up to 36 threads (`min(32, cpu+4)`). Now capped at 4 via `loop.set_default_executor()`.
+- **cv2 thread explosion** — `cv2.setNumThreads(os.cpu_count() or 4)` → `cv2.setNumThreads(1)`. Reduces per-thread buffer allocations.
+- **`ai_correct` stdout buffering** — `capture_output=True` buffered entire stdout/stderr in RAM. Now redirected to a file in the tmpdir.
+
+### Changed
+- **`config.py` cleaned up** — dead `"emoji"` field removed from all 50 entries in `TEXTURE_PROFILES` and all 7 entries in `PROFILE_CATEGORIES`. Field was never read by UI (Lucide icons used instead).
+- **All 50 presets + 7 categories** now have `"zh"` translations
+- **`AI_MODELS`** — added `"zh"` entries
+- **`README.md`** — added System Requirements section (16 GB min, 32 GB rec), updated for v1.7.6
+- **`manual.html`** — version bump, added `中文` container, added `Noto Sans SC` to font stack
+- **System requirements** — documented 16 GB minimum, 32 GB recommended. 8 GB noted as not recommended.
+- **Version bumped** to `1.7.6-beta` across all files
+
+### Internal
+- **`ui/header.py`** — `Header.__init__` now accepts optional `on_set_lang(code)` callback; `_build_lang_switch()` builds the segmented control
+- **`main.py`** — added `LANG_CYCLE = ["ru", "en", "zh"]`, `on_set_lang(code)`, updated `on_toggle_lang()` to cycle
+- **`main.py`** — `on_keyboard` handler guards against unknown language codes
+- **`ui/tab_batch.py`** — `process_one` refactored with explicit `img = None` / `result = None` / `ai_res = None` initialization before `try`, `finally` block does cleanup
+- **`ui/helpers.py`** — `_make_log_text()` helper extracted, `log()` and `refresh_log()` rewritten
+- **`translations.py`** — `T["zh"]` dict added with ~150 keys, `get_font_path()` function added
+- **`manual.html`** — added third `<div id="content-zh">`, `setLang()` supports `zh`, auto-detect includes `zh`
+
 
 ## [1.7.5-beta] — 2026-09-26
 
