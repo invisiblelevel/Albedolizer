@@ -30,8 +30,8 @@
   },
   "license": "https://opensource.org/licenses/MIT",
   "downloadUrl": "https://github.com/invisiblelevel/Albedolizer/releases/latest",
-  "softwareVersion": "1.7.5-beta",
-  "datePublished": "2026-09-26",
+  "softwareVersion": "1.7.6-beta",
+  "datePublished": "2026-09-28",
   "screenshot": "https://invisiblelevel.github.io/Albedolizer/screenshots/main_int.jpg"
 }
 </script>
@@ -54,7 +54,7 @@
   body {
     margin: 0; padding: 0;
     background: var(--bg); color: var(--fg);
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Segoe UI', 'Noto Sans SC', system-ui, sans-serif;
     line-height: 1.6;
   }
   .wrapper { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
@@ -313,11 +313,13 @@
   footer a { color: var(--accent); text-decoration: none; }
   footer a:hover { text-decoration: underline; }
 
-  .en, .ru { display: none; }
+  .en, .ru, .zh { display: none; }
   html[data-lang="ru"] .ru { display: block; }
   html[data-lang="ru"] .ru.inline { display: inline; }
   html[data-lang="en"] .en { display: block; }
   html[data-lang="en"] .en.inline { display: inline; }
+  html[data-lang="zh"] .zh { display: block; }
+  html[data-lang="zh"] .zh.inline { display: inline; }
 
   @media (max-width: 700px) {
     .toc ol { column-count: 1; }
@@ -330,10 +332,7 @@
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════
-     SVG SPRITE — все Lucide-иконки инлайн.
-     Использование: <svg class="icon-svg"><use href="#i-name"/></svg>
-     ═══════════════════════════════════════════════════════════ -->
+<!-- SVG SPRITE -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
@@ -362,15 +361,16 @@
 <header class="top">
   <div class="inner">
     <h1>Albedolizer</h1>
-    <span class="version">v1.7.5-beta</span>
+    <span class="version">v1.7.6-beta</span>
     <nav>
-      <a href="#features"><span class="ru inline">Возможности</span><span class="en inline">Features</span></a>
-      <a href="#addons"><span class="ru inline">Аддоны</span><span class="en inline">Add-ons</span></a>
-      <a href="#download"><span class="ru inline">Скачать</span><span class="en inline">Download</span></a>
-      <a href="#manual"><span class="ru inline">Мануал</span><span class="en inline">Manual</span></a>
+      <a href="#features"><span class="ru inline">Возможности</span><span class="en inline">Features</span><span class="zh inline">功能</span></a>
+      <a href="#addons"><span class="ru inline">Аддоны</span><span class="en inline">Add-ons</span><span class="zh inline">插件</span></a>
+      <a href="#download"><span class="ru inline">Скачать</span><span class="en inline">Download</span><span class="zh inline">下载</span></a>
+      <a href="#manual"><span class="ru inline">Мануал</span><span class="en inline">Manual</span><span class="zh inline">手册</span></a>
       <div class="lang-switch">
         <button id="btn-ru" onclick="setLang('ru')">RU</button>
         <button id="btn-en" class="active" onclick="setLang('en')">EN</button>
+        <button id="btn-zh" onclick="setLang('zh')">中文</button>
       </div>
     </nav>
   </div>
@@ -383,25 +383,30 @@
     <h2>
       <span class="ru">Проверяй, чини и генерируй <span class="accent">PBR-текстуры</span></span>
       <span class="en">Check, fix, and generate <span class="accent">PBR textures</span></span>
+      <span class="zh">检查、修复、生成 <span class="accent">PBR 贴图</span></span>
     </h2>
     <p class="tagline">
       <span class="ru">Бесплатный инструмент для 3D-художников: анализ Albedo, AI-коррекция цвета, 7 PBR-карт, экспорт под Unity / Unreal / Godot и 3D-вьюер — всё в одном окне. Плюс бесплатные аддоны для Blender, Unity и Godot.</span>
       <span class="en">Free tool for 3D artists: Albedo analysis, AI color correction, 7 PBR maps, engine export for Unity / Unreal / Godot, and a 3D viewer — all in one window. Plus free add-ons for Blender, Unity and Godot.</span>
+      <span class="zh">面向 3D 美术的免费工具：Albedo 分析、AI 自动校色、7 张 PBR 贴图、Unity / Unreal / Godot 导出、内置 3D 查看器 —— 全部在一个窗口里。另有免费 Blender / Unity / Godot 插件。</span>
     </p>
     <div class="cta">
       <a class="btn primary" href="#download">
         <svg class="icon-svg icon-btn"><use href="#i-download"/></svg>
         <span class="ru">Скачать для Windows</span>
         <span class="en">Download for Windows</span>
+        <span class="zh">下载 Windows 版</span>
       </a>
       <a class="btn secondary" href="#addons">
         <span class="ru">Аддоны для Blender / Unity / Godot</span>
         <span class="en">Blender / Unity / Godot Add-ons</span>
+        <span class="zh">Blender / Unity / Godot 插件</span>
       </a>
     </div>
     <p class="meta">
       <span class="ru">Windows 10/11 · 64-bit · MIT License</span>
       <span class="en">Windows 10/11 · 64-bit · MIT License</span>
+      <span class="zh">Windows 10/11 · 64-bit · MIT 协议</span>
     </p>
 
     <div class="hero-shot">
@@ -413,63 +418,63 @@
   <div class="features" id="features">
     <div class="feature">
       <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-search"/></svg></div>
-      <h3><span class="ru">Анализ Albedo</span><span class="en">Albedo Analysis</span></h3>
-      <p><span class="ru">Heatmap проблемных зон + статистика: min / max / avg / median / перцентили.</span><span class="en">Heatmap of problem zones + stats: min / max / avg / median / percentiles.</span></p>
+      <h3><span class="ru">Анализ Albedo</span><span class="en">Albedo Analysis</span><span class="zh">Albedo 分析</span></h3>
+      <p><span class="ru">Heatmap проблемных зон + статистика: min / max / avg / median / перцентили.</span><span class="en">Heatmap of problem zones + stats: min / max / avg / median / percentiles.</span><span class="zh">问题区域热力图 + 统计信息：最小 / 最大 / 平均 / 中位数 / 百分位。</span></p>
     </div>
     <div class="feature">
       <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-wand"/></svg></div>
-      <h3><span class="ru">AI-коррекция цвета</span><span class="en">AI Color Correction</span></h3>
-      <p><span class="ru">Три метода: Autolevels (XCiT), LUTwithBGrid (ECCV 2024), Math. Плюс фикс «мыла» и насыщенности.</span><span class="en">Three methods: Autolevels (XCiT), LUTwithBGrid (ECCV 2024), Math. Plus soap removal and saturation boost.</span></p>
+      <h3><span class="ru">AI-коррекция цвета</span><span class="en">AI Color Correction</span><span class="zh">AI 自动校色</span></h3>
+      <p><span class="ru">Три метода: Autolevels (XCiT), LUTwithBGrid (ECCV 2024), Math. Плюс фикс «мыла» и насыщенности.</span><span class="en">Three methods: Autolevels (XCiT), LUTwithBGrid (ECCV 2024), Math. Plus soap removal and saturation boost.</span><span class="zh">三种方法：Autolevels（XCiT）、LUTwithBGrid（ECCV 2024）、数学。另含去模糊与饱和度修正。</span></p>
     </div>
     <div class="feature">
       <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-bot"/></svg></div>
-      <h3><span class="ru">Автоопределение материала</span><span class="en">Material Auto-Detection</span></h3>
-      <p><span class="ru">CLIP-классификатор сам подбирает пресет из 50 доступных.</span><span class="en">CLIP-based classifier picks the right preset from 50 options.</span></p>
+      <h3><span class="ru">Автоопределение материала</span><span class="en">Material Auto-Detection</span><span class="zh">材质自动识别</span></h3>
+      <p><span class="ru">CLIP-классификатор сам подбирает пресет из 50 доступных.</span><span class="en">CLIP-based classifier picks the right preset from 50 options.</span><span class="zh">基于 CLIP 的分类器从 50 个预设中自动选择。</span></p>
     </div>
     <div class="feature">
       <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-palette"/></svg></div>
-      <h3><span class="ru">7 PBR-карт</span><span class="en">7 PBR Maps</span></h3>
-      <p><span class="ru">Height, Normal, AO, Roughness, Metallic, ORM, Edge. 8 или 16 bit.</span><span class="en">Height, Normal, AO, Roughness, Metallic, ORM, Edge. 8 or 16 bit.</span></p>
+      <h3><span class="ru">7 PBR-карт</span><span class="en">7 PBR Maps</span><span class="zh">7 张 PBR 贴图</span></h3>
+      <p><span class="ru">Height, Normal, AO, Roughness, Metallic, ORM, Edge. 8 или 16 bit.</span><span class="en">Height, Normal, AO, Roughness, Metallic, ORM, Edge. 8 or 16 bit.</span><span class="zh">Height、Normal、AO、Roughness、Metallic、ORM、Edge。支持 8 / 16 位。</span></p>
     </div>
     <div class="feature">
       <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-sliders"/></svg></div>
-      <h3><span class="ru">Свои Metallic / Roughness</span><span class="en">Custom Metallic / Roughness</span></h3>
-      <p><span class="ru">Загрузка своих grayscale-карт. Авто-ресайз под размер albedo.</span><span class="en">Load your own grayscale maps. Auto-resize to albedo size.</span></p>
+      <h3><span class="ru">Свои Metallic / Roughness</span><span class="en">Custom Metallic / Roughness</span><span class="zh">自定义 Metallic / Roughness</span></h3>
+      <p><span class="ru">Загрузка своих grayscale-карт. Авто-ресайз под размер albedo.</span><span class="en">Load your own grayscale maps. Auto-resize to albedo size.</span><span class="zh">加载自己的灰度贴图，自动匹配 Albedo 尺寸。</span></p>
     </div>
     <div class="feature">
       <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-square"/></svg></div>
-      <h3><span class="ru">Seamless как в GIMP</span><span class="en">GIMP-style Seamless</span></h3>
-      <p><span class="ru">Точный порт tile-seamless.c + Hi-pass pre-filter.</span><span class="en">Exact port of tile-seamless.c + Hi-pass pre-filter.</span></p>
+      <h3><span class="ru">Seamless как в GIMP</span><span class="en">GIMP-style Seamless</span><span class="zh">GIMP 风格无缝</span></h3>
+      <p><span class="ru">Точный порт tile-seamless.c + Hi-pass pre-filter.</span><span class="en">Exact port of tile-seamless.c + Hi-pass pre-filter.</span><span class="zh">tile-seamless.c 的精确移植 + 高通预滤镜。</span></p>
     </div>
     <div class="feature">
       <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-gamepad"/></svg></div>
-      <h3><span class="ru">Экспорт под движки</span><span class="en">Engine Export</span></h3>
-      <p><span class="ru">Unity HDRP / URP, Unreal ORM, Godot ORM. DirectX / OpenGL flip, Detail Mask.</span><span class="en">Unity HDRP / URP, Unreal ORM, Godot ORM. DirectX / OpenGL flip, Detail Mask.</span></p>
+      <h3><span class="ru">Экспорт под движки</span><span class="en">Engine Export</span><span class="zh">引擎导出</span></h3>
+      <p><span class="ru">Unity HDRP / URP, Unreal ORM, Godot ORM. DirectX / OpenGL flip, Detail Mask.</span><span class="en">Unity HDRP / URP, Unreal ORM, Godot ORM. DirectX / OpenGL flip, Detail Mask.</span><span class="zh">Unity HDRP / URP、Unreal ORM、Godot ORM。DirectX / OpenGL 翻转、Detail Mask。</span></p>
     </div>
     <div class="feature">
       <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-clapper"/></svg></div>
-      <h3><span class="ru">Realism пресеты</span><span class="en">Realism Presets</span></h3>
-      <p><span class="ru">Процедурный grain, high-pass, HSV-вариация, виньетка. Мягкий / Средний / Жёсткий.</span><span class="en">Procedural grain, high-pass, HSV variation, vignette. Soft / Medium / Hard.</span></p>
+      <h3><span class="ru">Realism пресеты</span><span class="en">Realism Presets</span><span class="zh">真实感预设</span></h3>
+      <p><span class="ru">Процедурный grain, high-pass, HSV-вариация, виньетка. Мягкий / Средний / Жёсткий.</span><span class="en">Procedural grain, high-pass, HSV variation, vignette. Soft / Medium / Hard.</span><span class="zh">程序化颗粒、高通、HSV 变化、暗角。柔和 / 中等 / 强烈。</span></p>
     </div>
     <div class="feature">
       <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-eye"/></svg></div>
-      <h3><span class="ru">Встроенный 3D-вьюер</span><span class="en">Built-in 3D Viewer</span></h3>
-      <p><span class="ru">4 формы, Substance-style освещение, ACES tone mapping, слайдер экспозиции.</span><span class="en">4 shapes, Substance-style lighting, ACES tone mapping, exposure slider.</span></p>
+      <h3><span class="ru">Встроенный 3D-вьюер</span><span class="en">Built-in 3D Viewer</span><span class="zh">内置 3D 查看器</span></h3>
+      <p><span class="ru">4 формы, Substance-style освещение, ACES tone mapping, слайдер экспозиции.</span><span class="en">4 shapes, Substance-style lighting, ACES tone mapping, exposure slider.</span><span class="zh">4 种形状、Substance 风格光照、ACES 色调映射、曝光滑块。</span></p>
     </div>
     <div class="feature">
       <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-target"/></svg></div>
-      <h3><span class="ru">50 пресетов в 7 категориях</span><span class="en">50 Presets in 7 Categories</span></h3>
-      <p><span class="ru">Металл, природа, минерал, синтетика, ткани, спецэффекты, фауна.</span><span class="en">Metal, nature, mineral, synthetic, fabric, special, fauna.</span></p>
+      <h3><span class="ru">50 пресетов в 7 категориях</span><span class="en">50 Presets in 7 Categories</span><span class="zh">7 类 50 个预设</span></h3>
+      <p><span class="ru">Металл, природа, минерал, синтетика, ткани, спецэффекты, фауна.</span><span class="en">Metal, nature, mineral, synthetic, fabric, special, fauna.</span><span class="zh">金属、自然、矿物、合成、织物、特殊、动物。</span></p>
     </div>
     <div class="feature">
       <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-layers"/></svg></div>
-      <h3><span class="ru">Пакетная обработка</span><span class="en">Batch Processing</span></h3>
-      <p><span class="ru">1–8 потоков. AI-коррекция или сжатие целых папок.</span><span class="en">1–8 threads. AI correction or compression for whole folders.</span></p>
+      <h3><span class="ru">Пакетная обработка</span><span class="en">Batch Processing</span><span class="zh">批量处理</span></h3>
+      <p><span class="ru">1–8 потоков. AI-коррекция или сжатие целых папок.</span><span class="en">1–8 threads. AI correction or compression for whole folders.</span><span class="zh">1–8 线程。整个文件夹的 AI 校正或压缩。</span></p>
     </div>
     <div class="feature">
       <div class="icon"><svg class="icon-svg icon-lg"><use href="#i-keyboard"/></svg></div>
-      <h3><span class="ru">Глобальные хоткеи</span><span class="en">Global Hotkeys</span></h3>
-      <p><span class="ru">Ctrl+O, Ctrl+S, Ctrl+R, Ctrl+Z, Space, Enter.</span><span class="en">Ctrl+O, Ctrl+S, Ctrl+R, Ctrl+Z, Space, Enter.</span></p>
+      <h3><span class="ru">Глобальные хоткеи</span><span class="en">Global Hotkeys</span><span class="zh">全局快捷键</span></h3>
+      <p><span class="ru">Ctrl+O, Ctrl+S, Ctrl+R, Ctrl+Z, Space, Enter.</span><span class="en">Ctrl+O, Ctrl+S, Ctrl+R, Ctrl+Z, Space, Enter.</span><span class="zh">Ctrl+O、Ctrl+S、Ctrl+R、Ctrl+Z、Space、Enter。</span></p>
     </div>
   </div>
 
@@ -479,10 +484,12 @@
       <svg class="icon-svg icon-lg"><use href="#i-puzzle"/></svg>
       <span class="ru">Бесплатные аддоны</span>
       <span class="en">Free Add-ons</span>
+      <span class="zh">免费插件</span>
     </h3>
     <p class="section-sub">
       <span class="ru">Albedolizer доступен прямо внутри Blender, Unity и Godot — тот же движок, тот же результат.</span>
       <span class="en">Albedolizer is available right inside Blender, Unity and Godot — same engine, same result.</span>
+      <span class="zh">Albedolizer 可直接在 Blender、Unity、Godot 内使用 —— 同一引擎，同样的结果。</span>
     </p>
 
     <div class="addons-grid">
@@ -495,17 +502,18 @@
         <p>
           <span class="ru">Blender-аддон для генерации PBR-карт прямо в N-панели. AI-коррекция, 50 пресетов, seamless, batch, автосборка нод к Principled BSDF, упаковка под движки.</span>
           <span class="en">Blender add-on that generates PBR maps right in the N-Panel. AI correction, 50 presets, seamless, batch, auto-wired Principled BSDF nodes, engine packing.</span>
+          <span class="zh">Blender 插件，可在 N 面板中直接生成 PBR 贴图。AI 校正、50 个预设、无缝、批量、自动连接 Principled BSDF 节点、引擎打包。</span>
         </p>
         <ul>
-          <li><span class="ru inline">7 PBR-карт из Albedo</span><span class="en inline">7 PBR maps from Albedo</span></li>
-          <li><span class="ru inline">Modal прогресс-бар — Blender не виснет</span><span class="en inline">Modal progress bar — Blender stays responsive</span></li>
-          <li><span class="ru inline">RU / EN интерфейс</span><span class="en inline">RU / EN interface</span></li>
+          <li><span class="ru inline">7 PBR-карт из Albedo</span><span class="en inline">7 PBR maps from Albedo</span><span class="zh inline">从 Albedo 生成 7 张 PBR 贴图</span></li>
+          <li><span class="ru inline">Modal прогресс-бар — Blender не виснет</span><span class="en inline">Modal progress bar — Blender stays responsive</span><span class="zh inline">模态进度条 —— Blender 不卡死</span></li>
+          <li><span class="ru inline">RU / EN интерфейс</span><span class="en inline">RU / EN interface</span><span class="zh inline">RU / EN 界面</span></li>
           <li>Blender 4.2 LTS+ · Windows</li>
         </ul>
         <div class="addon-cta">
           <a class="btn primary small" href="https://github.com/invisiblelevel/Albedolizer-Blender/releases/latest" target="_blank">
             <svg class="icon-svg"><use href="#i-download"/></svg>
-            <span class="ru inline">Скачать</span><span class="en inline">Download</span>
+            <span class="ru inline">Скачать</span><span class="en inline">Download</span><span class="zh inline">下载</span>
           </a>
           <a class="btn secondary small" href="https://github.com/invisiblelevel/Albedolizer-Blender" target="_blank">
             GitHub
@@ -524,11 +532,12 @@
         <p>
           <span class="ru">Unity Editor-аддон для генерации PBR-карт и автосоздания URP-материалов. Правильная упаковка каналов (R=Metallic, G=AO, A=Smoothness), batch, движковая упаковка.</span>
           <span class="en">Unity Editor add-on that generates PBR maps and auto-creates URP materials. Proper channel packing (R=Metallic, G=AO, A=Smoothness), batch, engine packing.</span>
+          <span class="zh">Unity 编辑器插件，可生成 PBR 贴图并自动创建 URP 材质。正确的通道打包（R=Metallic，G=AO，A=Smoothness）、批量、引擎打包。</span>
         </p>
         <ul>
-          <li><span class="ru inline">Автосоздание URP/Lit материала</span><span class="en inline">Auto-creation of URP/Lit material</span></li>
-          <li><span class="ru inline">Экспорт под HDRP / Unreal / Godot</span><span class="en inline">HDRP / Unreal / Godot packing</span></li>
-          <li><span class="ru inline">Установка через UPM Git URL</span><span class="en inline">UPM install via Git URL</span></li>
+          <li><span class="ru inline">Автосоздание URP/Lit материала</span><span class="en inline">Auto-creation of URP/Lit material</span><span class="zh inline">自动创建 URP/Lit 材质</span></li>
+          <li><span class="ru inline">Экспорт под HDRP / Unreal / Godot</span><span class="en inline">HDRP / Unreal / Godot packing</span><span class="zh inline">HDRP / Unreal / Godot 打包</span></li>
+          <li><span class="ru inline">Установка через UPM Git URL</span><span class="en inline">UPM install via Git URL</span><span class="zh inline">通过 UPM Git URL 安装</span></li>
           <li>Unity 2022.3 LTS+ · URP · Windows</li>
         </ul>
         <div class="addon-cta">
@@ -536,7 +545,7 @@
             GitHub
           </a>
           <a class="btn secondary small" href="https://github.com/invisiblelevel/Albedolizer-Unity#installation" target="_blank">
-            <span class="ru inline">Как установить</span><span class="en inline">Installation</span>
+            <span class="ru inline">Как установить</span><span class="en inline">Installation</span><span class="zh inline">安装方法</span>
           </a>
         </div>
       </div>
@@ -549,11 +558,12 @@
         <p>
           <span class="ru">Godot Editor-аддон для генерации PBR-карт и автосоздания StandardMaterial3D. Правильные каналы (R=Metallic, G=AO, A=Smoothness), прогресс-бар, автоопределение пресета.</span>
           <span class="en">Godot Editor add-on that generates PBR maps and auto-creates StandardMaterial3D. Proper channels (R=Metallic, G=AO, A=Smoothness), progress bar, preset auto-detect.</span>
+          <span class="zh">Godot 编辑器插件，可生成 PBR 贴图并自动创建 StandardMaterial3D。正确的通道（R=Metallic，G=AO，A=Smoothness）、进度条、自动识别预设。</span>
         </p>
         <ul>
-          <li><span class="ru inline">Автосоздание StandardMaterial3D</span><span class="en inline">Auto-creation of StandardMaterial3D</span></li>
-          <li><span class="ru inline">Прогресс-бар — Godot не виснет</span><span class="en inline">Progress bar — Godot stays responsive</span></li>
-          <li><span class="ru inline">Установка копированием папки addons/</span><span class="en inline">Install by copying addons/ folder</span></li>
+          <li><span class="ru inline">Автосоздание StandardMaterial3D</span><span class="en inline">Auto-creation of StandardMaterial3D</span><span class="zh inline">自动创建 StandardMaterial3D</span></li>
+          <li><span class="ru inline">Прогресс-бар — Godot не виснет</span><span class="en inline">Progress bar — Godot stays responsive</span><span class="zh inline">进度条 —— Godot 不卡死</span></li>
+          <li><span class="ru inline">Установка копированием папки addons/</span><span class="en inline">Install by copying addons/ folder</span><span class="zh inline">复制 addons/ 文件夹安装</span></li>
           <li>Godot 4.5+ · Windows</li>
         </ul>
         <div class="addon-cta">
@@ -562,7 +572,7 @@
           </a>
           <a class="btn secondary small" href="https://github.com/invisiblelevel/Albedolizer-Godot/releases/latest" target="_blank">
             <svg class="icon-svg"><use href="#i-download"/></svg>
-            <span class="ru inline">Скачать</span><span class="en inline">Download</span>
+            <span class="ru inline">Скачать</span><span class="en inline">Download</span><span class="zh inline">下载</span>
           </a>
         </div>
       </div>
@@ -572,16 +582,18 @@
 
   <!-- ═══ DOWNLOAD ═══ -->
   <div class="download" id="download">
-    <h3><span class="ru">Скачать Albedolizer</span><span class="en">Download Albedolizer</span></h3>
+    <h3><span class="ru">Скачать Albedolizer</span><span class="en">Download Albedolizer</span><span class="zh">下载 Albedolizer</span></h3>
     <p>
-      <span class="ru">Версия 1.7.5-beta для Windows. Установщик сделает всё сам — ярлыки, меню Пуск, удаление.</span>
-      <span class="en">Version 1.7.5-beta for Windows. Installer handles everything — shortcuts, Start Menu, uninstaller.</span>
+      <span class="ru">Версия 1.7.6-beta для Windows. Установщик сделает всё сам — ярлыки, меню Пуск, удаление.</span>
+      <span class="en">Version 1.7.6-beta for Windows. Installer handles everything — shortcuts, Start Menu, uninstaller.</span>
+      <span class="zh">Windows 版 1.7.6-beta。安装程序会自动创建快捷方式、开始菜单项和卸载程序。</span>
     </p>
     <div class="cta">
       <a class="btn primary" href="https://invlvl.itch.io/albedolizer" target="_blank">
         <svg class="icon-svg icon-btn"><use href="#i-download"/></svg>
         <span class="ru">Скачать с itch.io</span>
         <span class="en">Download from itch.io</span>
+        <span class="zh">从 itch.io 下载</span>
       </a>
       <a class="btn secondary" href="https://github.com/invisiblelevel/Albedolizer/releases/latest" target="_blank">
         GitHub Releases
@@ -593,6 +605,7 @@
     <p class="req">
       <span class="ru">Windows 10/11, 64-bit · MIT License · Бесплатно</span>
       <span class="en">Windows 10/11, 64-bit · MIT License · Free</span>
+      <span class="zh">Windows 10/11, 64-bit · MIT 协议 · 免费</span>
     </p>
   </div>
 
@@ -600,135 +613,144 @@
   <div class="manual-start" id="manual">
     <h3>
       <svg class="icon-svg icon-lg"><use href="#i-book"/></svg>
-      <span class="ru">Мануал</span><span class="en">Manual</span>
+      <span class="ru">Мануал</span><span class="en">Manual</span><span class="zh">手册</span>
     </h3>
-    <p><span class="ru">Полное руководство по всем вкладкам и инструментам</span><span class="en">Full guide to all tabs and tools</span></p>
+    <p><span class="ru">Полное руководство по всем вкладкам и инструментам</span><span class="en">Full guide to all tabs and tools</span><span class="zh">所有选项卡和工具的完整指南</span></p>
   </div>
 
   <nav class="toc">
     <h2>
       <svg class="icon-svg"><use href="#i-list"/></svg>
-      <span class="ru">Содержание</span><span class="en">Table of Contents</span>
+      <span class="ru">Содержание</span><span class="en">Table of Contents</span><span class="zh">目录</span>
     </h2>
     <ol>
-      <li><a href="#header"><span class="ru inline">Хедер и навигация</span><span class="en inline">Header &amp; Navigation</span></a></li>
-      <li><a href="#single"><span class="ru inline">Single — одиночная</span><span class="en inline">Single</span></a></li>
-      <li><a href="#right_panel"><span class="ru inline">Правая панель Single</span><span class="en inline">Single Right Panel</span></a></li>
-      <li><a href="#pbr"><span class="ru inline">PBR — генерация карт</span><span class="en inline">PBR Maps</span></a></li>
-      <li><a href="#custom_maps"><span class="ru inline">Свои карты</span><span class="en inline">Custom Maps</span></a></li>
-      <li><a href="#seamless"><span class="ru inline">Seamless</span><span class="en inline">Seamless</span></a></li>
-      <li><a href="#engine"><span class="ru inline">Движок — экспорт</span><span class="en inline">Engine Export</span></a></li>
-      <li><a href="#realism"><span class="ru inline">Realism — фильтр</span><span class="en inline">Realism Filter</span></a></li>
-      <li><a href="#batch"><span class="ru inline">Пакетная</span><span class="en inline">Batch</span></a></li>
-      <li><a href="#compress"><span class="ru inline">Сжатие</span><span class="en inline">Compression</span></a></li>
-      <li><a href="#log"><span class="ru inline">Лог</span><span class="en inline">Log Panel</span></a></li>
-      <li><a href="#viewer"><span class="ru inline">3D-вьюер</span><span class="en inline">3D Viewer</span></a></li>
-      <li><a href="#info"><span class="ru inline">Info</span><span class="en inline">Info</span></a></li>
+      <li><a href="#header"><span class="ru inline">Хедер и навигация</span><span class="en inline">Header &amp; Navigation</span><span class="zh inline">顶栏与导航</span></a></li>
+      <li><a href="#single"><span class="ru inline">Single — одиночная</span><span class="en inline">Single</span><span class="zh inline">单张图片</span></a></li>
+      <li><a href="#right_panel"><span class="ru inline">Правая панель Single</span><span class="en inline">Single Right Panel</span><span class="zh inline">单张图片右侧面板</span></a></li>
+      <li><a href="#pbr"><span class="ru inline">PBR — генерация карт</span><span class="en inline">PBR Maps</span><span class="zh inline">PBR 生成</span></a></li>
+      <li><a href="#custom_maps"><span class="ru inline">Свои карты</span><span class="en inline">Custom Maps</span><span class="zh inline">自定义贴图</span></a></li>
+      <li><a href="#seamless"><span class="ru inline">Seamless</span><span class="en inline">Seamless</span><span class="zh inline">无缝</span></a></li>
+      <li><a href="#engine"><span class="ru inline">Движок — экспорт</span><span class="en inline">Engine Export</span><span class="zh inline">引擎导出</span></a></li>
+      <li><a href="#realism"><span class="ru inline">Realism — фильтр</span><span class="en inline">Realism Filter</span><span class="zh inline">真实感滤镜</span></a></li>
+      <li><a href="#batch"><span class="ru inline">Пакетная</span><span class="en inline">Batch</span><span class="zh inline">批量处理</span></a></li>
+      <li><a href="#compress"><span class="ru inline">Сжатие</span><span class="en inline">Compression</span><span class="zh inline">压缩</span></a></li>
+      <li><a href="#log"><span class="ru inline">Лог</span><span class="en inline">Log Panel</span><span class="zh inline">日志</span></a></li>
+      <li><a href="#viewer"><span class="ru inline">3D-вьюер</span><span class="en inline">3D Viewer</span><span class="zh inline">3D 查看器</span></a></li>
+      <li><a href="#info"><span class="ru inline">Info</span><span class="en inline">Info</span><span class="zh inline">信息</span></a></li>
     </ol>
   </nav>
 
   <!-- ═══ 1. HEADER ═══ -->
   <section id="header">
-    <h2><span class="ru">1. Хедер и навигация</span><span class="en">1. Header &amp; Navigation</span></h2>
+    <h2><span class="ru">1. Хедер и навигация</span><span class="en">1. Header &amp; Navigation</span><span class="zh">1. 顶栏与导航</span></h2>
     <p class="ru">Верхняя панель содержит название, версию, переключатель режима Simple / Advanced, тему, язык и кнопку Info. Слева — NavigationRail со всеми вкладками.</p>
     <p class="en">Top bar contains title, version, Simple / Advanced toggle, theme switcher, language switcher, and Info button. Left side — NavigationRail with all tabs.</p>
+    <p class="zh">顶部栏包含名称、版本、简单 / 高级模式切换、主题、语言以及信息按钮。左侧是包含所有选项卡的 NavigationRail。</p>
     <div class="shot">
       <img src="screenshots/header.jpg" alt="Header">
     </div>
-    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span><span class="zh inline">返回目录</span></a>
   </section>
 
   <!-- ═══ 2. SINGLE ═══ -->
   <section id="single">
-    <h2><span class="ru">2. Single — одиночная обработка</span><span class="en">2. Single Processing</span></h2>
+    <h2><span class="ru">2. Single — одиночная обработка</span><span class="en">2. Single Processing</span><span class="zh">2. 单张图片处理</span></h2>
 
-    <h3><span class="ru">Simple режим</span><span class="en">Simple mode</span></h3>
+    <h3><span class="ru">Simple режим</span><span class="en">Simple mode</span><span class="zh">简单模式</span></h3>
     <p class="ru">Одна кнопка <code>Обработать текстуру</code> делает всё: открывает файл, AI-коррекция, буст насыщенности, результат. Плюс CLIP автоматически определяет материал и подбирает пресет.</p>
     <p class="en">One button <code>Process texture</code> does everything: open file, AI correction, saturation boost, result. CLIP auto-detects material and picks the preset.</p>
+    <p class="zh">一个按钮 <code>处理纹理</code> 完成所有操作：打开文件、AI 校正、提升饱和度、显示结果。CLIP 自动识别材质并选择预设。</p>
     <div class="shot">
       <img src="screenshots/tab_single_simple.jpg" alt="Single Simple">
     </div>
 
-    <h3><span class="ru">Advanced режим</span><span class="en">Advanced mode</span></h3>
+    <h3><span class="ru">Advanced режим</span><span class="en">Advanced mode</span><span class="zh">高级模式</span></h3>
     <p class="ru">Отдельные кнопки: <code>Открыть</code>, <code>Проверить</code>, <code>Автокоррекция</code>, <code>Сброс</code>, <code>Сохранить</code>. Кнопка <code>Оригинал / Результат</code> переключает превью. Если Check показал FAIL — жми Auto-Correct.</p>
     <p class="en">Separate buttons: <code>Open</code>, <code>Check</code>, <code>Auto-Correct</code>, <code>Reset</code>, <code>Save</code>. The <code>Original / Result</code> button toggles the preview. If Check shows FAIL — click Auto-Correct.</p>
+    <p class="zh">独立按钮：<code>加载</code>、<code>检查</code>、<code>自动校正</code>、<code>重置</code>、<code>保存</code>。<code>原图 / 结果</code> 按钮切换预览。如果检查失败 —— 点击自动校正。</p>
     <div class="shot">
       <img src="screenshots/tab_single_advanced.jpg" alt="Single Advanced">
     </div>
-    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span><span class="zh inline">返回目录</span></a>
   </section>
 
   <!-- ═══ 3. RIGHT PANEL ═══ -->
   <section id="right_panel">
-    <h2><span class="ru">3. Правая панель Single</span><span class="en">3. Single Right Panel</span></h2>
+    <h2><span class="ru">3. Правая панель Single</span><span class="en">3. Single Right Panel</span><span class="zh">3. 单张图片右侧面板</span></h2>
     <p class="ru">Все настройки в одном месте: автоопределение материала, тип текстуры, метод коррекции, тайлинг, seamless, удаление мыла, насыщенность, статистика.</p>
     <p class="en">All settings in one place: auto-detect material, texture type, correction method, tiling, seamless, soap removal, saturation, statistics.</p>
+    <p class="zh">所有设置集中在一处：材质自动识别、纹理类型、校正方法、平铺、无缝、去模糊、饱和度、统计。</p>
     <div class="shot narrow">
       <img src="screenshots/right_panel_single.jpg" alt="Right panel">
     </div>
     <ul>
-      <li><strong>Auto-detect material</strong> — <span class="ru inline">CLIP-классификатор подбирает пресет</span><span class="en inline">CLIP classifier picks the preset</span></li>
-      <li><strong>Texture type</strong> — <span class="ru inline">категории + пресеты</span><span class="en inline">categories + presets</span></li>
-      <li><strong>Correction method</strong> — <span class="ru inline">Autolevels / LUTwithBGrid / Math</span><span class="en inline">Autolevels / LUTwithBGrid / Math</span></li>
-      <li><strong>Tiling 3×3</strong> — <span class="ru inline">проверка бесшовности</span><span class="en inline">seamless check</span></li>
-      <li><strong>Seamless</strong> — <span class="ru inline">GIMP-style с Hi-pass pre-filter</span><span class="en inline">GIMP-style with Hi-pass pre-filter</span></li>
-      <li><strong>Remove soap</strong> — <span class="ru inline">фикс размытых участков</span><span class="en inline">fix blurry patches</span></li>
-      <li><strong>Saturation</strong> — <span class="ru inline">фикс блеклых цветов</span><span class="en inline">fix washed-out colors</span></li>
+      <li><strong>Auto-detect material</strong> — <span class="ru inline">CLIP-классификатор подбирает пресет</span><span class="en inline">CLIP classifier picks the preset</span><span class="zh inline">CLIP 分类器选择预设</span></li>
+      <li><strong>Texture type</strong> — <span class="ru inline">категории + пресеты</span><span class="en inline">categories + presets</span><span class="zh inline">分类 + 预设</span></li>
+      <li><strong>Correction method</strong> — <span class="ru inline">Autolevels / LUTwithBGrid / Math</span><span class="en inline">Autolevels / LUTwithBGrid / Math</span><span class="zh inline">Autolevels / LUTwithBGrid / 数学</span></li>
+      <li><strong>Tiling 3×3</strong> — <span class="ru inline">проверка бесшовности</span><span class="en inline">seamless check</span><span class="zh inline">无缝检查</span></li>
+      <li><strong>Seamless</strong> — <span class="ru inline">GIMP-style с Hi-pass pre-filter</span><span class="en inline">GIMP-style with Hi-pass pre-filter</span><span class="zh inline">GIMP 风格 + 高通预滤镜</span></li>
+      <li><strong>Remove soap</strong> — <span class="ru inline">фикс размытых участков</span><span class="en inline">fix blurry patches</span><span class="zh inline">修复模糊区域</span></li>
+      <li><strong>Saturation</strong> — <span class="ru inline">фикс блеклых цветов</span><span class="en inline">fix washed-out colors</span><span class="zh inline">修复发白颜色</span></li>
     </ul>
-    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span><span class="zh inline">返回目录</span></a>
   </section>
 
   <!-- ═══ 4. PBR ═══ -->
   <section id="pbr">
-    <h2><span class="ru">4. PBR — генерация карт</span><span class="en">4. PBR Maps</span></h2>
+    <h2><span class="ru">4. PBR — генерация карт</span><span class="en">4. PBR Maps</span><span class="zh">4. PBR 贴图生成</span></h2>
     <p class="ru">7 карт из одного Albedo: Height, Normal, AO, Roughness, Metallic, ORM, Edge.</p>
     <p class="en">7 maps from one Albedo: Height, Normal, AO, Roughness, Metallic, ORM, Edge.</p>
+    <p class="zh">从一张 Albedo 生成 7 张贴图：Height、Normal、AO、Roughness、Metallic、ORM、Edge。</p>
     <div class="shot">
       <img src="screenshots/tab_pbr.jpg" alt="PBR tab">
     </div>
     <ol>
-      <li><code>Load Albedo</code> — <span class="ru inline">выбери текстуру</span><span class="en inline">pick texture</span></li>
-      <li><span class="ru inline">Выбери <strong>пресет</strong> — слайдеры настроятся сами</span><span class="en inline">Pick <strong>preset</strong> — sliders auto-tune</span></li>
-      <li><code>Generate</code> — <span class="ru inline">сгенерировать 7 карт</span><span class="en inline">generate 7 maps</span></li>
-      <li><span class="ru inline">Переключайся между картами кнопками сверху</span><span class="en inline">Switch maps with the buttons on top</span></li>
-      <li><code>Save all</code> — <span class="ru inline">папка <code>&lt;name&gt;_pbr/</code> рядом с исходником</span><span class="en inline">folder <code>&lt;name&gt;_pbr/</code> next to source</span></li>
+      <li><code>Load Albedo</code> — <span class="ru inline">выбери текстуру</span><span class="en inline">pick texture</span><span class="zh inline">选择纹理</span></li>
+      <li><span class="ru inline">Выбери <strong>пресет</strong> — слайдеры настроятся сами</span><span class="en inline">Pick <strong>preset</strong> — sliders auto-tune</span><span class="zh inline">选择<strong>预设</strong> —— 滑块自动调整</span></li>
+      <li><code>Generate</code> — <span class="ru inline">сгенерировать 7 карт</span><span class="en inline">generate 7 maps</span><span class="zh inline">生成 7 张贴图</span></li>
+      <li><span class="ru inline">Переключайся между картами кнопками сверху</span><span class="en inline">Switch maps with the buttons on top</span><span class="zh inline">通过顶部按钮切换贴图</span></li>
+      <li><code>Save all</code> — <span class="ru inline">папка <code>&lt;name&gt;_pbr/</code> рядом с исходником</span><span class="en inline">folder <code>&lt;name&gt;_pbr/</code> next to source</span><span class="zh inline">源文件旁生成 <code>&lt;名称&gt;_pbr/</code> 文件夹</span></li>
     </ol>
-    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span><span class="zh inline">返回目录</span></a>
   </section>
 
   <!-- ═══ 5. CUSTOM MAPS ═══ -->
   <section id="custom_maps">
-    <h2><span class="ru">5. Свои Metallic / Roughness карты</span><span class="en">5. Custom Metallic / Roughness Maps</span></h2>
+    <h2><span class="ru">5. Свои Metallic / Roughness карты</span><span class="en">5. Custom Metallic / Roughness Maps</span><span class="zh">5. 自定义 Metallic / Roughness 贴图</span></h2>
     <p class="ru">В PBR-вкладке, рядом с выбором Metallic и Roughness, можно выбрать <code>Custom</code> и загрузить свою grayscale-карту.</p>
     <p class="en">In the PBR tab, next to Metallic and Roughness selection, pick <code>Custom</code> and load your own grayscale map.</p>
+    <p class="zh">在 PBR 选项卡中，Metallic 和 Roughness 选择旁，选 <code>自定义</code> 并加载自己的灰度贴图。</p>
     <ol>
-      <li><span class="ru inline">Выбери <code>Custom</code> для Metallic или Roughness</span><span class="en inline">Pick <code>Custom</code> for Metallic or Roughness</span></li>
-      <li><span class="ru inline">Нажми <code>Load metallic map</code> или <code>Load roughness map</code></span><span class="en inline">Click <code>Load metallic map</code> or <code>Load roughness map</code></span></li>
-      <li><span class="ru inline">Если размер не совпадает с Albedo — появится диалог с подтверждением авто-ресайза</span><span class="en inline">If size doesn't match Albedo — a confirmation dialog for auto-resize appears</span></li>
-      <li><span class="ru inline">PBR автоматически перегенерируется с новой картой</span><span class="en inline">PBR automatically regenerates with the new map</span></li>
+      <li><span class="ru inline">Выбери <code>Custom</code> для Metallic или Roughness</span><span class="en inline">Pick <code>Custom</code> for Metallic or Roughness</span><span class="zh inline">为 Metallic 或 Roughness 选择 <code>自定义</code></span></li>
+      <li><span class="ru inline">Нажми <code>Load metallic map</code> или <code>Load roughness map</code></span><span class="en inline">Click <code>Load metallic map</code> or <code>Load roughness map</code></span><span class="zh inline">点击 <code>加载金属度贴图</code> 或 <code>加载粗糙度贴图</code></span></li>
+      <li><span class="ru inline">Если размер не совпадает с Albedo — появится диалог с подтверждением авто-ресайза</span><span class="en inline">If size doesn't match Albedo — a confirmation dialog for auto-resize appears</span><span class="zh inline">如果尺寸与 Albedo 不符 —— 会弹出自动调整大小确认对话框</span></li>
+      <li><span class="ru inline">PBR автоматически перегенерируется с новой картой</span><span class="en inline">PBR automatically regenerates with the new map</span><span class="zh inline">PBR 会自动使用新贴图重新生成</span></li>
     </ol>
     <p class="ru">В Batch PBR при использовании Custom-карты в лог пишется предупреждение — карта применяется ко всем текстурам папки.</p>
     <p class="en">In Batch PBR, when using a Custom map, a warning appears in the log — the map is applied to all textures in the folder.</p>
-    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+    <p class="zh">在批量 PBR 中使用自定义贴图时，日志会显示警告 —— 该贴图将应用于文件夹中的所有纹理。</p>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span><span class="zh inline">返回目录</span></a>
   </section>
 
   <!-- ═══ 6. SEAMLESS ═══ -->
   <section id="seamless">
-    <h2><span class="ru">6. Seamless — бесшовность</span><span class="en">6. Seamless</span></h2>
+    <h2><span class="ru">6. Seamless — бесшовность</span><span class="en">6. Seamless</span><span class="zh">6. 无缝处理</span></h2>
     <p class="ru">Кнопка <code>Seamless</code> в правой панели Single делает текстуру бесшовной. Это точный порт GIMP <code>tile-seamless.c</code> — диагональная весовая функция, центр не трогается, края переплетаются.</p>
     <p class="en">The <code>Seamless</code> button in the Single right panel makes your texture tileable. Exact port of GIMP's <code>tile-seamless.c</code> — diagonal weight function, center untouched, edges blended.</p>
+    <p class="zh">单张图片右侧面板中的 <code>无缝</code> 按钮可使纹理可平铺。这是 GIMP <code>tile-seamless.c</code> 的精确移植 —— 对角线权重函数，中心不动，边缘混合。</p>
     <ul>
-      <li><strong>Hi-pass pre-filter</strong> — <span class="ru inline">опциональный чекбокс, выравнивает яркость краёв</span><span class="en inline">optional checkbox, evens out brightness between edges</span></li>
-      <li><strong>Tiling 3×3</strong> — <span class="ru inline">включи для проверки результата</span><span class="en inline">enable to check result</span></li>
+      <li><strong>Hi-pass pre-filter</strong> — <span class="ru inline">опциональный чекбокс, выравнивает яркость краёв</span><span class="en inline">optional checkbox, evens out brightness between edges</span><span class="zh inline">可选复选框，均匀边缘亮度</span></li>
+      <li><strong>Tiling 3×3</strong> — <span class="ru inline">включи для проверки результата</span><span class="en inline">enable to check result</span><span class="zh inline">启用可检查结果</span></li>
     </ul>
-    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span><span class="zh inline">返回目录</span></a>
   </section>
 
   <!-- ═══ 7. ENGINE ═══ -->
   <section id="engine">
-    <h2><span class="ru">7. Движок — экспорт</span><span class="en">7. Engine Export</span></h2>
+    <h2><span class="ru">7. Движок — экспорт</span><span class="en">7. Engine Export</span><span class="zh">7. 引擎导出</span></h2>
     <p class="ru">Упаковка PBR-карт под конкретный движок в один клик.</p>
     <p class="en">Pack PBR maps for a specific engine in one click.</p>
+    <p class="zh">一键为特定引擎打包 PBR 贴图。</p>
     <div class="shot">
       <img src="screenshots/tab_engine_export.jpg" alt="Engine Export">
     </div>
@@ -736,95 +758,103 @@
       <li><strong>Unity HDRP</strong> — R = Metallic, G = AO, B = Detail Mask, A = Smoothness</li>
       <li><strong>Unity URP</strong> — R = Metallic, G = AO, A = Smoothness</li>
       <li><strong>Unreal / Godot</strong> — R = AO, G = Roughness, B = Metallic</li>
-      <li><strong>Normal format</strong> — <span class="ru inline">OpenGL (Y+) или DirectX (Y−)</span><span class="en inline">OpenGL (Y+) or DirectX (Y−)</span></li>
-      <li><strong>Detail Mask</strong> — <span class="ru inline">белая / edge / своя с диска</span><span class="en inline">white / edge / custom from disk</span></li>
+      <li><strong>Normal format</strong> — <span class="ru inline">OpenGL (Y+) или DirectX (Y−)</span><span class="en inline">OpenGL (Y+) or DirectX (Y−)</span><span class="zh inline">OpenGL (Y+) 或 DirectX (Y−)</span></li>
+      <li><strong>Detail Mask</strong> — <span class="ru inline">белая / edge / своя с диска</span><span class="en inline">white / edge / custom from disk</span><span class="zh inline">白色 / 边缘 / 从磁盘自定义</span></li>
     </ul>
-    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span><span class="zh inline">返回目录</span></a>
   </section>
 
   <!-- ═══ 8. REALISM ═══ -->
   <section id="realism">
-    <h2><span class="ru">8. Realism — фильтр</span><span class="en">8. Realism Filter</span></h2>
+    <h2><span class="ru">8. Realism — фильтр</span><span class="en">8. Realism Filter</span><span class="zh">8. 真实感滤镜</span></h2>
     <p class="ru">Процедурный фотореализм: зерно, детализация, вариация, виньетка. Пресеты Мягкий / Средний / Жёсткий в один клик.</p>
     <p class="en">Procedural photorealism: grain, detail, variation, vignette. Soft / Medium / Hard presets in one click.</p>
+    <p class="zh">程序化照片级真实感：颗粒、细节、变化、暗角。柔和 / 中等 / 强烈一键预设。</p>
     <div class="shot">
       <img src="screenshots/tab_realism.jpg" alt="Realism">
     </div>
     <ul>
-      <li><strong>Grain</strong> — <span class="ru inline">мелкое и крупное зерно</span><span class="en inline">fine and coarse noise</span></li>
-      <li><strong>Detail</strong> — <span class="ru inline">адаптивный high-pass</span><span class="en inline">adaptive high-pass</span></li>
-      <li><strong>Variation</strong> — <span class="ru inline">крупные пятна + виньетка</span><span class="en inline">large patches + vignette</span></li>
+      <li><strong>Grain</strong> — <span class="ru inline">мелкое и крупное зерно</span><span class="en inline">fine and coarse noise</span><span class="zh inline">细粒和粗粒噪点</span></li>
+      <li><strong>Detail</strong> — <span class="ru inline">адаптивный high-pass</span><span class="en inline">adaptive high-pass</span><span class="zh inline">自适应高通</span></li>
+      <li><strong>Variation</strong> — <span class="ru inline">крупные пятна + виньетка</span><span class="en inline">large patches + vignette</span><span class="zh inline">大块斑纹 + 暗角</span></li>
     </ul>
-    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span><span class="zh inline">返回目录</span></a>
   </section>
 
   <!-- ═══ 9. BATCH ═══ -->
   <section id="batch">
-    <h2><span class="ru">9. Пакетная обработка</span><span class="en">9. Batch Processing</span></h2>
+    <h2><span class="ru">9. Пакетная обработка</span><span class="en">9. Batch Processing</span><span class="zh">9. 批量处理</span></h2>
     <p class="ru">Обработка целой папки: AI-коррекция или сжатие. Потоки 1–8.</p>
     <p class="en">Process a whole folder: AI correction or compression. Threads 1–8.</p>
+    <p class="zh">处理整个文件夹：AI 校正或压缩。线程 1–8。</p>
     <div class="shot">
       <img src="screenshots/tab_batch.jpg" alt="Batch">
     </div>
     <p class="ru">Результат в папке <code>_corrected</code> рядом с исходниками.</p>
     <p class="en">Output to <code>_corrected</code> folder next to sources.</p>
-    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+    <p class="zh">输出到源文件旁的 <code>_corrected</code> 文件夹。</p>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span><span class="zh inline">返回目录</span></a>
   </section>
 
   <!-- ═══ 10. COMPRESS ═══ -->
   <section id="compress">
-    <h2><span class="ru">10. Сжатие</span><span class="en">10. Compression</span></h2>
+    <h2><span class="ru">10. Сжатие</span><span class="en">10. Compression</span><span class="zh">10. 压缩</span></h2>
     <p class="ru">Одиночное или пакетное сжатие Albedo. Выбор 8-bit / 16-bit PNG. После сохранения показывает размер до/после с процентами.</p>
     <p class="en">Single or batch Albedo compression. 8-bit / 16-bit PNG. Shows size delta (original → new, % saved) after save.</p>
+    <p class="zh">单张或批量 Albedo 压缩。8 位 / 16 位 PNG。保存后显示大小变化（原大小 → 新大小、节省百分比）。</p>
     <div class="shot">
       <img src="screenshots/tab_compress.jpg" alt="Compress">
     </div>
     <p class="ru">Результат в папке <code>_compressed</code> рядом с исходниками. В Simple-режиме — две большие кнопки: сжать текстуру / сжать папку.</p>
     <p class="en">Output to <code>_compressed</code> folder next to sources. In Simple mode — two big buttons: compress texture / compress folder.</p>
-    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+    <p class="zh">输出到源文件旁的 <code>_compressed</code> 文件夹。简单模式下 —— 两个大按钮：压缩纹理 / 压缩文件夹。</p>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span><span class="zh inline">返回目录</span></a>
   </section>
 
   <!-- ═══ 11. LOG ═══ -->
   <section id="log">
-    <h2><span class="ru">11. Лог</span><span class="en">11. Log Panel</span></h2>
+    <h2><span class="ru">11. Лог</span><span class="en">11. Log Panel</span><span class="zh">11. 日志</span></h2>
     <p class="ru">Одна общая панель снизу. В свёрнутом виде — последняя строка, в развёрнутом — вся история.</p>
     <p class="en">Single shared log at the bottom. Collapsed — shows last line, expanded — full history.</p>
+    <p class="zh">底部只有一个共享日志面板。折叠时 —— 显示最后一行；展开时 —— 显示完整历史。</p>
     <div class="shot">
       <img src="screenshots/log_bottomsheet.jpg" alt="Log">
     </div>
-    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span><span class="zh inline">返回目录</span></a>
   </section>
 
   <!-- ═══ 12. VIEWER ═══ -->
   <section id="viewer">
-    <h2><span class="ru">12. 3D-вьюер</span><span class="en">12. 3D Viewer</span></h2>
+    <h2><span class="ru">12. 3D-вьюер</span><span class="en">12. 3D Viewer</span><span class="zh">12. 3D 查看器</span></h2>
     <p class="ru">Real-time PBR-превью. 4 формы: Sphere / Cylinder / Cube / Plane. Substance-style освещение, ACES tone mapping, слайдер экспозиции.</p>
     <p class="en">Real-time PBR preview. 4 shapes: Sphere / Cylinder / Cube / Plane. Substance-style lighting, ACES tone mapping, exposure slider.</p>
+    <p class="zh">实时 PBR 预览。4 种形状：球体 / 圆柱 / 立方体 / 平面。Substance 风格光照、ACES 色调映射、曝光滑块。</p>
     <div class="shot">
       <img src="screenshots/viewer_3d.jpg" alt="3D Viewer">
     </div>
     <ul>
-      <li><strong>ЛКМ + движение</strong> — <span class="ru inline">вращение камеры</span><span class="en inline">rotate camera</span></li>
-      <li><strong>Колесо мыши</strong> — <span class="ru inline">зум</span><span class="en inline">zoom</span></li>
-      <li><strong>Shape</strong> — <span class="ru inline">переключение формы</span><span class="en inline">switch shape</span></li>
-      <li><strong>Exposure</strong> — <span class="ru inline">слайдер яркости (0.5–2.0)</span><span class="en inline">brightness slider (0.5–2.0)</span></li>
-      <li><strong>Панель Tiling</strong> — <span class="ru inline">кнопки X/Y, масштаб текстуры от 1×1 до 16×16</span><span class="en inline">X/Y buttons, texture scale from 1×1 to 16×16</span></li>
+      <li><strong>ЛКМ + движение</strong> — <span class="ru inline">вращение камеры</span><span class="en inline">rotate camera</span><span class="zh inline">旋转相机</span></li>
+      <li><strong>Колесо мыши</strong> — <span class="ru inline">зум</span><span class="en inline">zoom</span><span class="zh inline">缩放</span></li>
+      <li><strong>Shape</strong> — <span class="ru inline">переключение формы</span><span class="en inline">switch shape</span><span class="zh inline">切换形状</span></li>
+      <li><strong>Exposure</strong> — <span class="ru inline">слайдер яркости (0.5–2.0)</span><span class="en inline">brightness slider (0.5–2.0)</span><span class="zh inline">亮度滑块（0.5–2.0）</span></li>
+      <li><strong>Панель Tiling</strong> — <span class="ru inline">кнопки X/Y, масштаб текстуры от 1×1 до 16×16</span><span class="en inline">X/Y buttons, texture scale from 1×1 to 16×16</span><span class="zh inline">X/Y 按钮，纹理缩放从 1×1 到 16×16</span></li>
     </ul>
-    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span><span class="zh inline">返回目录</span></a>
   </section>
 
   <!-- ═══ 13. INFO ═══ -->
   <section id="info">
-    <h2><span class="ru">13. Info</span><span class="en">13. Info</span></h2>
+    <h2><span class="ru">13. Info</span><span class="en">13. Info</span><span class="zh">13. 信息</span></h2>
     <p class="ru">Кнопка <code>Инфо</code> в хедере открывает диалог: Help (краткая справка), About (версия), Support (кошельки), Manual (этот файл в браузере).</p>
     <p class="en">The <code>Info</code> button in the header opens a dialog: Help (quick reference), About (version), Support (wallets), Manual (this file in browser).</p>
-    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span></a>
+    <p class="zh">顶部的 <code>信息</code> 按钮打开对话框：帮助（快速参考）、关于（版本）、支持（捐赠钱包）、手册（在浏览器中打开本文件）。</p>
+    <a href="#" class="back-top">↑ <span class="ru inline">К содержанию</span><span class="en inline">Back to top</span><span class="zh inline">返回目录</span></a>
   </section>
 
   <!-- ═══ FOOTER ═══ -->
   <footer>
     <p>
-      <strong>Albedolizer</strong> v1.7.5-beta · MIT License · 2026
+      <strong>Albedolizer</strong> v1.7.6-beta · MIT License · 2026
     </p>
     <p>
       <a href="https://github.com/invisiblelevel/Albedolizer" target="_blank">GitHub</a> ·
@@ -848,6 +878,7 @@
     document.body.setAttribute('data-lang', lang);
     document.getElementById('btn-ru').classList.toggle('active', lang === 'ru');
     document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    document.getElementById('btn-zh').classList.toggle('active', lang === 'zh');
     localStorage.setItem('albedolizer_manual_lang', lang);
   }
   (function() {
