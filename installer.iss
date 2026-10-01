@@ -1,14 +1,14 @@
 [Setup]
 AppName=Albedolizer
-AppVersion=1.7.6-beta
-AppVerName=Albedolizer 1.7.6-beta
+AppVersion=1.7.7-beta
+AppVerName=Albedolizer 1.7.7-beta
 AppPublisher=INV.LVL
 AppPublisherURL=https://github.com/invisiblelevel/Albedolizer
 DefaultDirName={autopf}\Albedolizer
 DefaultGroupName=Albedolizer
 DisableProgramGroupPage=yes
 OutputDir=installer_output
-OutputBaseFilename=Albedolizer_Setup_v1.7.6-beta
+OutputBaseFilename=Albedolizer_Setup_v1.7.7-beta
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -19,6 +19,7 @@ PrivilegesRequired=admin
 PrivilegesRequiredOverridesAllowed=dialog
 
 [Languages]
+Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
