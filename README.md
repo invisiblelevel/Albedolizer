@@ -2,7 +2,7 @@
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.7.6--beta-orange)
+![Version](https://img.shields.io/badge/version-1.7.7--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -46,7 +46,26 @@ Free Godot Editor add-on that generates PBR maps and auto-creates StandardMateri
 ## Screenshots
 ![Main UI](screenshots/main_int.png)
 
-## What's new in v1.7.6-beta
+## What's new in v1.7.7-beta
+
+### Fixed
+- **Chinese filenames broke Normal map save** — `cv2.imwrite` silently fails on Unicode paths on Windows. Replaced with `cv2.imencode` + `open(..., 'wb')` in `save_16bit_or_8bit` and `save_pbr_map`. Files with Chinese, Russian, or any non-ASCII names now save correctly.
+- **Viewer: cylinder and plane were transparent** — added `gl_FrontFacing` for two-sided normals, disabled `CULL_FACE`. Sphere no longer "floats" when rotating.
+- **Viewer: lighting was too harsh** — softer key light (2.5 → 1.6), reduced ambient (0.4/0.7 → 0.22/0.45), softer rim. Default exposure 0.75.
+
+### Added
+- **HiDPI / 4K UI auto-scaling** — reads system DPI via Windows API, sets `page.window.scale`. `SetProcessDpiAwareness` is called before `ft.run()`.
+- **Viewer: Normal map support** — TBN matrix, two-sided normals.
+- **Viewer: AO support** — ambient occlusion multiplied into the IBL ambient term.
+- **Viewer: Height map support** — simple parallax offset with an adjustable slider (0.0–3.0).
+- **Viewer: Chinese UI** — Microsoft YaHei font, `zh` strings.
+- **Chinese installer** — Inno Setup ships with `ChineseSimplified.isl`, auto-detected on Chinese Windows.
+
+### Changed
+- `viewer.py` — new `--normal`, `--ao`, `--height` CLI flags.
+- `ui/tab_pbr.py::pbr_open_viewer` — passes normal / ao / height paths to viewer.
+
+## Previous — v1.7.6-beta
 
 ### Chinese localization
 - **Full Simplified Chinese UI** (中文) — every button, tab, header, dialog, and log message translated
@@ -117,6 +136,7 @@ Free Godot Editor add-on that generates PBR maps and auto-creates StandardMateri
 ### Built-in 3D Viewer
 - Real-time PBR preview via OpenGL (`viewer.exe`)
 - **4 shapes:** Sphere / Cylinder / Cube / Plane
+- **Normal, AO and Height (parallax) support** — full PBR material preview
 - **Substance-style lighting** — key + fill + rim, ACES tone mapping, exposure slider
 - **Tiling panel** — click X/Y buttons in the window to change texture scale (1×1 to 16×16)
 - Rotate with LMB, zoom with mouse wheel
@@ -145,6 +165,7 @@ Free Godot Editor add-on that generates PBR maps and auto-creates StandardMateri
 
 ### Interface
 - Russian / English / Chinese with auto-detection
+- **HiDPI / 4K auto-scaling** — UI scales with system DPI
 - Interactive preview with zoom (0.5x–8x)
 - **Global hotkeys** — Ctrl+O, Ctrl+S, Ctrl+R, Ctrl+Z, Space, Enter
 - **Last opened folder is remembered** across sessions
@@ -156,7 +177,7 @@ Free Godot Editor add-on that generates PBR maps and auto-creates StandardMateri
 
 ### Installer (recommended)
 
-1. Download `Albedolizer_Setup_v1.7.6-beta.exe` from the [latest release](../../releases/latest)
+1. Download `Albedolizer_Setup_v1.7.7-beta.exe` from the [latest release](../../releases/latest)
 2. Run the installer — it places everything in `Program Files\Albedolizer`
 3. Launch from Start Menu or Desktop shortcut
 
@@ -206,7 +227,7 @@ Free Godot Editor add-on that generates PBR maps and auto-creates StandardMateri
 5. Optional: **Metal** → **By color** → pick on Albedo
 6. **Generate** → 7 maps
 7. Switch between maps with buttons on top — right panel changes per map
-8. **3D Preview** — opens the OpenGL viewer
+8. **3D Preview** — opens the OpenGL viewer with Normal, AO and Height (parallax)
 9. **Save all** — creates a `<name>_pbr/` folder
 
 ### Engine Export
@@ -281,7 +302,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.7.6-beta  
+**Version:** 1.7.7-beta  
 **Date:** 2026
 
 ---
@@ -327,7 +348,26 @@ Albedolizer также доступен прямо внутри **Blender**, **U
 
 ---
 
-## Что нового в v1.7.6-beta
+## Что нового в v1.7.7-beta
+
+### Исправлено
+- **Китайские имена файлов ломали сохранение Normal map** — `cv2.imwrite` молча падает на Unicode-путях в Windows. Заменён на `cv2.imencode` + `open(..., 'wb')` в `save_16bit_or_8bit` и `save_pbr_map`. Файлы с китайскими, русскими и любыми не-ASCII именами теперь сохраняются корректно.
+- **Вьюер: цилиндр и плоскость были прозрачными** — добавлен `gl_FrontFacing` для двусторонних нормалей, `CULL_FACE` выключен. Сфера больше не «плавает» при вращении.
+- **Вьюер: освещение слепило** — приглушён key light (2.5 → 1.6), снижен ambient (0.4/0.7 → 0.22/0.45), мягче rim. Дефолтная экспозиция 0.75.
+
+### Добавлено
+- **HiDPI / 4K авто-масштаб UI** — читает системный DPI через Windows API, ставит `page.window.scale`. `SetProcessDpiAwareness` вызывается до `ft.run()`.
+- **Вьюер: поддержка Normal map** — TBN-матрица, двусторонние нормали.
+- **Вьюер: поддержка AO** — ambient occlusion множится на IBL ambient.
+- **Вьюер: поддержка Height map** — simple parallax offset со слайдером (0.0–3.0).
+- **Вьюер: китайский UI** — шрифт Microsoft YaHei, `zh` строки.
+- **Китайский инсталлер** — Inno Setup с `ChineseSimplified.isl`, авто-определение на китайской Windows.
+
+### Изменено
+- `viewer.py` — новые CLI-флаги `--normal`, `--ao`, `--height`.
+- `ui/tab_pbr.py::pbr_open_viewer` — передача путей normal / ao / height во вьюер.
+
+## Previous — v1.7.6-beta
 
 ### Китайская локализация
 - **Полный перевод UI на упрощённый китайский** (中文) — все кнопки, вкладки, хедер, диалоги и лог
@@ -398,6 +438,7 @@ Albedolizer также доступен прямо внутри **Blender**, **U
 ### Встроенный 3D-вьюер
 - Просмотр PBR в реальном времени через OpenGL (`viewer.exe`)
 - **4 формы:** Sphere / Cylinder / Cube / Plane
+- **Поддержка Normal, AO и Height (parallax)** — полное PBR-превью материала
 - **Освещение как в Substance** — key + fill + rim, ACES tone mapping, слайдер экспозиции
 - **Панель тайлинга** — кнопки X/Y прямо в окне, масштаб от 1×1 до 16×16
 - Вращение ЛКМ, зум колесом
@@ -426,6 +467,7 @@ Albedolizer также доступен прямо внутри **Blender**, **U
 
 ### Интерфейс
 - Русский / English / 中文 с автоопределением системы
+- **HiDPI / 4K авто-масштаб** — UI масштабируется под системный DPI
 - Интерактивное превью с зумом (0.5x–8x)
 - **Глобальные хоткеи** — Ctrl+O, Ctrl+S, Ctrl+R, Ctrl+Z, Space, Enter
 - **Запоминается последняя открытая папка** между сессиями
@@ -437,7 +479,7 @@ Albedolizer также доступен прямо внутри **Blender**, **U
 
 ### Инсталлер (рекомендуется)
 
-1. Скачай `Albedolizer_Setup_v1.7.6-beta.exe` из [последнего релиза](../../releases/latest)
+1. Скачай `Albedolizer_Setup_v1.7.7-beta.exe` из [последнего релиза](../../releases/latest)
 2. Запусти установщик — всё встанет в `Program Files\Albedolizer`
 3. Запускай из меню Пуск или ярлыка на рабочем столе
 
@@ -485,7 +527,7 @@ Albedolizer также доступен прямо внутри **Blender**, **U
 5. Опционально: **Metal** → **By color** → ткни в Albedo
 6. **Generate** → 7 карт
 7. Переключайся между картами — правая панель меняется под карту
-8. **3D Preview** — открывает OpenGL-вьюер
+8. **3D Preview** — открывает OpenGL-вьюер с Normal, AO и Height (параллакс)
 9. **Save all** — создастся папка `<имя>_pbr/`
 
 ### Экспорт для движков
@@ -560,5 +602,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.7.6-beta  
+**Версия:** 1.7.7-beta  
 **Дата:** 2026
