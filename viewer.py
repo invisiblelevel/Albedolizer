@@ -1,7 +1,7 @@
 """
 viewer.py — PBR 3D viewer для Albedolizer.
 Отдельное OpenGL-окно через moderngl + glfw.
-v1.7.2: цилиндр/куб/плоскость, свет как в Substance, ACES, слайдер экспозиции.
+v1.7.6: Normal + AO + Height (parallax offset), RU/EN/ZH.
 """
 
 import os
@@ -54,8 +54,11 @@ in vec3 v_normal;
 in vec2 v_uv;
 
 uniform sampler2D u_albedo;
+uniform sampler2D u_normal;
 uniform sampler2D u_roughness;
 uniform sampler2D u_metallic;
+uniform sampler2D u_ao;
+uniform sampler2D u_height;
 uniform sampler2D u_env;
 uniform sampler2D u_env_blur;
 
@@ -63,6 +66,10 @@ uniform vec3 u_cam_pos;
 uniform float u_exposure;
 uniform float u_tile_x;
 uniform float u_tile_y;
+uniform int u_has_normal;
+uniform int u_has_ao;
+uniform int u_has_height;
+uniform float u_parallax_strength;
 
 out vec4 frag_color;
 
@@ -83,7 +90,38 @@ vec3 sample_env_blur(vec3 dir) {
     return texture(u_env_blur, dir_to_uv(dir)).rgb;
 }
 
-// ═══ BRDF функции ═══
+// ═══ Simple parallax offset ═══
+// Смещает UV в зависимости от height и направления взгляда (в tangent space).
+vec2 parallax_offset(vec2 uv, vec3 V_ts, float strength) {
+    if (u_has_height == 0 || strength <= 0.0) {
+        return uv;
+    }
+    // V_ts: направление взгляда в tangent space (упрощённо)
+    // Многократный sample для сглаживания
+    float h = texture(u_height, uv).r;
+    // Смещение по V_ts.xy * (h - 0.5) * strength
+    vec2 offset = V_ts.xy * (h - 0.5) * strength * 0.05;
+    return uv - offset;
+}
+
+// ═══ Применение normal map ═══
+vec3 apply_normal_map(vec3 N, vec2 uv, vec3 world_pos, sampler2D tex) {
+    vec3 n = texture(tex, uv).rgb * 2.0 - 1.0;
+    vec3 dp1 = dFdx(world_pos);
+    vec3 dp2 = dFdy(world_pos);
+    vec2 duv1 = dFdx(uv);
+    vec2 duv2 = dFdy(uv);
+
+    vec3 T = normalize(dp1 * duv2.y - dp2 * duv1.y);
+    vec3 B = normalize(cross(N, T));
+    if (length(T) < 0.001 || length(B) < 0.001) {
+        return N;
+    }
+    mat3 TBN = mat3(T, B, N);
+    return normalize(TBN * n);
+}
+
+// ═══ BRDF ═══
 float DistributionGGX(vec3 N, vec3 H, float roughness) {
     float a = roughness * roughness;
     float a2 = a * a;
@@ -124,18 +162,15 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness) {
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-// ═══ Три источника света — как в Substance Painter ═══
-// Key: основной, сверху-слева-спереди, тёплый
+// ═══ Три источника света ═══
 const vec3 KEY_DIR   = normalize(vec3(-0.6, 0.8, 0.5));
-const vec3 KEY_COLOR = vec3(2.5, 2.4, 2.2);
+const vec3 KEY_COLOR = vec3(1.6, 1.55, 1.45);
 
-// Fill: снизу-справа, холодный, слабый — чтобы тени не в ноль
 const vec3 FILL_DIR   = normalize(vec3(0.7, -0.3, 0.4));
-const vec3 FILL_COLOR = vec3(0.35, 0.42, 0.55);
+const vec3 FILL_COLOR = vec3(0.20, 0.24, 0.32);
 
-// Rim: сзади-сверху, для отрыва силуэта от фона
 const vec3 RIM_DIR   = normalize(vec3(0.3, 0.6, -0.9));
-const vec3 RIM_COLOR = vec3(0.9, 0.95, 1.0);
+const vec3 RIM_COLOR = vec3(0.55, 0.60, 0.65);
 
 
 vec3 direct_light(vec3 N, vec3 V, vec3 L, vec3 light_color,
@@ -159,7 +194,6 @@ vec3 direct_light(vec3 N, vec3 V, vec3 L, vec3 light_color,
     return (kD * albedo / PI + specular) * light_color * NdotL;
 }
 
-// ═══ ACES tone mapping (Narkowicz approximation) ═══
 vec3 aces_tonemap(vec3 x) {
     const float a = 2.51;
     const float b = 0.03;
@@ -171,29 +205,65 @@ vec3 aces_tonemap(vec3 x) {
 
 
 void main() {
+    // Базовые UV с тайлингом
     vec2 uv = vec2(v_uv.x * u_tile_x, v_uv.y * u_tile_y);
-    vec3 albedo = texture(u_albedo, uv).rgb;
-    vec3 N = normalize(v_normal);
+
+    // Двусторонние нормали
+    vec3 Ng = normalize(v_normal);
+    if (!gl_FrontFacing) {
+        Ng = -Ng;
+    }
+
+    // Простой tangent space для параллакса (производные)
     vec3 V = normalize(u_cam_pos - v_world_pos);
+
+    // Простой parallax: смещение UV по направлению взгляда в плоскости поверхности
+    if (u_has_height == 1 && u_parallax_strength > 0.0) {
+        // Упрощённый tangent: используем производные UV
+        vec3 dp1 = dFdx(v_world_pos);
+        vec3 dp2 = dFdy(v_world_pos);
+        vec2 duv1 = dFdx(uv);
+        vec2 duv2 = dFdy(uv);
+
+        vec3 T = normalize(dp1 * duv2.y - dp2 * duv1.y);
+        vec3 B = normalize(cross(Ng, T));
+
+        // V в tangent space
+        vec3 V_ts = vec3(dot(V, T), dot(V, B), dot(V, Ng));
+
+        // Один шаг parallax offset
+        float h = texture(u_height, uv).r;
+        vec2 offset = V_ts.xy / max(abs(V_ts.z), 0.001) * (h - 0.5) * u_parallax_strength * 0.05;
+        uv -= offset;
+    }
+
+    vec3 albedo = texture(u_albedo, uv).rgb;
+
+    vec3 N = Ng;
+    if (u_has_normal == 1) {
+        N = apply_normal_map(N, uv, v_world_pos, u_normal);
+    }
+
     vec3 R = reflect(-V, N);
 
     float roughness = clamp(texture(u_roughness, uv).r, 0.05, 1.0);
     float metallic = clamp(texture(u_metallic, uv).r, 0.0, 1.0);
+    float ao = (u_has_ao == 1) ? texture(u_ao, uv).r : 1.0;
 
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo, metallic);
 
-    // ═══ Прямой свет: key + fill + rim ═══
+    // ═══ Прямой свет ═══
     vec3 Lo = vec3(0.0);
     Lo += direct_light(N, V, KEY_DIR,  KEY_COLOR,  albedo, F0, roughness, metallic);
     Lo += direct_light(N, V, FILL_DIR, FILL_COLOR, albedo, F0, roughness, metallic);
     Lo += direct_light(N, V, RIM_DIR,  RIM_COLOR,  albedo, F0, roughness, metallic);
 
-    // ═══ Rim light (fresnel-подсветка силуэта) ═══
-    float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-    vec3 rim_color = vec3(0.3, 0.35, 0.4) * rim * 0.5;
+    // ═══ Rim light ═══
+    float rim = pow(1.0 - max(dot(N, V), 0.0), 4.0);
+    vec3 rim_color = vec3(0.15, 0.17, 0.20) * rim * 0.3;
 
-    // ═══ IBL (ambient от env-карты) ═══
+    // ═══ IBL ═══
     float NdotV = max(dot(N, V), 0.0);
     vec3 F_ibl = fresnelSchlickRoughness(NdotV, F0, roughness);
     vec3 kS_ibl = F_ibl;
@@ -206,12 +276,10 @@ void main() {
     vec3 diffuse_ibl = irradiance * albedo * kD_ibl;
     vec3 specular_ibl = reflection_env * F_ibl * (metallic * 8.0 + (1.0 - metallic) * 0.05) * (1.0 - roughness * 0.5);
 
-    // IBL слабее прямого света — иначе нет объёма
-    vec3 ambient = diffuse_ibl * 0.4 + specular_ibl * 0.7;
+    vec3 ambient = (diffuse_ibl * 0.22 + specular_ibl * 0.45) * ao;
 
     vec3 color = Lo + ambient + rim_color;
 
-    // ═══ Экспозиция → ACES → gamma ═══
     color *= u_exposure;
     color = aces_tonemap(color);
     color = pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
@@ -253,12 +321,10 @@ def create_sphere(radius=0.5, segments=64, rings=64):
 
 
 def create_cylinder(radius=0.5, height=1.0, segments=64):
-    """Цилиндр по Y с крышками. Бок — UV по окружности, крышки — отдельные диски."""
     verts = []
     idx = []
     half_h = height * 0.5
 
-    # ─── Боковая поверхность ───
     side_start = 0
     for seg in range(segments + 1):
         theta = 2.0 * math.pi * seg / segments
@@ -266,9 +332,7 @@ def create_cylinder(radius=0.5, height=1.0, segments=64):
         z = radius * math.sin(theta)
         nx, nz = math.cos(theta), math.sin(theta)
         u = seg / segments
-        # низ
         verts.append((x, -half_h, z, nx, 0.0, nz, u, 0.0))
-        # верх
         verts.append((x,  half_h, z, nx, 0.0, nz, u, 1.0))
 
     for seg in range(segments):
@@ -279,7 +343,6 @@ def create_cylinder(radius=0.5, height=1.0, segments=64):
         idx.extend([a, c, b])
         idx.extend([b, c, d])
 
-    # ─── Верхняя крышка ───
     top_center = len(verts)
     verts.append((0.0, half_h, 0.0, 0.0, 1.0, 0.0, 0.5, 0.5))
     top_ring_start = len(verts)
@@ -295,7 +358,6 @@ def create_cylinder(radius=0.5, height=1.0, segments=64):
         b = a + 1
         idx.extend([top_center, b, a])
 
-    # ─── Нижняя крышка ───
     bot_center = len(verts)
     verts.append((0.0, -half_h, 0.0, 0.0, -1.0, 0.0, 0.5, 0.5))
     bot_ring_start = len(verts)
@@ -315,33 +377,23 @@ def create_cylinder(radius=0.5, height=1.0, segments=64):
 
 
 def create_cube(size=1.0):
-    """Куб size×size×size. UV 0..1 на каждую грань."""
     h = size * 0.5
 
-    # 6 граней, каждая — 4 вершины, нормаль наружу
-    # (позиция, нормаль) для каждой вершины
     faces = [
-        # +X
         (( h, -h, -h), (1, 0, 0)), (( h,  h, -h), (1, 0, 0)),
         (( h,  h,  h), (1, 0, 0)), (( h, -h,  h), (1, 0, 0)),
-        # -X
         ((-h, -h,  h), (-1, 0, 0)), ((-h,  h,  h), (-1, 0, 0)),
         ((-h,  h, -h), (-1, 0, 0)), ((-h, -h, -h), (-1, 0, 0)),
-        # +Y
         ((-h,  h, -h), (0, 1, 0)), ((-h,  h,  h), (0, 1, 0)),
         (( h,  h,  h), (0, 1, 0)), (( h,  h, -h), (0, 1, 0)),
-        # -Y
         ((-h, -h,  h), (0, -1, 0)), ((-h, -h, -h), (0, -1, 0)),
         (( h, -h, -h), (0, -1, 0)), (( h, -h,  h), (0, -1, 0)),
-        # +Z
         ((-h, -h,  h), (0, 0, 1)), (( h, -h,  h), (0, 0, 1)),
         (( h,  h,  h), (0, 0, 1)), ((-h,  h,  h), (0, 0, 1)),
-        # -Z
         (( h, -h, -h), (0, 0, -1)), ((-h, -h, -h), (0, 0, -1)),
         ((-h,  h, -h), (0, 0, -1)), (( h,  h, -h), (0, 0, -1)),
     ]
 
-    # UV для каждой грани: (0,0), (1,0), (1,1), (0,1)
     uvs = [(0, 0), (1, 0), (1, 1), (0, 1)]
 
     verts = []
@@ -359,7 +411,6 @@ def create_cube(size=1.0):
 
 
 def create_plane(size=1.0):
-    """Плоскость size×size в XY, нормаль +Z. Стена."""
     h = size * 0.5
     verts = np.array([
         (-h, -h, 0, 0, 0, 1, 0, 0),
@@ -375,10 +426,13 @@ def create_plane(size=1.0):
 #  ЗАГРУЗКА ТЕКСТУР
 # ═══════════════════════════════════════════════════════════
 
-def load_texture(ctx, path, default_color=(128, 128, 128)):
+def load_texture(ctx, path, default_color=(128, 128, 128),
+                 srgb=False, max_dim=4096):
     if path and path != "" and path.lower() != "none":
         try:
             img = Image.open(path).convert("RGB")
+            if max(img.size) > max_dim:
+                img.thumbnail((max_dim, max_dim), Image.LANCZOS)
             data = img.tobytes()
             w, h = img.size
             tex = ctx.texture((w, h), 3, data)
@@ -386,6 +440,7 @@ def load_texture(ctx, path, default_color=(128, 128, 128)):
             tex.filter = (moderngl.LINEAR_MIPMAP_LINEAR, moderngl.LINEAR)
             tex.repeat_x = True
             tex.repeat_y = True
+            tex.anisotropy = 8.0
             return tex
         except Exception as e:
             print(f"⚠ Не удалось загрузить {path}: {e}")
@@ -470,50 +525,51 @@ def imgui_glfw_backend(win):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--albedo", default="")
+    parser.add_argument("--normal", default="")
     parser.add_argument("--roughness", default="")
     parser.add_argument("--metallic", default="")
+    parser.add_argument("--ao", default="")
+    parser.add_argument("--height", default="")
     parser.add_argument("--tile-x", type=int, default=4)
     parser.add_argument("--tile-y", type=int, default=3)
     parser.add_argument("--shape", default="sphere", choices=["sphere", "cylinder", "cube", "plane"])
     parser.add_argument("--lang", default="ru")
     args = parser.parse_args()
 
-    # ═══ Локализация UI вьюера ═══
     VIEWER_STRINGS = {
         "ru": {
-            "window_title": "Viewer",
-            "shape": "Форма",
-            "sphere": "Сфера",
-            "cylinder": "Цилиндр",
-            "cube": "Куб",
-            "plane": "Плоскость",
-            "lighting": "Освещение",
-            "exposure": "Экспозиция",
-            "tiling": "Тайлинг",
-            "current": "Текущий",
-            "horizontal": "По горизонтали (X):",
-            "vertical": "По вертикали (Y):",
+            "window_title": "Viewer", "shape": "Форма",
+            "sphere": "Сфера", "cylinder": "Цилиндр",
+            "cube": "Куб", "plane": "Плоскость",
+            "lighting": "Освещение", "exposure": "Экспозиция",
+            "parallax": "Параллакс",
+            "tiling": "Тайлинг", "current": "Текущий",
+            "horizontal": "По горизонтали (X):", "vertical": "По вертикали (Y):",
             "reset": "Сброс 4x3",
         },
         "en": {
-            "window_title": "Viewer",
-            "shape": "Shape",
-            "sphere": "Sphere",
-            "cylinder": "Cylinder",
-            "cube": "Cube",
-            "plane": "Plane",
-            "lighting": "Lighting",
-            "exposure": "Exposure",
-            "tiling": "Tiling",
-            "current": "Current",
-            "horizontal": "Horizontal (X):",
-            "vertical": "Vertical (Y):",
+            "window_title": "Viewer", "shape": "Shape",
+            "sphere": "Sphere", "cylinder": "Cylinder",
+            "cube": "Cube", "plane": "Plane",
+            "lighting": "Lighting", "exposure": "Exposure",
+            "parallax": "Parallax",
+            "tiling": "Tiling", "current": "Current",
+            "horizontal": "Horizontal (X):", "vertical": "Vertical (Y):",
             "reset": "Reset 4x3",
+        },
+        "zh": {
+            "window_title": "查看器", "shape": "形状",
+            "sphere": "球体", "cylinder": "圆柱",
+            "cube": "立方体", "plane": "平面",
+            "lighting": "光照", "exposure": "曝光",
+            "parallax": "视差",
+            "tiling": "平铺", "current": "当前",
+            "horizontal": "水平 (X):", "vertical": "垂直 (Y):",
+            "reset": "重置 4x3",
         },
     }
     L = VIEWER_STRINGS.get(args.lang, VIEWER_STRINGS["ru"])
 
-    # ═══ Базовая папка ═══
     if getattr(sys, 'frozen', False):
         _meipass = getattr(sys, '_MEIPASS', None)
         _exe_dir = os.path.dirname(sys.executable)
@@ -529,7 +585,7 @@ def main():
     glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
     glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
 
-    win = glfw.create_window(800, 800, "Albedolizer — 3D Viewer", None, None)
+    win = glfw.create_window(900, 900, "Albedolizer — 3D Viewer", None, None)
     if not win:
         glfw.terminate()
         print("Не удалось создать окно")
@@ -540,17 +596,25 @@ def main():
     glfw.focus_window(win)
     ctx = moderngl.create_context()
 
-    # ═══ ImGui init ═══
     imgui.create_context()
     io = imgui.get_io()
 
-    font_path = r"C:\Windows\Fonts\segoeui.ttf"
-    if not os.path.exists(font_path):
-        font_path = r"C:\Windows\Fonts\arial.ttf"
-
-    if os.path.exists(font_path):
-        io.fonts.add_font_from_file_ttf(font_path, 18.0)
-    else:
+    font_candidates = [
+        r"C:\Windows\Fonts\msyh.ttc",
+        r"C:\Windows\Fonts\msyh.ttf",
+        r"C:\Windows\Fonts\segoeui.ttf",
+        r"C:\Windows\Fonts\arial.ttf",
+    ]
+    font_loaded = False
+    for fp in font_candidates:
+        if os.path.exists(fp):
+            try:
+                io.fonts.add_font_from_file_ttf(fp, 18.0)
+                font_loaded = True
+                break
+            except Exception:
+                continue
+    if not font_loaded:
         io.fonts.add_font_default()
 
     io.display_size = glfw.get_window_size(win)
@@ -559,10 +623,16 @@ def main():
 
     prog = ctx.program(vertex_shader=VERTEX_SHADER, fragment_shader=FRAGMENT_SHADER)
 
-    # ═══ Текстуры ═══
     tex_albedo = load_texture(ctx, args.albedo, default_color=(200, 180, 150))
+    tex_normal = load_texture(ctx, args.normal, default_color=(128, 128, 255))
     tex_rough = load_texture(ctx, args.roughness, default_color=(128, 128, 128))
     tex_metal = load_texture(ctx, args.metallic, default_color=(0, 0, 0))
+    tex_ao = load_texture(ctx, args.ao, default_color=(255, 255, 255))
+    tex_height = load_texture(ctx, args.height, default_color=(128, 128, 128))
+
+    has_normal = 1 if (args.normal and args.normal != "" and args.normal.lower() != "none") else 0
+    has_ao = 1 if (args.ao and args.ao != "" and args.ao.lower() != "none") else 0
+    has_height = 1 if (args.height and args.height != "" and args.height.lower() != "none") else 0
 
     env_path = os.path.join(_base_dir, "env.png")
     tex_env = load_texture(ctx, env_path, default_color=(128, 128, 128))
@@ -578,18 +648,32 @@ def main():
         tex_env_blur = tex_env
 
     tex_albedo.use(0)
-    tex_rough.use(1)
-    tex_metal.use(2)
-    tex_env.use(3)
-    tex_env_blur.use(4)
+    tex_normal.use(1)
+    tex_rough.use(2)
+    tex_metal.use(3)
+    tex_ao.use(4)
+    tex_height.use(5)
+    tex_env.use(6)
+    tex_env_blur.use(7)
 
-    prog["u_albedo"] = 0
-    prog["u_roughness"] = 1
-    prog["u_metallic"] = 2
-    prog["u_env"] = 3
-    prog["u_env_blur"] = 4
+    def _set_u(name, value):
+        try:
+            prog[name] = value
+        except KeyError:
+            print(f"⚠ Uniform {name} not found")
 
-    # ═══ Геометрия — 4 VAO ═══
+    _set_u("u_albedo", 0)
+    _set_u("u_normal", 1)
+    _set_u("u_roughness", 2)
+    _set_u("u_metallic", 3)
+    _set_u("u_ao", 4)
+    _set_u("u_height", 5)
+    _set_u("u_env", 6)
+    _set_u("u_env_blur", 7)
+    _set_u("u_has_normal", has_normal)
+    _set_u("u_has_ao", has_ao)
+    _set_u("u_has_height", has_height)
+
     def make_vao(verts, idx):
         vbo = ctx.buffer(verts.tobytes())
         ibo = ctx.buffer(idx.tobytes())
@@ -607,13 +691,14 @@ def main():
 
     SHAPES = ["sphere", "cylinder", "cube", "plane"]
     SHAPE_LABELS = {
-        "ru": {"sphere": L["sphere"], "cylinder": L["cylinder"], "cube": L["cube"], "plane": L["plane"]},
-        "en": {"sphere": L["sphere"], "cylinder": L["cylinder"], "cube": L["cube"], "plane": L["plane"]},
-    }[args.lang if args.lang in ("ru", "en") else "ru"]
+        "sphere": L["sphere"],
+        "cylinder": L["cylinder"],
+        "cube": L["cube"],
+        "plane": L["plane"],
+    }
 
     shape_idx = SHAPES.index(args.shape) if args.shape in SHAPES else 0
 
-    # ═══ Состояние камеры ═══
     yaw = 0.0
     pitch = 0.0
     dist = 1.5
@@ -621,7 +706,6 @@ def main():
     last_y = 0.0
     dragging = False
 
-    # ═══ Tiling state ═══
     TILE_STEPS = [1, 2, 3, 4, 6, 8, 12, 16]
 
     def _idx_for(val):
@@ -636,8 +720,8 @@ def main():
     tile_idx_x = _idx_for(args.tile_x)
     tile_idx_y = _idx_for(args.tile_y)
 
-    # ═══ Exposure ═══
-    exposure = 1.0
+    exposure = 0.75
+    parallax_strength = 1.0 if has_height else 0.0
 
     def mouse_button(window, button, action, mods):
         nonlocal dragging, last_x, last_y
@@ -696,8 +780,8 @@ def main():
     glfw.set_scroll_callback(win, scroll_combined)
 
     ctx.enable(moderngl.DEPTH_TEST)
+    ctx.disable(moderngl.CULL_FACE)
 
-    # ═══ ImGui стиль ═══
     imgui.style_colors_dark()
     style = imgui.get_style()
     style.window_rounding = 8.0
@@ -705,18 +789,16 @@ def main():
     style.window_padding = imgui.ImVec2(12, 12)
     style.frame_padding = imgui.ImVec2(8, 6)
 
-    # ═══ Панель управления ═══
     def draw_panel():
-        nonlocal shape_idx, tile_idx_x, tile_idx_y, exposure
+        nonlocal shape_idx, tile_idx_x, tile_idx_y, exposure, parallax_strength
 
         imgui.set_next_window_pos(imgui.ImVec2(12, 12), imgui.Cond_.always)
-        imgui.set_next_window_size(imgui.ImVec2(270, 0), imgui.Cond_.always)
+        imgui.set_next_window_size(imgui.ImVec2(280, 0), imgui.Cond_.always)
         imgui.begin(L["window_title"], None,
                     imgui.WindowFlags_.no_resize |
                     imgui.WindowFlags_.no_move |
                     imgui.WindowFlags_.always_auto_resize)
 
-        # ─── Форма ───
         imgui.text(L["shape"])
         imgui.separator()
         for i, key in enumerate(SHAPES):
@@ -724,14 +806,17 @@ def main():
                 shape_idx = i
         imgui.spacing()
 
-        # ─── Освещение ───
         imgui.text(L["lighting"])
         imgui.separator()
         imgui.text(L["exposure"])
         changed, exposure = imgui.slider_float("##exposure", exposure, 0.5, 2.0, "%.2f")
+
+        if has_height == 1:
+            imgui.text(L["parallax"])
+            changed_p, parallax_strength = imgui.slider_float(
+                "##parallax", parallax_strength, 0.0, 3.0, "%.2f")
         imgui.spacing()
 
-        # ─── Тайлинг ───
         imgui.text(L["tiling"])
         imgui.separator()
         imgui.text(f"{L['current']}: {TILE_STEPS[tile_idx_x]} x {TILE_STEPS[tile_idx_y]}")
@@ -745,7 +830,6 @@ def main():
                 tile_idx_x = i
             if active:
                 imgui.pop_style_color()
-            # перенос на новый ряд после каждых 4 кнопок
             if (i + 1) % 4 == 0:
                 pass
             elif i < len(TILE_STEPS) - 1:
@@ -773,7 +857,6 @@ def main():
 
         imgui.end()
 
-    # ═══ Главный цикл ═══
     target_dt = 1.0 / 60.0
 
     while not glfw.window_should_close(win):
@@ -808,8 +891,8 @@ def main():
         prog["u_tile_x"].value = float(TILE_STEPS[tile_idx_x])
         prog["u_tile_y"].value = float(TILE_STEPS[tile_idx_y])
         prog["u_exposure"].value = float(exposure)
+        prog["u_parallax_strength"].value = float(parallax_strength)
 
-        # ─── Выбор VAO ───
         vao = [vao_sphere, vao_cylinder, vao_cube, vao_plane][shape_idx]
         vao.render(moderngl.TRIANGLES)
 

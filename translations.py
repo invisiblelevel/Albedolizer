@@ -93,7 +93,7 @@ T = {
         "welcome_manual": "Открыть мануал",
         "welcome_switch_simple": "Включить Advanced mode",
         # ─── Логи (эмодзи оставлены) ───
-        "welcome_1": "👋 Добро пожаловать в Albedolizer v1.7.6-beta",
+        "welcome_1": "👋 Добро пожаловать в Albedolizer v1.7.7-beta",
         "welcome_2": "→ Нажми «Открыть» для начала",
         "log_loaded": "📂 Загружено:", "log_type": "→ Тип:",
         "log_click_check": "→ Нажми «Проверить» для анализа",
@@ -410,7 +410,7 @@ T = {
         "welcome_manual": "Open manual",
         "welcome_switch_simple": "Enable Advanced mode",
         # ─── Logs (emoji kept) ───
-        "welcome_1": "👋 Welcome to Albedolizer v1.7.6-beta",
+        "welcome_1": "👋 Welcome to Albedolizer v1.7.7-beta",
         "welcome_2": "→ Click «Open» to start",
         "log_loaded": "📂 Loaded:", "log_type": "→ Type:",
         "log_click_check": "→ Click «Check» to analyze",
@@ -727,7 +727,7 @@ T = {
         "welcome_manual": "打开手册",
         "welcome_switch_simple": "启用高级模式",
         # ─── Логи (эмодзи оставлены) ───
-        "welcome_1": "👋 欢迎使用 Albedolizer v1.7.6-beta",
+        "welcome_1": "👋 欢迎使用 Albedolizer v1.7.7-beta",
         "welcome_2": "→ 点击「加载」开始",
         "log_loaded": "📂 已加载:", "log_type": "→ 类型:",
         "log_click_check": "→ 点击「检查」进行分析",

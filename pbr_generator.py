@@ -294,23 +294,28 @@ def to_preview_pil(arr):
 
 
 def save_pbr_map(arr, path, bit_depth=8):
-    """Сохраняет float32 массив 0-1 в PNG. bit_depth: 8 или 16."""
+    """Сохраняет float32 массив 0-1 в PNG. bit_depth: 8 или 16.
+    Работает с Unicode-путями (китайские имена и т.п.)."""
     arr = np.clip(arr, 0, 1)
 
     if bit_depth == 16:
         data16 = (arr * 65535).astype(np.uint16)
         if arr.ndim == 2:
-            # Grayscale 16-bit — Pillow умеет
-            Image.fromarray(data16, mode="I;16").save(path)
+            # Grayscale 16-bit — Pillow умеет с Unicode
+            Image.fromarray(data16, mode="I;16").save(str(path))
         else:
-            # RGB 16-bit — через cv2 (BGR)
+            # RGB 16-bit — cv2.imencode + open
             bgr = cv2.cvtColor(data16, cv2.COLOR_RGB2BGR)
-            cv2.imwrite(str(path), bgr)
+            ok, buf = cv2.imencode(".png", bgr)
+            if not ok:
+                raise OSError(f"imencode failed: {path}")
+            with open(path, "wb") as f:
+                f.write(buf.tobytes())
     else:
         if arr.ndim == 2:
-            Image.fromarray((arr * 255).astype(np.uint8), mode="L").save(path)
+            Image.fromarray((arr * 255).astype(np.uint8), mode="L").save(str(path))
         else:
-            Image.fromarray((arr * 255).astype(np.uint8), mode="RGB").save(path)
+            Image.fromarray((arr * 255).astype(np.uint8), mode="RGB").save(str(path))
 
 
 def generate_all_pbr(albedo_pil,

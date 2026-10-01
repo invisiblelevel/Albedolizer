@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.7.7-beta] — 2026-10-01
+
+Bug fixes and viewer improvements.
+
+### Fixed
+- **Chinese filenames broke Normal map save** — `cv2.imwrite` doesn't handle Unicode paths on Windows. Replaced with `cv2.imencode` + `open(..., 'wb')` in `save_16bit_or_8bit` and `save_pbr_map`.
+- **Viewer: cylinder and plane were transparent** — added `gl_FrontFacing` for two-sided normals, disabled `CULL_FACE`. Sphere no longer "floats" when rotating.
+- **Viewer: lighting was too harsh** — reduced `KEY_COLOR` from 2.5 to 1.6, ambient from 0.4/0.7 to 0.22/0.45, rim light softened. Default exposure 0.75.
+
+### Added
+- **HiDPI / 4K UI auto-scaling** — reads system DPI via Windows API, sets `page.window.scale` accordingly. `SetProcessDpiAwareness` is called before `ft.run()`.
+- **Viewer: Normal map support** — TBN matrix, two-sided normals.
+- **Viewer: AO support** — ambient occlusion multiplied into IBL ambient term.
+- **Viewer: Height map support** — simple parallax offset with adjustable slider (0.0–3.0).
+- **Viewer: Chinese UI** — `zh` in `VIEWER_STRINGS`, Microsoft YaHei font.
+
+### Changed
+- `viewer.py` — `--normal`, `--ao`, `--height` CLI flags.
+- `ui/tab_pbr.py::pbr_open_viewer` — passes normal / ao / height paths to viewer.
+
 ## [1.7.6-beta] — 2026-09-28
 
 Chinese localization + critical batch fix + memory optimization.

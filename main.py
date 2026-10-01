@@ -94,6 +94,25 @@ def main(page: ft.Page):
     page.window.height = WINDOW_HEIGHT
     page.window.opacity = 1.0
 
+    # ═══ Авто-масштаб интерфейса под HiDPI / 4K ═══
+    # SetProcessDpiAwareness уже вызван на уровне модуля (до ft.run).
+    # Здесь только читаем DPI и ставим scale.
+    try:
+        import ctypes
+        user32 = ctypes.windll.user32
+        try:
+            dpi = user32.GetDpiForSystem()
+        except Exception:
+            hdc = user32.GetDC(0)
+            dpi = ctypes.windll.gdi32.GetDeviceCaps(hdc, 88)  # LOGPIXELSX
+            user32.ReleaseDC(0, hdc)
+        if dpi and dpi > 0:
+            # 96 DPI = 100%. На 4K обычно 144 или 192.
+            # 0.85 — компенсация, чтобы UI не был слишком крупным.
+            page.window.scale = max(1.0, round((dpi / 96.0) * 0.85, 2))
+    except Exception:
+        pass
+
     # ═══ Шрифт для китайского ═══
     font_path = get_font_path()
     if font_path:
@@ -107,11 +126,6 @@ def main(page: ft.Page):
     # ═══ CLIP + FilePicker ═══
     S["clip"] = CLIPMaterialClassifier()
     picker = ft.FilePicker()
-
-    # ═══ CPU threads для cv2 ═══
-     # cv2 внутри каждого воркера использует 1 поток,
-    # параллелизм обеспечивается на уровне asyncio.
-    cv2.setNumThreads(1)
 
     # ═══ Функции-обёртки для переводов/темы ═══
     def t(key):
@@ -372,6 +386,21 @@ def main(page: ft.Page):
             dlg.open = True
             page.update()
         page.run_task(_show_welcome_later)
+
+
+# ═══ DPI awareness — ДО создания окна Flet ═══
+# SetProcessDpiAwareness надо вызвать до ft.run(), иначе Windows
+# не отдаёт реальный DPI, и scale не применяется.
+if sys.platform == "win32":
+    try:
+        import ctypes
+        # 2 = PROCESS_PER_MONITOR_DPI_AWARE (Win 8.1+)
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    except Exception:
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
