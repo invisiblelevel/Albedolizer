@@ -44,8 +44,8 @@ def create_info_dialog(page, S, t, theme, base_dir) -> ft.AlertDialog:
 
     # ─── About content ───
     about_rows = [
-        ("about_version", "1.7.6-beta"),
-        ("about_build", "2026-09-28"),
+        ("about_version", "1.7.7-beta"),
+        ("about_build", "2026-10-01"),
         ("about_author", "INV.LVL"),
         ("about_license", "Free / Open Source"),
     ]

@@ -21,7 +21,7 @@ class Header:
         S           — состояние
         t           — перевод
         theme       — цвета
-        version     — '1.7.6-beta'
+        version     — '1.7.7-beta'
         on_toggle_mode  — callback() — переключить Simple/Advanced
         on_toggle_theme — callback() — переключить тему
         on_toggle_lang  — callback() — циклическое переключение языка (fallback)

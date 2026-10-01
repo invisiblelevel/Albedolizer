@@ -1040,8 +1040,11 @@ class PbrTab:
 
             cmd += [
                 "--albedo", paths.get("albedo", ""),
+                "--normal", paths.get("normal", ""),
                 "--roughness", paths.get("roughness", ""),
                 "--metallic", paths.get("metallic", ""),
+                "--ao", paths.get("ao", ""),
+                "--height", paths.get("height", ""),
                 "--tile-x", str(S.get("viewer_tile_x", 4)),
                 "--tile-y", str(S.get("viewer_tile_y", 3)),
                 "--lang", S.get("lang", "ru"),
