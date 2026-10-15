@@ -1,14 +1,14 @@
 [Setup]
 AppName=Albedolizer
-AppVersion=1.7.7-beta
-AppVerName=Albedolizer 1.7.7-beta
+AppVersion=1.7.8
+AppVerName=Albedolizer 1.7.8
 AppPublisher=INV.LVL
 AppPublisherURL=https://github.com/invisiblelevel/Albedolizer
 DefaultDirName={autopf}\Albedolizer
 DefaultGroupName=Albedolizer
 DisableProgramGroupPage=yes
 OutputDir=installer_output
-OutputBaseFilename=Albedolizer_Setup_v1.7.7-beta
+OutputBaseFilename=Albedolizer_Setup_v1.7.8
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

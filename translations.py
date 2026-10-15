@@ -93,7 +93,7 @@ T = {
         "welcome_manual": "Открыть мануал",
         "welcome_switch_simple": "Включить Advanced mode",
         # ─── Логи (эмодзи оставлены) ───
-        "welcome_1": "👋 Добро пожаловать в Albedolizer v1.7.7-beta",
+        "welcome_1": "👋 Добро пожаловать в Albedolizer v1.7.8",
         "welcome_2": "→ Нажми «Открыть» для начала",
         "log_loaded": "📂 Загружено:", "log_type": "→ Тип:",
         "log_click_check": "→ Нажми «Проверить» для анализа",
@@ -129,6 +129,8 @@ T = {
         "batch_threads_title": "ПОТОКИ",
         "batch_threads_label": "Параллельных задач (1–8)",
         "batch_right_hint": "Выбери папку или файлы → задай метод коррекции слева → жми «Запустить обработку».\n\nРезультат сохранится в папку _corrected рядом с исходниками.",
+        "recursive_label": "Включая подпапки",
+        "recursive_hint": "Игнорирует папки вывода Albedolizer (_corrected, _pbr_output и т.д.)",
         # ─── Compress ───
         "compress_title": "СЖАТИЕ ALBEDO",
         "compress_single": "ОДИНОЧНОЕ СЖАТИЕ",
@@ -410,7 +412,7 @@ T = {
         "welcome_manual": "Open manual",
         "welcome_switch_simple": "Enable Advanced mode",
         # ─── Logs (emoji kept) ───
-        "welcome_1": "👋 Welcome to Albedolizer v1.7.7-beta",
+        "welcome_1": "👋 Welcome to Albedolizer v1.7.8",
         "welcome_2": "→ Click «Open» to start",
         "log_loaded": "📂 Loaded:", "log_type": "→ Type:",
         "log_click_check": "→ Click «Check» to analyze",
@@ -446,6 +448,8 @@ T = {
         "batch_threads_title": "THREADS",
         "batch_threads_label": "Parallel tasks (1–8)",
         "batch_right_hint": "Pick a folder or files → choose correction method on the left → hit «Run processing».\n\nResults are saved to _corrected folder next to sources.",
+        "recursive_label": "Include subfolders",
+        "recursive_hint": "Ignores Albedolizer output folders (_corrected, _pbr_output, etc.)",
         # ─── Compress ───
         "compress_title": "ALBEDO COMPRESSION",
         "compress_single": "SINGLE COMPRESSION",
@@ -727,7 +731,7 @@ T = {
         "welcome_manual": "打开手册",
         "welcome_switch_simple": "启用高级模式",
         # ─── Логи (эмодзи оставлены) ───
-        "welcome_1": "👋 欢迎使用 Albedolizer v1.7.7-beta",
+        "welcome_1": "👋 欢迎使用 Albedolizer v1.7.8",
         "welcome_2": "→ 点击「加载」开始",
         "log_loaded": "📂 已加载:", "log_type": "→ 类型:",
         "log_click_check": "→ 点击「检查」进行分析",
@@ -763,6 +767,8 @@ T = {
         "batch_threads_title": "线程",
         "batch_threads_label": "并行任务 (1–8)",
         "batch_right_hint": "选择文件夹或文件 → 在左侧选择校正方法 → 点击「开始处理」。\n\n结果保存在源文件旁的 _corrected 文件夹中。",
+        "recursive_label": "包含子文件夹",
+        "recursive_hint": "忽略 Albedolizer 输出文件夹（_corrected、_pbr_output 等）",
         # ─── Compress ───
         "compress_title": "Albedo 压缩",
         "compress_single": "单张压缩",
