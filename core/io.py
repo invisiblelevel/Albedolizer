@@ -1,9 +1,7 @@
 """
 core/io.py — сохранение/загрузка изображений, конвертация, форматирование.
-
 Не знает про Flet. Работает с PIL, numpy, cv2.
 """
-
 import io
 import base64
 import os
@@ -12,26 +10,29 @@ import cv2
 from PIL import Image
 from pbr_generator import to_preview_pil
 
-
 # ═══════════════════════════════════════════════════════════
-#  СОХРАНЕНИЕ PNG
+# СОХРАНЕНИЕ PNG (Unicode-safe для Windows)
 # ═══════════════════════════════════════════════════════════
-
 def save_16bit_or_8bit(pil_img, path, bit_depth: int = 16):
-    """Сохраняет PIL в PNG с выбранной битностью. bit_depth: 8 или 16."""
+    """Сохраняет PIL в PNG с выбранной битностью. bit_depth: 8 или 16.
+    Работает с Unicode-путями (китайские имена и т.п.) через cv2.imencode."""
+    arr = np.array(pil_img.convert("RGB"))
     if bit_depth == 16:
-        arr = np.array(pil_img.convert("RGB"))
         arr16 = (arr.astype(np.uint16) * 257)
         bgr = cv2.cvtColor(arr16, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(str(path), bgr)
     else:
-        pil_img.save(str(path))
-
+        bgr = cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
+    
+    ok, buf = cv2.imencode(".png", bgr)
+    if not ok:
+        raise OSError(f"imencode failed: {path}")
+    
+    with open(path, "wb") as f:
+        f.write(buf.tobytes())
 
 # ═══════════════════════════════════════════════════════════
-#  ПРЕВЬЮ → BASE64
+# ПРЕВЬЮ → BASE64
 # ═══════════════════════════════════════════════════════════
-
 def pil_to_b64(data, max_size: int = 900) -> str:
     """PIL или numpy → base64 PNG (для ft.Image src)."""
     if isinstance(data, np.ndarray):
@@ -44,11 +45,9 @@ def pil_to_b64(data, max_size: int = 900) -> str:
     p.save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode()
 
-
 # ═══════════════════════════════════════════════════════════
-#  РАЗМЕР
+# РАЗМЕР
 # ═══════════════════════════════════════════════════════════
-
 def fmt_size(b: int) -> str:
     """Байты → человекочитаемо: 1.2 KB / 3.4 MB / 1.5 GB."""
     if b < 1024:
@@ -59,21 +58,17 @@ def fmt_size(b: int) -> str:
         return f"{b / 1024 / 1024:.2f} MB"
     return f"{b / 1024 / 1024 / 1024:.2f} GB"
 
-
 # ═══════════════════════════════════════════════════════════
-#  ЯРКОСТЬ
+# ЯРКОСТЬ
 # ═══════════════════════════════════════════════════════════
-
 def get_luminance(pil) -> np.ndarray:
     """PIL → массив яркости (Rec. 709)."""
     arr = np.array(pil.convert("RGB")).astype(np.float32)
     return 0.2126 * arr[:, :, 0] + 0.7152 * arr[:, :, 1] + 0.0722 * arr[:, :, 2]
 
-
 # ═══════════════════════════════════════════════════════════
-#  БЕЗОПАСНОЕ ОТКРЫТИЕ
+# БЕЗОПАСНОЕ ОТКРЫТИЕ
 # ═══════════════════════════════════════════════════════════
-
 def safe_open_rgb(path: str) -> Image.Image:
     """Открывает картинку и конвертит в RGB. Бросает OSError с понятным текстом."""
     try:
@@ -87,7 +82,6 @@ def safe_open_rgb(path: str) -> Image.Image:
             f"Проверь: длину пути (>260 символов?), права доступа, "
             f"свободное место на диске, целостность файла."
         ) from ex
-
 
 def safe_open_gray(path: str) -> Image.Image:
     """Открывает картинку в grayscale."""

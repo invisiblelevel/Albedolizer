@@ -1,13 +1,11 @@
 """
 ui/tab_batch.py — вкладка Batch (пакетная AI-коррекция папки).
 """
-
 import os
 import asyncio
 import gc
 from PIL import Image
 import flet as ft
-
 from core.image_ops import apply_ai, apply_fallback, apply_soap
 from core.io import save_16bit_or_8bit, safe_open_rgb
 from core.state import remember_folder, init_dir
@@ -34,7 +32,6 @@ class BatchTab:
     def build(self) -> ft.Container:
         th = self.theme
         S = self.S
-
         sel_row = ft.Row([
             make_btn(self.t("batch_select_folder"), self.batch_select_folder,
                      th["accent"], icon="folder-open",
@@ -43,7 +40,6 @@ class BatchTab:
                      th["accent"], icon="layers",
                      size=13, vertical=11, horizontal=16),
         ], spacing=6)
-
         info_card = ft.Container(
             content=ft.Column([
                 ft.Text("AI-коррекция папки", size=10,
@@ -55,11 +51,9 @@ class BatchTab:
             ], spacing=6),
             bgcolor=th["panel"], border_radius=12, padding=16,
         )
-
         run_btn = make_btn(self.t("batch_run"), self.batch_run,
-                            th["success"], icon="play",
-                            size=14, vertical=13, horizontal=16)
-
+                           th["success"], icon="play",
+                           size=14, vertical=13, horizontal=16)
         return ft.Container(
             content=ft.Row([
                 ft.Container(
@@ -88,10 +82,10 @@ class BatchTab:
         def _method_btn(label, active, on_click):
             return ft.Container(
                 content=ft.Text(label,
-                                 color="#ffffff" if active else th["fg2"],
-                                 size=11, font_family=FONT,
-                                 weight=ft.FontWeight.W_600,
-                                 text_align=ft.TextAlign.CENTER),
+                                color="#ffffff" if active else th["fg2"],
+                                size=11, font_family=FONT,
+                                weight=ft.FontWeight.W_600,
+                                text_align=ft.TextAlign.CENTER),
                 bgcolor=th["accent"] if active else th["card"],
                 border_radius=8,
                 padding=ft.Padding.symmetric(vertical=8, horizontal=6),
@@ -116,9 +110,9 @@ class BatchTab:
                 ft.Container(height=6),
                 ft.Row([
                     _method_btn(self.t("correction_ai_autolevels"),
-                                 method == "ai", lambda e: set_ai()),
+                                method == "ai", lambda e: set_ai()),
                     _method_btn(self.t("correction_math"),
-                                 method == "math", lambda e: set_math()),
+                                method == "math", lambda e: set_math()),
                 ], spacing=4),
                 ft.Container(height=14),
                 divider(th["fg3"]),
@@ -149,6 +143,23 @@ class BatchTab:
                 ft.Container(height=14),
                 divider(th["fg3"]),
                 ft.Container(height=10),
+                section_title("Рекурсия", th["fg3"]),
+                ft.Container(height=6),
+                ft.Checkbox(
+                    label=self.t("recursive_label"),
+                    value=S.get("batch_recursive", False),
+                    fill_color=th["accent"],
+                    label_style=ft.TextStyle(color=th["fg2"], size=11,
+                                             font_family=FONT),
+                    on_change=lambda e: (
+                        S.update({"batch_recursive": e.control.value}),
+                        self.on_persist(),
+                    )),
+                ft.Text(self.t("recursive_hint"),
+                    color=th["fg3"], size=10, font_family=FONT),
+                ft.Container(height=14),
+                divider(th["fg3"]),
+                ft.Container(height=10),
                 section_title(self.t("batch_right_info"), th["fg3"]),
                 ft.Container(height=8),
                 ft.Text(self.t("batch_right_hint"), color=th["fg2"],
@@ -159,7 +170,6 @@ class BatchTab:
         )
 
     # ─── Действия ───
-
     async def batch_select_folder(self, e=None):
         th = self.theme
         try:
@@ -168,10 +178,22 @@ class BatchTab:
             if not folder:
                 return
             exts = ('.png', '.jpg', '.jpeg', '.tif', '.tiff', '.bmp')
-            files = [os.path.join(folder, f) for f in os.listdir(folder)
-                     if f.lower().endswith(exts)]
+            recursive = self.S.get("batch_recursive", False)
+            files = self._collect_files(folder, exts, recursive)
+            if len(files) > 10000:
+                log(self.S, f"❌ Слишком много файлов: {len(files)}. "
+                           "Выбери другую папку.",
+                    color=th["danger"], fg2=th["fg2"])
+                self.page.update()
+                return
+            if len(files) > 5000:
+                log(self.S, f"⚠ Найдено {len(files)} файлов. "
+                           "Это может занять много времени.",
+                    color=th["warn"], fg2=th["fg2"])
             self.S["batch_files"] = files
-            log(self.S, f"📁 {self.t('batch_folder')} {folder}",
+            self.S["batch_base_dir"] = folder
+            log(self.S, f"📁 {self.t('batch_folder')} {folder}"
+                       + (f" ({self.t('recursive_label')})" if recursive else ""),
                 color=th["fg2"], fg2=th["fg2"])
             log(self.S, f"   {self.t('batch_found')} {len(files)}",
                 color=th["fg2"], fg2=th["fg2"])
@@ -185,6 +207,38 @@ class BatchTab:
             log(self.S, f"❌ {self.t('err')}: {ex}",
                 color=th["danger"], fg2=th["fg2"])
             self.page.update()
+
+    def _collect_files(self, folder, exts, recursive):
+        """Собирает файлы. Если recursive=True — с защитой от папок вывода."""
+        OUTPUT_DIRS = {
+            '_corrected', '_pbr_output', '_compressed', '_realism',
+            '_unity_hdrp_gl', '_unity_hdrp_dx',
+            '_unity_urp_gl', '_unity_urp_dx',
+            '_unreal_gl', '_unreal_dx',
+            '_godot_gl', '_godot_dx',
+        }
+        SYSTEM_DIRS = {
+            'node_modules', '.git', '__pycache__', 'dist', 'build',
+            '.venv', 'venv', '.idea', '.vscode',
+        }
+        if not recursive:
+            return [os.path.join(folder, f) for f in os.listdir(folder)
+                    if f.lower().endswith(exts)]
+        files = []
+        for root, dirs, filenames in os.walk(folder):
+            rel = os.path.relpath(root, folder)
+            depth = 0 if rel == '.' else rel.count(os.sep) + 1
+            if depth >= 10:
+                dirs.clear()
+                continue
+            dirs[:] = [d for d in dirs
+                       if d not in OUTPUT_DIRS
+                       and d not in SYSTEM_DIRS
+                       and not d.startswith('.')]
+            for fn in filenames:
+                if fn.lower().endswith(exts):
+                    files.append(os.path.join(root, fn))
+        return files
 
     async def batch_select_files(self, e=None):
         th = self.theme
@@ -226,24 +280,20 @@ class BatchTab:
                 fg2=th["fg2"])
             self.page.update()
             return
-
         total = len(files)
         update_batch_progress(S, self.page, 0, total,
-                               f"Запуск... 0 / {total}",
-                               fg2=th["fg2"])
-
-        base_dir = os.path.dirname(files[0])
-        out_dir = os.path.join(base_dir, "_corrected")
-        os.makedirs(out_dir, exist_ok=True)
-
+                              f"Запуск... 0 / {total}",
+                              fg2=th["fg2"])
+        base_dir = S.get("batch_base_dir") or os.path.dirname(files[0])
+        out_root = os.path.join(base_dir, "_corrected")
+        os.makedirs(out_root, exist_ok=True)
         log(S, "", fg2=th["fg2"])
         log(S, "━━━━━━━━━━━━━━━━━━━━━━", color=th["fg3"], fg2=th["fg2"])
         log(S, f"{self.t('batch_started')} {total}",
             color=th["fg"], fg2=th["fg2"])
-        log(S, f"   {self.t('batch_out')} {out_dir}",
+        log(S, f"   {self.t('batch_out')} {out_root}",
             color=th["fg2"], fg2=th["fg2"])
         self.page.update()
-
         count = 0
         done = 0
         sem = asyncio.Semaphore(max(1, min(8, S.get("batch_threads", 3))))
@@ -251,8 +301,13 @@ class BatchTab:
         async def process_one(fp):
             nonlocal count, done
             async with sem:
+                rel_path = os.path.relpath(fp, base_dir)
+                rel_dir = os.path.dirname(rel_path)
                 base = os.path.splitext(os.path.basename(fp))[0]
-                out_path = os.path.join(out_dir, f"{base}.png")
+                out_subdir = (os.path.join(out_root, rel_dir)
+                              if rel_dir else out_root)
+                os.makedirs(out_subdir, exist_ok=True)
+                out_path = os.path.join(out_subdir, f"{base}.png")
                 err = None
                 ok = False
                 img = None
@@ -277,7 +332,7 @@ class BatchTab:
                             color=th["fg2"], fg2=th["fg2"])
                         if ai_ok and ai_res is not None:
                             result = ai_res
-                            ai_res = None  # владение передано в result
+                            ai_res = None
                         else:
                             result = await asyncio.to_thread(
                                 apply_fallback, img, S["profile"])
@@ -293,7 +348,6 @@ class BatchTab:
                 except Exception as ex:
                     err = f"{type(ex).__name__}: {ex}"
                 finally:
-                    # Всегда освобождаем большие объекты
                     if img is not None:
                         try:
                             img.close()
@@ -305,7 +359,6 @@ class BatchTab:
                     if ai_res is not None:
                         del ai_res
                     gc.collect()
-
                 done += 1
                 if ok:
                     count += 1
@@ -315,11 +368,9 @@ class BatchTab:
                     log(S, f"  ✗ {os.path.basename(fp)}: {err}",
                         color=th["danger"], fg2=th["fg2"])
                 update_batch_progress(S, self.page, done, total,
-                                       fg2=th["fg2"])
+                                      fg2=th["fg2"])
                 self.page.update()
 
-        # Пул воркеров: одновременно существует ровно N корутин,
-        # а не len(files). Экономит память на больших батчах.
         queue = asyncio.Queue()
         for fp in files:
             queue.put_nowait(fp)
@@ -335,13 +386,12 @@ class BatchTab:
         n_workers = max(1, min(8, S.get("batch_threads", 3)))
         workers = [asyncio.create_task(worker()) for _ in range(n_workers)]
         await asyncio.gather(*workers)
-
         log(S, f"✅ {self.t('batch_processed')} {count} / {total}",
             color=th["success"], fg2=th["fg2"])
-        log(S, f"📁 {out_dir}", color=th["fg2"], fg2=th["fg2"])
+        log(S, f"📁 {out_root}", color=th["fg2"], fg2=th["fg2"])
         update_batch_progress(S, self.page, total, total,
-                               f"{self.t('batch_done')}: {count} / {total}",
-                               fg2=th["fg2"])
+                              f"{self.t('batch_done')}: {count} / {total}",
+                              fg2=th["fg2"])
         S["batch_files"] = []
         S["batch_running"] = False
         self.page.update()

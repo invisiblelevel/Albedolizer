@@ -1,16 +1,13 @@
 """
 ui/tab_compress.py — вкладка Compress (сжатие Albedo).
-
 Simple: две большие кнопки (файл / папка) — автосохранение в _compressed.
 Advanced: одиночное сжатие + пакетное + выбор битности.
 """
-
 import os
 import asyncio
 import gc
 from PIL import Image
 import flet as ft
-
 from core.image_ops import lab_roundtrip
 from core.io import save_16bit_or_8bit, pil_to_b64, fmt_size, safe_open_rgb
 from core.state import remember_folder, init_dir
@@ -45,7 +42,6 @@ class CompressTab:
         return self._build_advanced()
 
     # ─── SIMPLE ───
-
     def _build_simple(self) -> ft.Container:
         th = self.theme
         S = self.S
@@ -68,6 +64,19 @@ class CompressTab:
         card_batch = ft.Container(
             content=ft.Column([
                 section_title(self.t("compress_batch"), th["fg3"]),
+                ft.Container(height=8),
+                ft.Checkbox(
+                    label=self.t("recursive_label"),
+                    value=S.get("compress_recursive", False),
+                    fill_color=th["compress"],
+                    label_style=ft.TextStyle(color=th["fg2"], size=11,
+                                             font_family=FONT),
+                    on_change=lambda e: (
+                        S.update({"compress_recursive": e.control.value}),
+                        self.on_persist(),
+                    )),
+                ft.Text(self.t("recursive_hint"),
+                        color=th["fg3"], size=10, font_family=FONT),
                 ft.Container(height=8),
                 make_btn(self.t("compress_batch_btn"),
                          self.compress_simple_batch, th["compress"],
@@ -94,58 +103,59 @@ class CompressTab:
         )
 
     # ─── ADVANCED ───
-
     def _build_advanced(self) -> ft.Container:
         th = self.theme
         S = self.S
 
         self.preview_image = ft.Image(src="", visible=False,
-                                        fit=ft.BoxFit.CONTAIN)
+                                      fit=ft.BoxFit.CONTAIN)
         # Восстановить превью после rebuild
         _prev_src = None
         if S.get("compress_corrected") is not None:
             _prev_src = f"data:image/png;base64,{pil_to_b64(S['compress_corrected'])}"
         elif S.get("compress_original") is not None:
             _prev_src = f"data:image/png;base64,{pil_to_b64(S['compress_original'])}"
+
         if _prev_src:
             self.preview_image.src = _prev_src
             self.preview_image.visible = True
 
         self.preview_hint = ft.Text(self.t("preview_hint"),
-                                     color=th["fg3"], size=14,
-                                     font_family=FONT,
-                                     visible=(_prev_src is None))
+                                    color=th["fg3"], size=14,
+                                    font_family=FONT,
+                                    visible=(_prev_src is None))
         S["compress_preview"] = self.preview_image
         S["compress_preview_hint"] = self.preview_hint
 
         preview_box = ft.Container(
             content=ft.Stack([
                 ft.Container(content=self.preview_hint,
-                              alignment=ft.Alignment.CENTER, expand=True),
+                             alignment=ft.Alignment.CENTER, expand=True),
                 ft.Container(content=self.preview_image,
-                              alignment=ft.Alignment.CENTER, expand=True),
+                             alignment=ft.Alignment.CENTER, expand=True),
             ], expand=True),
             bgcolor=th["card"], border_radius=12, padding=10, expand=True,
         )
 
         # Кнопки single
         open_btn = make_btn(self.t("load"), self.compress_open_file,
-                             th["accent"], icon="folder-open",
-                             size=13, vertical=11, horizontal=16)
-        run_btn = make_btn(self.t("compress_run"), self.compress_do,
-                            th["compress"], icon="archive",
-                            disabled=(S.get("compress_original") is None),
+                            th["accent"], icon="folder-open",
                             size=13, vertical=11, horizontal=16)
+        run_btn = make_btn(self.t("compress_run"), self.compress_do,
+                           th["compress"], icon="archive",
+                           disabled=(S.get("compress_original") is None),
+                           size=13, vertical=11, horizontal=16)
         save_btn = make_btn(self.t("save"), self.compress_save, th["save"],
-                             icon="save",
-                             disabled=(S.get("compress_corrected") is None),
-                             size=13, vertical=11, horizontal=16)
+                            icon="save",
+                            disabled=(S.get("compress_corrected") is None),
+                            size=13, vertical=11, horizontal=16)
+
         self.compress_buttons = {"open": open_btn, "run": run_btn,
-                                   "save": save_btn}
+                                 "save": save_btn}
         S["compress_buttons"] = self.compress_buttons
 
         toolbar = ft.Row([open_btn, run_btn, ft.Container(expand=True),
-                           save_btn], spacing=6)
+                          save_btn], spacing=6)
 
         card_single = ft.Container(
             content=ft.Column([
@@ -229,6 +239,23 @@ class CompressTab:
                 ft.Container(height=14),
                 divider(th["fg3"]),
                 ft.Container(height=10),
+                section_title("Рекурсия", th["fg3"]),
+                ft.Container(height=6),
+                ft.Checkbox(
+                    label=self.t("recursive_label"),
+                    value=S.get("compress_recursive", False),
+                    fill_color=th["compress"],
+                    label_style=ft.TextStyle(color=th["fg2"], size=11,
+                                             font_family=FONT),
+                    on_change=lambda e: (
+                        S.update({"compress_recursive": e.control.value}),
+                        self.on_persist(),
+                    )),
+                ft.Text(self.t("recursive_hint"),
+                        color=th["fg3"], size=10, font_family=FONT),
+                ft.Container(height=14),
+                divider(th["fg3"]),
+                ft.Container(height=10),
                 section_title(self.t("compress_right_info"), th["fg3"]),
                 ft.Container(height=8),
                 ft.Text(self.t("compress_right_hint"), color=th["fg2"],
@@ -238,8 +265,40 @@ class CompressTab:
             padding=16, width=320,
         )
 
-    # ─── Действия ───
+    def _collect_files(self, folder, exts, recursive):
+        """Собирает файлы. Если recursive=True — с защитой от папок вывода."""
+        OUTPUT_DIRS = {
+            '_corrected', '_pbr_output', '_compressed', '_realism',
+            '_unity_hdrp_gl', '_unity_hdrp_dx',
+            '_unity_urp_gl', '_unity_urp_dx',
+            '_unreal_gl', '_unreal_dx',
+            '_godot_gl', '_godot_dx',
+        }
+        SYSTEM_DIRS = {
+            'node_modules', '.git', '__pycache__', 'dist', 'build',
+            '.venv', 'venv', '.idea', '.vscode',
+        }
+        if not recursive:
+            return [os.path.join(folder, f) for f in os.listdir(folder)
+                    if f.lower().endswith(exts)]
+        
+        files = []
+        for root, dirs, filenames in os.walk(folder):
+            rel = os.path.relpath(root, folder)
+            depth = 0 if rel == '.' else rel.count(os.sep) + 1
+            if depth >= 10:
+                dirs.clear()
+                continue
+            dirs[:] = [d for d in dirs
+                       if d not in OUTPUT_DIRS
+                       and d not in SYSTEM_DIRS
+                       and not d.startswith('.')]
+            for fn in filenames:
+                if fn.lower().endswith(exts):
+                    files.append(os.path.join(root, fn))
+        return files
 
+    # ─── Действия ───
     async def compress_open_file(self, e=None):
         th = self.theme
         try:
@@ -361,10 +420,22 @@ class CompressTab:
             if not folder:
                 return
             exts = ('.png', '.jpg', '.jpeg', '.tif', '.tiff', '.bmp')
-            files = [os.path.join(folder, f) for f in os.listdir(folder)
-                     if f.lower().endswith(exts)]
+            recursive = self.S.get("compress_recursive", False)
+            files = self._collect_files(folder, exts, recursive)
+            
+            if len(files) > 10000:
+                log(self.S, f"❌ Слишком много файлов: {len(files)}. Выбери другую папку.",
+                    color=self.theme["danger"], fg2=self.theme["fg2"])
+                self.page.update()
+                return
+            if len(files) > 5000:
+                log(self.S, f"⚠ Найдено {len(files)} файлов. Это может занять много времени.",
+                    color=self.theme["warn"], fg2=self.theme["fg2"])
+                    
             self.S["compress_files"] = files
-            log(self.S, f"📁 {self.t('batch_folder')} {folder}",
+            self.S["compress_base_dir"] = folder
+            log(self.S, f"📁 {self.t('batch_folder')} {folder}"
+                       + (f" ({self.t('recursive_label')})" if recursive else ""),
                 color=self.theme["fg2"], fg2=self.theme["fg2"])
             log(self.S, f"   {self.t('batch_found')} {len(files)}",
                 color=self.theme["fg2"], fg2=self.theme["fg2"])
@@ -416,25 +487,33 @@ class CompressTab:
             log(S, self.t("batch_no_files"), color=th["warn"], fg2=th["fg2"])
             self.page.update()
             return
+        
         total = len(files)
-        base_dir = os.path.dirname(files[0])
-        out_dir = os.path.join(base_dir, "_compressed")
-        os.makedirs(out_dir, exist_ok=True)
+        base_dir = S.get("compress_base_dir") or os.path.dirname(files[0])
+        out_root = os.path.join(base_dir, "_compressed")
+        os.makedirs(out_root, exist_ok=True)
+        
         log(S, "", fg2=th["fg2"])
         log(S, "━━━━━━━━━━━━━━━━━━━━━━", color=th["fg3"], fg2=th["fg2"])
         log(S, f"{self.t('compress_batch_started')} {total}",
             color=th["fg"], fg2=th["fg2"])
-        log(S, f"   {self.t('compress_out')} {out_dir}",
+        log(S, f"   {self.t('compress_out')} {out_root}",
             color=th["fg2"], fg2=th["fg2"])
         self.page.update()
-
+        
         count = 0
         for i, fp in enumerate(files, 1):
             try:
+                # Сохраняем структуру папок
+                rel_path = os.path.relpath(fp, base_dir)
+                rel_dir = os.path.dirname(rel_path)
+                base = os.path.splitext(os.path.basename(fp))[0]
+                out_subdir = os.path.join(out_root, rel_dir) if rel_dir else out_root
+                os.makedirs(out_subdir, exist_ok=True)
+                out_path = os.path.join(out_subdir, f"{base}.png")
+                
                 img = await asyncio.to_thread(safe_open_rgb, fp)
                 result = await asyncio.to_thread(lab_roundtrip, img)
-                base = os.path.splitext(os.path.basename(fp))[0]
-                out_path = os.path.join(out_dir, f"{base}.png")
                 bd = S.get("pbr_bit_depth", 16)
                 await asyncio.to_thread(
                     save_16bit_or_8bit, result, out_path, bd)
@@ -442,19 +521,18 @@ class CompressTab:
                 count += 1
                 log(S, f"  [{i}/{total}] ✓ {os.path.basename(fp)}",
                     color=th["success"], fg2=th["fg2"])
-                update_compress_progress(S, self.page, i, total,
-                                          fg2=th["fg2"])
+                update_compress_progress(S, self.page, i, total, fg2=th["fg2"])
                 if i % 5 == 0:
                     gc.collect()
                 await asyncio.sleep(0.01)
             except Exception as ex:
                 log(S, f"  ✗ {os.path.basename(fp)}: {ex}",
                     color=th["danger"], fg2=th["fg2"])
-                update_compress_progress(S, self.page, i, total,
-                                          fg2=th["fg2"])
+                update_compress_progress(S, self.page, i, total, fg2=th["fg2"])
+        
         log(S, f"✅ {self.t('batch_processed')} {count} / {total}",
             color=th["success"], fg2=th["fg2"])
-        log(S, f"📁 {out_dir}", color=th["fg2"], fg2=th["fg2"])
+        log(S, f"📁 {out_root}", color=th["fg2"], fg2=th["fg2"])
         update_compress_progress(S, self.page, total, total,
                                   f"{self.t('batch_done')}: {count} / {total}",
                                   fg2=th["fg2"])
@@ -463,7 +541,6 @@ class CompressTab:
         self.page.update()
 
     # ─── SIMPLE MODE действия ───
-
     async def compress_simple_process(self, e=None):
         th = self.theme
         S = self.S
@@ -530,40 +607,64 @@ class CompressTab:
                 dialog_title=self.t("batch_select_folder"))
             if not folder:
                 return
-            remember_folder(S, folder)
+            
             exts = ('.png', '.jpg', '.jpeg', '.tif', '.tiff', '.bmp')
-            files = [os.path.join(folder, f) for f in os.listdir(folder)
-                     if f.lower().endswith(exts)]
+            recursive = S.get("compress_recursive", False)
+            files = self._collect_files(folder, exts, recursive)
+            
+            if len(files) > 10000:
+                log(S, f"❌ Слишком много файлов: {len(files)}. Выбери другую папку.",
+                    color=th["danger"], fg2=th["fg2"])
+                self.page.update()
+                S["compress_batch_running"] = False
+                return
+            if len(files) > 5000:
+                log(S, f"⚠ Найдено {len(files)} файлов. Это может занять много времени.",
+                    color=th["warn"], fg2=th["fg2"])
+                    
             if not files:
                 log(S, self.t("batch_no_files"), color=th["warn"],
                     fg2=th["fg2"])
                 self.page.update()
+                S["compress_batch_running"] = False
                 return
+            
             total = len(files)
-            out_dir = os.path.join(folder, "_compressed")
-            os.makedirs(out_dir, exist_ok=True)
+            base_dir = folder
+            out_root = os.path.join(base_dir, "_compressed")
+            os.makedirs(out_root, exist_ok=True)
+            
             log(S, "", fg2=th["fg2"])
             log(S, "━━━━━━━━━━━━━━━━━━━━━━", color=th["fg3"], fg2=th["fg2"])
             log(S, f"{self.t('compress_batch_started')} {total}",
                 color=th["fg"], fg2=th["fg2"])
-            log(S, f"   {self.t('compress_out')} {out_dir}",
+            log(S, f"   {self.t('compress_out')} {out_root}",
                 color=th["fg2"], fg2=th["fg2"])
+            
             S["compress_progress_bar"].value = 0
             S["compress_progress_bar"].visible = True
             S["compress_progress_text"].visible = True
             self.page.update()
+            
             count = 0
             for i, fp in enumerate(files, 1):
                 try:
+                    # Сохраняем структуру папок
+                    rel_path = os.path.relpath(fp, base_dir)
+                    rel_dir = os.path.dirname(rel_path)
+                    base = os.path.splitext(os.path.basename(fp))[0]
+                    out_subdir = os.path.join(out_root, rel_dir) if rel_dir else out_root
+                    os.makedirs(out_subdir, exist_ok=True)
+                    out_path = os.path.join(out_subdir, f"{base}.png")
+                    
                     img = await asyncio.to_thread(safe_open_rgb, fp)
                     result = await asyncio.to_thread(lab_roundtrip, img)
-                    base = os.path.splitext(os.path.basename(fp))[0]
-                    out_path = os.path.join(out_dir, f"{base}.png")
                     bd = S.get("pbr_bit_depth", 16)
                     await asyncio.to_thread(
                         save_16bit_or_8bit, result, out_path, bd)
                     img.close()
                     count += 1
+                    
                     log(S, f"  [{i}/{total}] ✓ {os.path.basename(fp)}",
                         color=th["success"], fg2=th["fg2"])
                     S["compress_progress_bar"].value = i / total
@@ -577,9 +678,10 @@ class CompressTab:
                 except Exception as ex:
                     log(S, f"  ✗ {os.path.basename(fp)}: {ex}",
                         color=th["danger"], fg2=th["fg2"])
+            
             log(S, f"✅ {self.t('batch_processed')} {count} / {total}",
                 color=th["success"], fg2=th["fg2"])
-            log(S, f"📁 {out_dir}", color=th["fg2"], fg2=th["fg2"])
+            log(S, f"📁 {out_root}", color=th["fg2"], fg2=th["fg2"])
             S["compress_progress_bar"].visible = False
             S["compress_progress_text"].visible = False
             S["compress_batch_running"] = False

@@ -1,10 +1,8 @@
 """
 core/state.py — состояние приложения (словарь S), сохранение настроек.
-
 Импортирует только settings.py (load_settings/save_settings) и config.py.
 Не знает про Flet.
 """
-
 import os
 from config import (
     PROFILE_CATEGORIES, DEFAULT_AI_MODEL,
@@ -15,7 +13,7 @@ def _detect_system_lang() -> str:
     """
     Windows API → 'ru' / 'zh' / 'en'.
     Primary language ID (младшие 10 бит):
-      0x19 = ru, 0x04 = zh (Chinese), остальное → en.
+    0x19 = ru, 0x04 = zh (Chinese), остальное → en.
     """
     try:
         import ctypes
@@ -59,13 +57,13 @@ def create_state(user_settings: dict) -> dict:
         "seamless_hipass": user_settings.get("seamless_hipass", True),
         "batch_files": [],
         "batch_threads": user_settings.get("batch_threads", 3),
+        "batch_recursive": user_settings.get("batch_recursive", False),
         "compress_files": [],
         "compress_original": None,
         "compress_corrected": None,
         "compress_path": None,
         "active_tab": "single",
         "last_folder": user_settings.get("last_folder", ""),
-
         # ─── PBR ───
         "pbr_bit_depth": user_settings.get("pbr_bit_depth", 16),
         "pbr_bit_depth_per_map": user_settings.get("pbr_bit_depth_per_map", {
@@ -109,18 +107,16 @@ def create_state(user_settings: dict) -> dict:
         "pbr_batch_index": 0,
         "pbr_batch_label": None,
         "pbr_batch_nav_panel": None,
-
+        "pbr_batch_recursive": user_settings.get("pbr_batch_recursive", False),
         # ─── Realism ───
         "realism_grain": user_settings.get("realism_grain", 0.15),
         "realism_highpass": user_settings.get("realism_highpass", 0.30),
         "realism_variation": user_settings.get("realism_variation", 0.20),
         "realism_source": None,
         "realism_result": None,
-
         # ─── Viewer ───
         "viewer_tile_x": 4,
         "viewer_tile_y": 3,
-
         # ─── Export ───
         "export_source": None,
         "export_source_label": None,
@@ -133,11 +129,9 @@ def create_state(user_settings: dict) -> dict:
         "export_custom_detail": None,
         "export_bit_depth": user_settings.get("export_bit_depth", 8),
         "export_preview_channel": "rgb",
-
         # ─── Misc ───
         "first_launch_done": user_settings.get("first_launch_done", False),
         "log_expanded": False,
-
         # ─── UI refs (заполняются в main.py при сборке) ───
         "log_column_bottom": None,
         "log_collapsed_preview": None,
@@ -163,13 +157,11 @@ def create_state(user_settings: dict) -> dict:
         "compress_buttons": {},
         "pbr_params_ref": None,
         "update_pbr_preview": None,
-        
         # --- New ---
         "batch_running": False,
         "compress_batch_running": False,
         "pbr_batch_running": False,
     }
-
     # Валидация: profile ∈ profile_category
     cat_items = PROFILE_CATEGORIES.get(S["profile_category"], {}).get("items", [])
     if S["profile"] not in cat_items:
@@ -180,14 +172,12 @@ def create_state(user_settings: dict) -> dict:
         else:
             S["profile"] = "metal"
             S["profile_category"] = "metal"
-
     return S
 
 
 def persist_settings(S: dict, save_fn, page=None):
     """
     Сохраняет текущие настройки через save_fn (settings.save_settings).
-
     page — опционально, если нужно сохранить размер окна.
     """
     data = {
@@ -209,6 +199,8 @@ def persist_settings(S: dict, save_fn, page=None):
         "realism_highpass": S.get("realism_highpass", 0.30),
         "realism_variation": S.get("realism_variation", 0.20),
         "batch_threads": S.get("batch_threads", 3),
+        "batch_recursive": S.get("batch_recursive", False),
+        "pbr_batch_recursive": S.get("pbr_batch_recursive", False),
         "export_engine": S.get("export_engine", "unity_hdrp"),
         "export_normal_format": S.get("export_normal_format", "opengl"),
         "export_detail_mode": S.get("export_detail_mode", "edge"),
@@ -235,9 +227,8 @@ def persist_settings(S: dict, save_fn, page=None):
 
 
 # ═══════════════════════════════════════════════════════════
-#  ПАПКИ
+# ПАПКИ
 # ═══════════════════════════════════════════════════════════
-
 def init_dir(S: dict):
     """Возвращает последнюю открытую папку или None."""
     lf = S.get("last_folder") or ""

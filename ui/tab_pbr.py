@@ -1,7 +1,6 @@
 """
 ui/tab_pbr.py — вкладка PBR целиком.
 """
-
 import os
 import asyncio
 import gc
@@ -10,7 +9,6 @@ import tempfile
 import numpy as np
 from PIL import Image
 import flet as ft
-
 from config import PBR_PRESETS, TEXTURE_PROFILES, PROFILE_CATEGORIES
 from core.image_ops import (
     generate_pbr_all, make_metallic_mask, pick_color_from_pixel,
@@ -64,7 +62,6 @@ class PbrTab:
         self.theme = theme
         self.on_rebuild = on_rebuild
         self.on_persist = on_persist
-
         self.preview_image = None
         self.preview_hint = None
         self.batch_label = None
@@ -79,8 +76,7 @@ class PbrTab:
         is_simple = S["ui_mode"] == "simple"
 
         self.preview_image = ft.Image(src="", visible=False,
-                                       fit=ft.BoxFit.CONTAIN)
-        # Восстановление превью после rebuild
+                                      fit=ft.BoxFit.CONTAIN)
         if S.get("pbr_result") and S.get("pbr_current_map") in S["pbr_result"]:
             key = S["pbr_current_map"]
             self.preview_image.src = (
@@ -95,15 +91,15 @@ class PbrTab:
         S["pbr_preview"] = self.preview_image
 
         self.preview_hint = ft.Text(self.t("pbr_preview_hint"),
-                                     color=th["fg3"], size=14,
-                                     font_family=FONT,
-                                     visible=(S.get("pbr_source") is None
-                                              and S.get("pbr_result") is None))
+                                    color=th["fg3"], size=14,
+                                    font_family=FONT,
+                                    visible=(S.get("pbr_source") is None
+                                             and S.get("pbr_result") is None))
         S["pbr_preview_hint"] = self.preview_hint
 
         self.batch_label = ft.Text("", color=th["fg"], size=12,
-                                    font_family=FONT,
-                                    weight=ft.FontWeight.W_600)
+                                   font_family=FONT,
+                                   weight=ft.FontWeight.W_600)
         S["pbr_batch_label"] = self.batch_label
 
         batch_nav_inner = ft.Container(
@@ -128,7 +124,7 @@ class PbrTab:
 
         self.batch_nav_panel = ft.Container(
             content=ft.Row([batch_nav_inner],
-                            alignment=ft.MainAxisAlignment.END),
+                           alignment=ft.MainAxisAlignment.END),
             visible=len(S["pbr_batch_results"]) > 0,
         )
         S["pbr_batch_nav_panel"] = self.batch_nav_panel
@@ -137,19 +133,18 @@ class PbrTab:
             content=ft.InteractiveViewer(
                 content=ft.Stack([
                     ft.Container(content=self.preview_hint,
-                                  alignment=ft.Alignment.CENTER, expand=True),
+                                 alignment=ft.Alignment.CENTER, expand=True),
                     ft.Container(content=self.preview_image,
-                                  alignment=ft.Alignment.CENTER, expand=True),
+                                 alignment=ft.Alignment.CENTER, expand=True),
                     ft.Container(content=self.batch_nav_panel,
-                                  alignment=ft.Alignment.BOTTOM_RIGHT,
-                                  padding=12),
+                                 alignment=ft.Alignment.BOTTOM_RIGHT,
+                                 padding=12),
                 ], expand=True),
                 min_scale=0.5, max_scale=8.0, expand=True,
             ),
             bgcolor=th["card"], border_radius=12, padding=10, expand=True,
         )
 
-        # Кнопки карт
         map_row = ft.Row([], spacing=4)
         for key, label in MAP_KEYS:
             is_active = key == S["pbr_current_map"]
@@ -172,7 +167,7 @@ class PbrTab:
             map_row.controls.append(b)
 
         toolbar = (self._build_toolbar_simple() if is_simple
-                    else self._build_toolbar_advanced())
+                   else self._build_toolbar_advanced())
 
         if is_simple:
             params_panel = self._build_simple_params_panel()
@@ -203,22 +198,21 @@ class PbrTab:
     # ═══════════════════════════════════════════════════════════
     #  ТУЛБАРЫ
     # ═══════════════════════════════════════════════════════════
-
     def _build_toolbar_simple(self) -> ft.Row:
         th = self.theme
         gen_btn = make_btn(self.t("pbr_gen"), self.pbr_do_simple_generate,
-                            th["success"], icon="wand-sparkles",
-                            size=14, vertical=13, horizontal=16)
+                           th["success"], icon="wand-sparkles",
+                           size=14, vertical=13, horizontal=16)
         viewer_btn = make_btn(self.t("pbr_viewer"), self.pbr_open_viewer,
-                               th["seamless"], icon="rotate-3d",
-                               disabled=(self.S["pbr_result"] is None),
-                               size=13, vertical=11, horizontal=16)
+                              th["seamless"], icon="rotate-3d",
+                              disabled=(self.S["pbr_result"] is None),
+                              size=13, vertical=11, horizontal=16)
         save_btn = make_btn(self.t("pbr_save"), self.pbr_do_save,
-                             th["save"], icon="save",
-                             disabled=(self.S["pbr_result"] is None),
-                             size=13, vertical=11, horizontal=16)
+                            th["save"], icon="save",
+                            disabled=(self.S["pbr_result"] is None),
+                            size=13, vertical=11, horizontal=16)
         self.pbr_buttons = {"viewer": viewer_btn, "save": save_btn,
-                             "gen": gen_btn}
+                            "gen": gen_btn}
         self.S["pbr_buttons"] = self.pbr_buttons
         return ft.Row([
             gen_btn,
@@ -229,24 +223,38 @@ class PbrTab:
 
     def _build_toolbar_advanced(self) -> ft.Row:
         th = self.theme
+        S = self.S
         load_btn = make_btn(self.t("pbr_load"), self.pbr_do_load,
-                             th["accent"], icon="folder-open",
-                             size=13, vertical=11, horizontal=16)
-        gen_btn = make_btn(self.t("pbr_gen"), self.pbr_do_generate,
-                            th["success"], icon="wand-sparkles",
-                            disabled=(self.S["pbr_source"] is None),
+                            th["accent"], icon="folder-open",
                             size=13, vertical=11, horizontal=16)
+        gen_btn = make_btn(self.t("pbr_gen"), self.pbr_do_generate,
+                           th["success"], icon="wand-sparkles",
+                           disabled=(self.S["pbr_source"] is None),
+                           size=13, vertical=11, horizontal=16)
         batch_btn = make_btn(self.t("pbr_batch"), self.pbr_do_batch,
-                              th["compress"], icon="layers",
-                              size=13, vertical=11, horizontal=16)
-        viewer_btn = make_btn(self.t("pbr_viewer"), self.pbr_open_viewer,
-                               th["seamless"], icon="rotate-3d",
-                               disabled=(self.S["pbr_result"] is None),
-                               size=13, vertical=11, horizontal=16)
-        save_btn = make_btn(self.t("pbr_save"), self.pbr_do_save,
-                             th["save"], icon="save",
-                             disabled=(self.S["pbr_result"] is None),
+                             th["compress"], icon="layers",
                              size=13, vertical=11, horizontal=16)
+        viewer_btn = make_btn(self.t("pbr_viewer"), self.pbr_open_viewer,
+                              th["seamless"], icon="rotate-3d",
+                              disabled=(self.S["pbr_result"] is None),
+                              size=13, vertical=11, horizontal=16)
+        save_btn = make_btn(self.t("pbr_save"), self.pbr_do_save,
+                            th["save"], icon="save",
+                            disabled=(self.S["pbr_result"] is None),
+                            size=13, vertical=11, horizontal=16)
+
+        recursive_cb = ft.Checkbox(
+            label=self.t("recursive_label"),
+            value=S.get("pbr_batch_recursive", False),
+            fill_color=th["compress"],
+            label_style=ft.TextStyle(color=th["fg2"], size=11,
+                                     font_family=FONT),
+            on_change=lambda e: (
+                S.update({"pbr_batch_recursive": e.control.value}),
+                self.on_persist(),
+            ),
+        )
+
         self.pbr_buttons = {
             "load": load_btn, "gen": gen_btn, "batch": batch_btn,
             "viewer": viewer_btn, "save": save_btn,
@@ -254,14 +262,15 @@ class PbrTab:
         self.S["pbr_buttons"] = self.pbr_buttons
         return ft.Row([
             load_btn, gen_btn, batch_btn,
+            ft.Container(width=12),
+            recursive_cb,
             ft.Container(expand=True),
             viewer_btn, save_btn,
-        ], spacing=6)
+        ], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER)
 
     # ═══════════════════════════════════════════════════════════
     #  ПРАВАЯ ПАНЕЛЬ
     # ═══════════════════════════════════════════════════════════
-
     def _build_simple_params_panel(self) -> ft.Container:
         th = self.theme
         bit_radio = self._build_bit_radio()
@@ -288,25 +297,25 @@ class PbrTab:
         elif key == "height":
             content = [header,
                        self._slider(self.t("pbr_sl_height_blur"),
-                                     "height_blur", 2.0, 0.0, 10.0, 0.5),
+                                    "height_blur", 2.0, 0.0, 10.0, 0.5),
                        bit_block]
         elif key == "normal":
             content = [header,
                        self._slider(self.t("pbr_sl_strength"),
-                                     "strength", 1.5, 0.1, 5.0, 0.1),
+                                    "strength", 1.5, 0.1, 5.0, 0.1),
                        self._slider(self.t("pbr_sl_smooth"),
-                                     "smooth", 1.5, 0.0, 5.0, 0.1),
+                                    "smooth", 1.5, 0.0, 5.0, 0.1),
                        self._slider(self.t("pbr_sl_threshold"),
-                                     "threshold", 0.05, 0.0, 0.20, 0.01),
+                                    "threshold", 0.05, 0.0, 0.20, 0.01),
                        self._slider(self.t("pbr_sl_high_pass"),
-                                     "high_pass", 40.0, 0.0, 100.0, 1.0),
+                                    "high_pass", 40.0, 0.0, 100.0, 1.0),
                        bit_block]
         elif key == "ao":
             content = [header,
                        self._slider(self.t("pbr_sl_ao_radius"),
-                                     "ao_radius", 8.0, 2.0, 30.0, 1.0),
+                                    "ao_radius", 8.0, 2.0, 30.0, 1.0),
                        self._slider(self.t("pbr_sl_ao_intensity"),
-                                     "ao_intensity", 1.5, 0.1, 3.0, 0.1),
+                                    "ao_intensity", 1.5, 0.1, 3.0, 0.1),
                        bit_block]
         elif key == "roughness":
             content = [header,
@@ -317,11 +326,11 @@ class PbrTab:
                        ft.Container(
                            content=ft.Column([
                                self._slider(self.t("pbr_sl_rough_base"),
-                                             "rough_base", 0.7, 0.0, 1.0, 0.05),
+                                            "rough_base", 0.7, 0.0, 1.0, 0.05),
                                self._slider(self.t("pbr_sl_rough_var"),
-                                             "rough_var", 0.3, 0.0, 1.0, 0.05),
+                                            "rough_var", 0.3, 0.0, 1.0, 0.05),
                                self._slider(self.t("pbr_sl_rough_detail"),
-                                             "rough_detail", 1.0, 0.0, 1.0, 0.05),
+                                            "rough_detail", 1.0, 0.0, 1.0, 0.05),
                            ], spacing=6),
                            visible=(self.S.get("pbr_roughness") != "custom"),
                        ),
@@ -368,7 +377,7 @@ class PbrTab:
             content_color = "#ffffff" if is_active else th["fg2"]
             chip = ft.Container(
                 content=img_icon(icon_map.get(key, "layers"),
-                                  content_color, 14),
+                                 content_color, 14),
                 bgcolor=th["accent"] if is_active else th["card"],
                 border_radius=6,
                 padding=ft.Padding.symmetric(vertical=6, horizontal=6),
@@ -393,11 +402,11 @@ class PbrTab:
             label = TEXTURE_PROFILES[key][self.S["lang"]]
             chip = ft.Container(
                 content=ft.Text(label,
-                                 color="#ffffff" if is_active else th["fg2"],
-                                 size=10, font_family=FONT,
-                                 weight=ft.FontWeight.W_600 if is_active
-                                 else ft.FontWeight.W_500,
-                                 text_align=ft.TextAlign.CENTER),
+                                color="#ffffff" if is_active else th["fg2"],
+                                size=10, font_family=FONT,
+                                weight=ft.FontWeight.W_600 if is_active
+                                else ft.FontWeight.W_500,
+                                text_align=ft.TextAlign.CENTER),
                 bgcolor=th["accent"] if is_active else th["card"],
                 border_radius=6,
                 padding=ft.Padding.symmetric(vertical=6, horizontal=2),
@@ -627,14 +636,14 @@ class PbrTab:
                 ft.Container(height=4),
                 ft.Row([
                     self._metal_preset_btn("tight",
-                                            self.t("pbr_metal_preset_tight"),
-                                            0.10, 0.02, 0.05),
+                                           self.t("pbr_metal_preset_tight"),
+                                           0.10, 0.02, 0.05),
                     self._metal_preset_btn("medium",
-                                            self.t("pbr_metal_preset_medium"),
-                                            0.20, 0.05, 0.10),
+                                           self.t("pbr_metal_preset_medium"),
+                                           0.20, 0.05, 0.10),
                     self._metal_preset_btn("loose",
-                                            self.t("pbr_metal_preset_loose"),
-                                            0.40, 0.10, 0.15),
+                                           self.t("pbr_metal_preset_loose"),
+                                           0.40, 0.10, 0.15),
                 ], spacing=4),
                 ft.Container(height=10),
                 section_title(self.t("pbr_metal_manual_title"), th["fg3"]),
@@ -672,8 +681,8 @@ class PbrTab:
         )
 
     def _metal_preset_btn(self, key: str, label: str,
-                           tol: float, soft: float, neg_tol: float
-                           ) -> ft.Container:
+                          tol: float, soft: float, neg_tol: float
+                          ) -> ft.Container:
         th = self.theme
         is_active = (abs(self.S.get("pbr_metal_tolerance", 0.20) - tol) < 0.001
                      and abs(self.S.get("pbr_metal_softness", 0.05) - soft) < 0.001)
@@ -687,10 +696,10 @@ class PbrTab:
 
         return ft.Container(
             content=ft.Text(label,
-                             color="#ffffff" if is_active else th["fg2"],
-                             size=10, font_family=FONT,
-                             weight=ft.FontWeight.W_600,
-                             text_align=ft.TextAlign.CENTER),
+                            color="#ffffff" if is_active else th["fg2"],
+                            size=10, font_family=FONT,
+                            weight=ft.FontWeight.W_600,
+                            text_align=ft.TextAlign.CENTER),
             bgcolor=th["accent"] if is_active else th["card"],
             border_radius=8,
             padding=ft.Padding.symmetric(vertical=8, horizontal=4),
@@ -698,9 +707,8 @@ class PbrTab:
         )
 
     # ═══════════════════════════════════════════════════════════
-    #  ПЕРЕКЛЮЧЕНИЕ КАРТ
+    #  ПЕРЕДВИЖЕНИЕ КАРТ
     # ═══════════════════════════════════════════════════════════
-
     def _show_map(self, key: str):
         self.S["pbr_current_map"] = key
         self._update_preview()
@@ -714,6 +722,7 @@ class PbrTab:
         S = self.S
         th = self.theme
         key = S.get("pbr_current_map", "albedo")
+
         if S["pbr_batch_selected"] and S["pbr_result"] and key in S["pbr_result"]:
             self.preview_image.src = (
                 f"data:image/png;base64,{pil_to_b64(S['pbr_result'][key])}"
@@ -737,8 +746,10 @@ class PbrTab:
                     f"data:image/png;base64,{pil_to_b64(S['pbr_result'][key])}"
                 )
                 self.preview_image.visible = True
+
         if self.preview_hint is not None:
             self.preview_hint.visible = False
+
         for k, b in self.map_buttons.items():
             is_active = (k == key)
             b.bgcolor = th["accent"] if is_active else th["card"]
@@ -766,7 +777,6 @@ class PbrTab:
     # ═══════════════════════════════════════════════════════════
     #  BATCH NAV
     # ═══════════════════════════════════════════════════════════
-
     def pbr_batch_next(self, e=None):
         keys = list(self.S["pbr_batch_results"].keys())
         if not keys:
@@ -789,7 +799,6 @@ class PbrTab:
         folder = self.S["pbr_batch_results"].get(base_name)
         if not folder or not os.path.exists(folder):
             return
-
         result = {}
         for key in ("albedo", "height", "normal", "ao", "roughness",
                     "metallic", "orm", "edge"):
@@ -798,7 +807,6 @@ class PbrTab:
                 img = Image.open(path).convert("RGB")
                 img.load()
                 result[key] = img
-
         if not result:
             return
         self.S["pbr_result"] = result
@@ -806,7 +814,6 @@ class PbrTab:
         keys = list(self.S["pbr_batch_results"].keys())
         if base_name in keys:
             self.S["pbr_batch_index"] = keys.index(base_name)
-
         show_key = "albedo" if "albedo" in result else next(iter(result.keys()), None)
         if show_key:
             self.S["pbr_current_map"] = show_key
@@ -826,9 +833,43 @@ class PbrTab:
         self.batch_label.value = f"{keys[idx]}  ({idx + 1}/{len(keys)})"
 
     # ═══════════════════════════════════════════════════════════
+    #  СБОР ФАЙЛОВ (с рекурсией и защитой)
+    # ═══════════════════════════════════════════════════════════
+    def _collect_files(self, folder, exts, recursive):
+        """Собирает файлы. Если recursive=True — с защитой от папок вывода."""
+        OUTPUT_DIRS = {
+            '_corrected', '_pbr_output', '_compressed', '_realism',
+            '_unity_hdrp_gl', '_unity_hdrp_dx',
+            '_unity_urp_gl', '_unity_urp_dx',
+            '_unreal_gl', '_unreal_dx',
+            '_godot_gl', '_godot_dx',
+        }
+        SYSTEM_DIRS = {
+            'node_modules', '.git', '__pycache__', 'dist', 'build',
+            '.venv', 'venv', '.idea', '.vscode',
+        }
+        if not recursive:
+            return [os.path.join(folder, f) for f in os.listdir(folder)
+                    if f.lower().endswith(exts)]
+        files = []
+        for root, dirs, filenames in os.walk(folder):
+            rel = os.path.relpath(root, folder)
+            depth = 0 if rel == '.' else rel.count(os.sep) + 1
+            if depth >= 10:
+                dirs.clear()
+                continue
+            dirs[:] = [d for d in dirs
+                       if d not in OUTPUT_DIRS
+                       and d not in SYSTEM_DIRS
+                       and not d.startswith('.')]
+            for fn in filenames:
+                if fn.lower().endswith(exts):
+                    files.append(os.path.join(root, fn))
+        return files
+
+    # ═══════════════════════════════════════════════════════════
     #  ДЕЙСТВИЯ
     # ═══════════════════════════════════════════════════════════
-
     async def pbr_do_load(self, e):
         th = self.theme
         try:
@@ -897,7 +938,6 @@ class PbrTab:
             S["pbr_batch_selected"] = None
             log(S, f"{self.t('pbr_log_loaded')} {os.path.basename(fp)}",
                 color=th["success"], fg2=th["fg2"])
-
             await show_pbr_progress(S, self.page, self.t("pbr_progress_gen"))
             await asyncio.sleep(0.1)
             await self._maybe_rebuild_auto_metal_mask()
@@ -957,7 +997,6 @@ class PbrTab:
             return
         try:
             await show_pbr_progress(S, self.page, self.t("pbr_progress_gen"))
-
             base_name = "pbr_output"
             if S["pbr_source_path"]:
                 base_name = os.path.splitext(
@@ -966,7 +1005,6 @@ class PbrTab:
                       if S["pbr_source_path"] else os.getcwd())
             out_dir = os.path.join(folder, f"{base_name}_pbr")
             os.makedirs(out_dir, exist_ok=True)
-
             bit_per_map = S.get("pbr_bit_depth_per_map", {})
             total = len(S["pbr_result"])
             done = 0
@@ -982,7 +1020,6 @@ class PbrTab:
                 )
                 self.page.update()
                 await asyncio.sleep(0.02)
-
             gc.collect()
             log(S, f"{self.t('pbr_log_saved')} {out_dir}",
                 color=th["success"], fg2=th["fg2"])
@@ -1003,9 +1040,8 @@ class PbrTab:
             return
         try:
             await show_pbr_progress(S, self.page,
-                                     self.t("pbr_viewer_progress"))
+                                    self.t("pbr_viewer_progress"))
             await asyncio.sleep(0.05)
-
             tmpdir = tempfile.mkdtemp(prefix="albedo_viewer_")
             paths = {}
             keys = ("albedo", "height", "normal", "ao", "roughness",
@@ -1020,24 +1056,21 @@ class PbrTab:
                     else:
                         await asyncio.to_thread(img.save, p)
                     paths[key] = p
-
             if "albedo" not in paths and S["pbr_source"] is not None:
                 p = os.path.join(tmpdir, "albedo.png")
                 await asyncio.to_thread(S["pbr_source"].save, p)
                 paths["albedo"] = p
-
             import sys
             if getattr(sys, "frozen", False):
                 viewer_path = os.path.join(
                     os.path.dirname(sys.executable), "viewer.exe")
                 if not os.path.exists(viewer_path):
                     viewer_path = os.path.join(self.paths["base_dir"],
-                                                "viewer.exe")
+                                               "viewer.exe")
                 cmd = [viewer_path]
             else:
                 viewer_path = os.path.join(self.paths["base_dir"], "viewer.py")
                 cmd = [sys.executable, viewer_path]
-
             cmd += [
                 "--albedo", paths.get("albedo", ""),
                 "--normal", paths.get("normal", ""),
@@ -1069,14 +1102,30 @@ class PbrTab:
             folder = await self.picker.get_directory_path(
                 dialog_title=self.t("pbr_dialog_folder"))
             if not folder:
+                S["pbr_batch_running"] = False
                 return
             exts = ('.png', '.jpg', '.jpeg', '.tif', '.tiff', '.bmp')
-            files = [os.path.join(folder, f) for f in os.listdir(folder)
-                     if f.lower().endswith(exts)]
+            recursive = S.get("pbr_batch_recursive", False)
+            files = self._collect_files(folder, exts, recursive)
+
+            # Лимиты
+            if len(files) > 10000:
+                log(S, f"❌ Слишком много файлов: {len(files)}. "
+                       "Выбери другую папку.",
+                    color=th["danger"], fg2=th["fg2"])
+                self.page.update()
+                S["pbr_batch_running"] = False
+                return
+            if len(files) > 5000:
+                log(S, f"⚠ Найдено {len(files)} файлов. "
+                       "Это может занять много времени.",
+                    color=th["warn"], fg2=th["fg2"])
+
             if not files:
                 log(S, self.t("pbr_log_no_files"),
                     color=th["warn"], fg2=th["fg2"])
                 self.page.update()
+                S["pbr_batch_running"] = False
                 return
 
             await show_pbr_progress(S, self.page, self.t("pbr_progress_batch"))
@@ -1095,17 +1144,22 @@ class PbrTab:
             m_custom = S.get("pbr_metallic_custom") if m_mode in ("custom", "auto") else None
             r_custom = S.get("pbr_roughness_custom") if r_mode == "custom" else None
             vals = S.get("pbr_values", {})
-
             S["pbr_batch_results"] = {}
             count = 0
             total_files = len(files)
+
+            log(S, f"📁 {self.t('pbr_dialog_folder')}: {folder}"
+                   + (f" ({self.t('recursive_label')})" if recursive else ""),
+                color=th["fg2"], fg2=th["fg2"])
+            log(S, f"   Найдено: {total_files} файлов",
+                color=th["fg2"], fg2=th["fg2"])
+
             for i, fp in enumerate(files, 1):
                 try:
                     S["pbr_progress_text"].value = (
                         f"{self.t('pbr_progress_batch')} {i}/{total_files}"
                     )
                     self.page.update()
-
                     img = await asyncio.to_thread(safe_open_rgb, fp)
                     result = await asyncio.to_thread(
                         generate_pbr_all, img, vals,
@@ -1114,9 +1168,18 @@ class PbrTab:
                         roughness_mode=r_mode,
                         roughness_custom=r_custom,
                     )
+
+                    # Сохраняем структуру папок
+                    rel_path = os.path.relpath(fp, folder)
+                    rel_dir = os.path.dirname(rel_path)
                     base = os.path.splitext(os.path.basename(fp))[0]
-                    sub = os.path.join(out_root, base)
+
+                    if rel_dir:
+                        sub = os.path.join(out_root, rel_dir, base)
+                    else:
+                        sub = os.path.join(out_root, base)
                     os.makedirs(sub, exist_ok=True)
+
                     await asyncio.to_thread(
                         img.save, str(os.path.join(sub, f"{base}_albedo.png")))
                     bit_per_map = S.get("pbr_bit_depth_per_map", {})
@@ -1127,7 +1190,9 @@ class PbrTab:
                             str(os.path.join(sub, f"{base}_{k}.png")), bd,
                         )
                     count += 1
-                    S["pbr_batch_results"][base] = sub
+                    # Ключ для batch_results — уникальный по пути
+                    unique_key = rel_path.replace(os.sep, "/") if rel_dir else base
+                    S["pbr_batch_results"][unique_key] = sub
                     log(S, f"  [{i}/{total_files}] ✓ {os.path.basename(fp)}",
                         color=th["success"], fg2=th["fg2"])
                     self.page.update()
@@ -1141,6 +1206,7 @@ class PbrTab:
                 except Exception as ex:
                     log(S, f"  ✗ {os.path.basename(fp)}: {ex}",
                         color=th["danger"], fg2=th["fg2"])
+
             log(S, f"{self.t('pbr_log_batch_done')} {count} "
                    f"{self.t('pbr_log_files')}",
                 color=th["success"], fg2=th["fg2"])
@@ -1163,7 +1229,6 @@ class PbrTab:
     # ═══════════════════════════════════════════════════════════
     #  ЗАГРУЗКА СВОИХ MAP
     # ═══════════════════════════════════════════════════════════
-
     async def pbr_load_metallic_map(self, e=None):
         S = self.S
         th = self.theme
@@ -1179,7 +1244,6 @@ class PbrTab:
             remember_folder(S, fp)
             img = await asyncio.to_thread(safe_open_gray, fp)
             arr = np.array(img).astype(np.float32) / 255.0
-
             if S.get("pbr_source") is not None:
                 arr, ok = await self._ask_resize_dialog(
                     arr, S["pbr_source"], "Metallic")
@@ -1188,13 +1252,11 @@ class PbrTab:
                         color=th["warn"], fg2=th["fg2"])
                     self.page.update()
                     return
-
             S["pbr_metallic_custom"] = arr
             S["pbr_metallic_custom_path"] = fp
             S["pbr_metallic"] = "custom"
             log(S, f"⚙ Metallic map загружена: {os.path.basename(fp)}",
                 color=th["success"], fg2=th["fg2"])
-
             if S.get("pbr_source") is not None and S.get("pbr_result") is not None:
                 log(S, "   → Автогенерация PBR с новой картой...",
                     color=th["fg2"], fg2=th["fg2"])
@@ -1221,7 +1283,6 @@ class PbrTab:
             remember_folder(S, fp)
             img = await asyncio.to_thread(safe_open_gray, fp)
             arr = np.array(img).astype(np.float32) / 255.0
-
             if S.get("pbr_source") is not None:
                 arr, ok = await self._ask_resize_dialog(
                     arr, S["pbr_source"], "Roughness")
@@ -1230,13 +1291,11 @@ class PbrTab:
                         color=th["warn"], fg2=th["fg2"])
                     self.page.update()
                     return
-
             S["pbr_roughness_custom"] = arr
             S["pbr_roughness_custom_path"] = fp
             S["pbr_roughness"] = "custom"
             log(S, f"🔧 Roughness map загружена: {os.path.basename(fp)}",
                 color=th["success"], fg2=th["fg2"])
-
             if S.get("pbr_source") is not None and S.get("pbr_result") is not None:
                 log(S, "   → Автогенерация PBR с новой картой...",
                     color=th["fg2"], fg2=th["fg2"])
@@ -1253,7 +1312,6 @@ class PbrTab:
             custom_arr, albedo_pil, map_name)
         if not was_resized:
             return custom_arr, True
-
         loop = asyncio.get_event_loop()
         fut = loop.create_future()
 
@@ -1285,11 +1343,9 @@ class PbrTab:
         self.page.overlay.append(dlg)
         dlg.open = True
         self.page.update()
-
         ok = await fut
         dlg.open = False
         self.page.update()
-
         if not ok:
             return custom_arr, False
         log(self.S, f"   ✅ {map_name} resized: {old_size[0]}×{old_size[1]} "
@@ -1300,7 +1356,6 @@ class PbrTab:
     # ═══════════════════════════════════════════════════════════
     #  PIPETTE
     # ═══════════════════════════════════════════════════════════
-
     async def pbr_pick_color(self, e=None, mode: str = "positive"):
         S = self.S
         th = self.theme
@@ -1309,7 +1364,6 @@ class PbrTab:
                 color=th["warn"], fg2=th["fg2"])
             self.page.update()
             return
-
         src = S["pbr_source"]
         max_disp = 600
         disp = src.copy()
@@ -1317,19 +1371,17 @@ class PbrTab:
         disp_w, disp_h = disp.size
         orig_w, orig_h = src.size
         scale = orig_w / disp_w
-
         state = {"rgb": None,
                  "img_src": f"data:image/png;base64,"
                             f"{pil_to_b64(disp, max_size=max_disp)}"}
-
         color_swatch = ft.Container(width=32, height=32, bgcolor="#000000",
-                                      border_radius=4)
+                                    border_radius=4)
         picked_label = ft.Text("—", color=th["fg"], size=13,
-                                font_family=FONT_MONO,
-                                weight=ft.FontWeight.W_600)
+                               font_family=FONT_MONO,
+                               weight=ft.FontWeight.W_600)
         img_control = ft.Image(src=state["img_src"],
-                                fit=ft.BoxFit.CONTAIN,
-                                width=disp_w, height=disp_h)
+                               fit=ft.BoxFit.CONTAIN,
+                               width=disp_w, height=disp_h)
         stack = ft.Stack([img_control], width=disp_w, height=disp_h)
 
         def _on_image_click(e):
@@ -1347,7 +1399,6 @@ class PbrTab:
                 oy = int(ly * scale)
                 ox = max(0, min(orig_w - 1, ox))
                 oy = max(0, min(orig_h - 1, oy))
-
                 rgb = pick_color_from_pixel(src, ox, oy, half_window=2)
                 state["rgb"] = rgb
                 color_swatch.bgcolor = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
@@ -1368,9 +1419,8 @@ class PbrTab:
             content=stack, on_tap_down=_on_image_click,
             mouse_cursor=ft.MouseCursor.PRECISE,
         )
-
         title_text = (self.t("pbr_metal_negative_hint") if mode == "negative"
-                       else self.t("pbr_metal_pick_dialog"))
+                      else self.t("pbr_metal_pick_dialog"))
 
         def _close(e=None):
             dlg.open = False
@@ -1393,8 +1443,8 @@ class PbrTab:
                     clickable,
                     ft.Container(height=8),
                     ft.Row([color_swatch, ft.Container(width=8), picked_label],
-                            spacing=6,
-                            vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                           spacing=6,
+                           vertical_alignment=ft.CrossAxisAlignment.CENTER),
                 ], spacing=0,
                    horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 width=min(disp_w, 600) + 20,
