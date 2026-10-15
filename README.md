@@ -2,7 +2,7 @@
 
 **PBR Albedo Checker & Optimizer** — a tool for checking, correcting, and generating PBR maps from Albedo textures.
 
-![Version](https://img.shields.io/badge/version-1.7.7--beta-orange)
+![version](https://img.shields.io/badge/version-1.7.8--beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-yellow)
@@ -46,7 +46,7 @@ Free Godot Editor add-on that generates PBR maps and auto-creates StandardMateri
 ## Screenshots
 ![Main UI](screenshots/main_int.png)
 
-## What's new in v1.7.7-beta
+## What's new in v1.7.8
 
 ### Fixed
 - **Chinese filenames broke Normal map save** — `cv2.imwrite` silently fails on Unicode paths on Windows. Replaced with `cv2.imencode` + `open(..., 'wb')` in `save_16bit_or_8bit` and `save_pbr_map`. Files with Chinese, Russian, or any non-ASCII names now save correctly.
@@ -177,7 +177,7 @@ Free Godot Editor add-on that generates PBR maps and auto-creates StandardMateri
 
 ### Installer (recommended)
 
-1. Download `Albedolizer_Setup_v1.7.7-beta.exe` from the [latest release](../../releases/latest)
+1. Download `Albedolizer_Setup_v1.7.8.exe` from the [latest release](../../releases/latest)
 2. Run the installer — it places everything in `Program Files\Albedolizer`
 3. Launch from Start Menu or Desktop shortcut
 
@@ -302,7 +302,7 @@ MIT — free to use, including in commercial projects.
 ---
 
 **Author:** INV.LVL  
-**Version:** 1.7.7-beta  
+**Version:** 1.7.8  
 **Date:** 2026
 
 ---
@@ -348,7 +348,7 @@ Albedolizer также доступен прямо внутри **Blender**, **U
 
 ---
 
-## Что нового в v1.7.7-beta
+## Что нового в v1.7.8
 
 ### Исправлено
 - **Китайские имена файлов ломали сохранение Normal map** — `cv2.imwrite` молча падает на Unicode-путях в Windows. Заменён на `cv2.imencode` + `open(..., 'wb')` в `save_16bit_or_8bit` и `save_pbr_map`. Файлы с китайскими, русскими и любыми не-ASCII именами теперь сохраняются корректно.
@@ -479,7 +479,7 @@ Albedolizer также доступен прямо внутри **Blender**, **U
 
 ### Инсталлер (рекомендуется)
 
-1. Скачай `Albedolizer_Setup_v1.7.7-beta.exe` из [последнего релиза](../../releases/latest)
+1. Скачай `Albedolizer_Setup_v1.7.8.exe` из [последнего релиза](../../releases/latest)
 2. Запусти установщик — всё встанет в `Program Files\Albedolizer`
 3. Запускай из меню Пуск или ярлыка на рабочем столе
 
@@ -602,5 +602,5 @@ MIT — используйте свободно, в том числе в ком�
 ---
 
 **Автор:** INV.LVL  
-**Версия:** 1.7.7-beta  
+**Версия:** 1.7.8 
 **Дата:** 2026

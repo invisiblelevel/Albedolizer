@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.7.8-beta] — 2026-10-15
+
+Recursive batch processing + Unicode fixes.
+
+### Added
+- **Recursive folder processing** — Batch, PBR Batch, and Compress Batch now support subfolders via "Include subfolders" checkbox.
+- **Output folder protection** — recursively collected files automatically skip Albedolizer output folders (`_corrected`, `_pbr_output`, `_compressed`, `_realism`, `_unity_hdrp_gl`, `_unity_hdrp_dx`, `_unity_urp_gl`, `_unity_urp_dx`, `_unreal_gl`, `_unreal_dx`, `_godot_gl`, `_godot_dx`) and system folders (`node_modules`, `.git`, `__pycache__`, `dist`, `build`, `.venv`, `venv`, `.idea`, `.vscode`).
+- **Folder structure preservation** — batch outputs now mirror the source folder hierarchy inside `_corrected`, `_pbr_output`, `_compressed`.
+- **Safety limits** — warning at 5000+ files, hard stop at 10000+ files. Max recursion depth: 10 levels.
+- **Translations** — `recursive_label` / `recursive_hint` keys added for RU / EN / ZH.
+
+### Fixed
+- **8-bit Unicode save** — `core/io.py::save_16bit_or_8bit` now uses `cv2.imencode` + `open('wb')` for both 8-bit and 16-bit PNGs. Fixes crashes on Windows with Chinese/Russian/non-ASCII paths in 8-bit mode.
+- **albedolizer_cli.py** — removed duplicated `except Exception` block in `main()` that printed the error twice.
+
+### Changed
+- `tab_batch.py`, `tab_pbr.py`, `tab_compress.py` — new `_collect_files()` helper with recursive + protection logic.
+- `core/state.py` — new keys: `batch_recursive`, `pbr_batch_recursive`, `compress_recursive`.
+- `translations.py` — new keys: `recursive_label`, `recursive_hint` (RU / EN / ZH).
+
+---
+
 ## [1.7.7-beta] — 2026-10-01
 
 Bug fixes and viewer improvements.
